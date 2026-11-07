@@ -1,8 +1,8 @@
 // "See every single voter": an animated flight over Texas with one dot for each person who voted in the 2026 U.S. Senate
-// race. It plays on its own, scene by scene, always over the flat map: the whole state, what a dot means, the emptiest
-// county, the county with the most voters, down into the most crowded neighborhood in the state until single voters show,
-// the same zoom over the emptiest county; then flights over the big metros, and the most crowded spot of seven more
-// counties, each close enough to see single voters.
+// race. It plays on its own, scene by scene, always over the flat map. After the whole state, it visits one place at a
+// time, in an order that keeps the flights short: the metro from high up, then one county, then down to its most crowded
+// spot until single voters stand apart. Houston, the border, Austin and San Antonio (ending in the most crowded neighborhood
+// in Texas), then at that same zoom the emptiest county, El Paso, Lubbock and Dallas-Fort Worth.
 import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
@@ -167,11 +167,26 @@ const HOUSTON = named('Harris', 'Fort Bend', 'Montgomery', 'Galveston', 'Brazori
 const DFW = named('Dallas', 'Tarrant', 'Collin', 'Denton');
 const I35 = named('Travis', 'Bexar', 'Williamson', 'Hays');
 const BORDER = named('Hidalgo', 'Cameron', 'Webb');
-const ELPASO = byName('El Paso');
-// the close-up tour, roughly west to east so each hop is short
-const TOUR = named('El Paso', 'Lubbock', 'Tarrant', 'Bexar', 'Hidalgo', 'Nueces', 'Harris').filter(c => c !== DENSE);
-// a metro flight: over the group at a slight angle, then the camera slides across it
-const metro = (cs, heading) => () => boxView(cs, 0.3, heading, 1.1);
+const HARRIS = byName('Harris'), HIDALGO = byName('Hidalgo'), ELPASO = byName('El Paso'), LUBBOCK = byName('Lubbock');
+// the I-35 visit's county: the one with the most crowded neighborhood in the state, if it's there
+const MID35 = I35.includes(DENSE) ? DENSE : byName('Travis');
+
+// ---- the three distances of a visit ----
+// far: a metro from high up, a little tilted, drifting round; its counties labeled
+const far = (cs, heading, html) => ({ fly: 3, hold: 8, drift: 0.006 * Math.sign(heading || 1), labels: cs,
+  view: () => boxView(cs, 0.3, heading, 1.1), html });
+// medium: one county, outlined
+const county = (c, kicker, more = '') => ({ fly: 3, hold: 8, focus: c, view: () => countyView(c, 0.12), html: () => `
+      <div class="kicker">${kicker}</div>
+      <h2>${c.name} County</h2>
+      <div class="big">${fmt(c.total)} voters<small>${perSqMi(c)} per square mile · ${split(c)}</small></div>${more}` });
+// close: the county's most crowded spot, close enough that single voters stand apart
+const close = (c, kicker) => ({ fly: 3, hold: 8, focus: c, dot: gapMiles(c) / 3, view: () => closeView(c), html: v => `
+      <div class="kicker">${kicker} · up close</div>
+      <h2>${c.name} County's most crowded spot</h2>
+      <div class="big">About ${fmt(round2(c.hot.voters))} voters per square mile<small>this view is ${tall(v)} tall and holds about ${fmt(inView(c, v))}</small></div>
+      <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. Each dot is one voter.</p>` });
+const lineup = cs => cs.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ');
 
 const scenes = [
   { fly: 0, hold: 10, reveal: 7, view: () => stateView(), html: () => `
@@ -193,75 +208,77 @@ const scenes = [
       <p><span class="d">Blue</span>: voted for ${D.name} (D), ${fmt(D.votes)}.<br><span class="r">Red</span>: ${R.name} (R), ${fmt(R.votes)}.<br>
       <span class="o">Gray</span>: everyone else, ${fmt(OTH)}.</p>
       <p>From up here, the dots pile on top of each other: in the cities, hundreds of thousands of voters share a few pixels.
-      Out west, there's mostly black.</p>` },
-  { fly: 6, hold: 11, size: 4, focus: EMPTY, view: () => countyView(EMPTY, 0.15), html: () => `
-      <div class="kicker">The emptiest county</div>
-      <h2>${EMPTY.name} County</h2>
-      <div class="big">${fmt(EMPTY.total)} voters<small>on ${fmt(Math.round(EMPTY.landSqMi))} square miles of land</small></div>
-      <p>That's one voter for every ${Math.round(1 / EMPTY.density)} square miles. Each dot you can see here is one person who voted
-      (drawn larger, so you can find them).</p>` },
-  ...(BIGGEST === CROWDED ? [] : [{ fly: 7, hold: 9, focus: BIGGEST, view: () => countyView(BIGGEST, 0.15), html: () => `
-      <div class="kicker">The most voters</div>
-      <h2>${BIGGEST.name} County</h2>
-      <div class="big">${fmt(BIGGEST.total)} voters<small>${pct(BIGGEST.total, TOT)} of every Senate vote in Texas</small></div>
-      <p>From this high up, they blur together. The empty patches are where few people live: the Ship Channel, parks, the airports.</p>` }]),
-  { fly: 5, hold: 9, focus: CROWDED, view: () => countyView(CROWDED, 0.15), html: () => `
-      <div class="kicker">The most crowded county</div>
-      <h2>${CROWDED.name} County</h2>
-      <div class="big">${perSqMi(CROWDED)} voters per square mile<small>${fmt(CROWDED.total)} voters on ${fmt(Math.round(CROWDED.landSqMi))} square miles</small></div>
-      <p>That's about ${fmt(round2(CROWDED.density / EMPTY.density))} times as crowded as ${EMPTY.name} County. Now let's go down into the most
-      crowded neighborhood in the state${DENSE === CROWDED ? ', right here' : `, in ${DENSE.name} County`}, until the blur breaks apart.</p>` },
-  { fly: 8, hold: 6, focus: DENSE, view: () => milesView(DENSE.hot, ZOOM_MID), html: v => `
+      Out west, there's mostly black. Let's visit a few places, one at a time.</p>` },
+
+  // ---- Houston ----
+  far(HOUSTON, -0.15, () => `
+      <div class="kicker">Houston</div>
+      <h2>${fmt(sumVoters(HOUSTON))} voters</h2>
+      <p>${HOUSTON.map(c => c.name).join(', ')}: ${pct(sumVoters(HOUSTON), TOT)} of the state's vote in five counties.
+      ${PC ? 'The blue core and the redder suburbs follow how each neighborhood voted in 2024.' : ''}</p>`),
+  county(HARRIS, HARRIS === BIGGEST ? 'Houston · the most voters' : 'Houston', `
+      <p>${pct(HARRIS.total, TOT)} of every Senate vote in Texas. From this high up, they blur together. The empty patches are where
+      few people live: the Ship Channel, parks, the airports.</p>`),
+  close(HARRIS, 'Houston'),
+
+  // ---- the border ----
+  far(BORDER, 0.1, () => `
+      <div class="kicker">The border</div>
+      <h2>${fmt(sumVoters(BORDER))} voters</h2>
+      <p>${lineup(BORDER)}. Between the cities, the map is nearly empty.</p>`),
+  county(HIDALGO, 'The Rio Grande Valley'),
+  close(HIDALGO, 'The Rio Grande Valley'),
+
+  // ---- Austin and San Antonio, down to the most crowded neighborhood in Texas ----
+  far(I35, -0.1, () => `
+      <div class="kicker">Down I-35: Austin and San Antonio</div>
+      <h2>${fmt(sumVoters(I35))} voters</h2>
+      <p>${lineup(I35)}.</p>`),
+  county(MID35, 'Austin and San Antonio', MID35 === DENSE ? `
+      <p>Somewhere in here is the most crowded neighborhood in Texas. Let's go down into it, until the blur breaks apart.</p>` : ''),
+  { fly: 3, hold: 6, focus: DENSE, view: () => milesView(DENSE.hot, ZOOM_MID), html: v => `
       <h2>Closer…</h2>
       <p>This view is about ${Math.round(viewMiles(v))} miles from top to bottom, around the most crowded part of ${DENSE.name} County.</p>` },
-  { fly: 7, hold: 11, focus: DENSE, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE), html: v => `
+  { fly: 3, hold: 11, focus: DENSE, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE), html: v => `
       <h2>Every single voter</h2>
       <p>Now each dot is one person: about <b class="hl">${fmt(inView(DENSE, v))}</b> voters in a patch of land ${tall(v)} tall,
       in the most crowded neighborhood in Texas (${DENSE.name} County).</p>
       <p>Across the whole county, each ${DENSE.name} County voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>` },
-  { fly: 9, hold: 11, size: 4, focus: EMPTY, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE, EMPTY), html: v => {
+
+  // ---- from the most crowded to the emptiest, at the same zoom ----
+  { fly: 3, hold: 11, size: 4, focus: EMPTY, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE, EMPTY), html: v => {
       const n = EMPTY.density * viewSqMi(v);
       return `
       <div class="kicker">Same zoom, ${EMPTY.name} County</div>
       <h2>Nobody here</h2>
-      <p>This patch of ${EMPTY.name} County is the same size as the last one, which held about ${fmt(inView(DENSE, v))} voters.
-      On average, a patch this size here holds ${n < 0.1 ? 'less than a tenth' : n.toFixed(1)} of one.</p>
+      <p>This patch of ${EMPTY.name} County, the emptiest in Texas, is the same size as the last one, which held about
+      ${fmt(inView(DENSE, v))} voters. On average, a patch this size here holds ${n < 0.1 ? 'less than a tenth' : n.toFixed(1)} of one.</p>
       <div class="vs"><div><b>${fmt(round2(DENSE.hot.voters))}</b>voters per square mile in that ${DENSE.name} County neighborhood</div>
       <div><b>1 per ${Math.round(1 / EMPTY.density)}</b>square miles in ${EMPTY.name} County</div></div>`;
     } },
-  // ---- over the big metros ----
-  { fly: 12, hold: 9, drift: 0.008, labels: HOUSTON, view: metro(HOUSTON, -0.15), html: () => `
-      <div class="kicker">Houston</div>
-      <h2>${fmt(sumVoters(HOUSTON))} voters</h2>
-      <p>${HOUSTON.map(c => c.name).join(', ')}: ${pct(sumVoters(HOUSTON), TOT)} of the state's vote in five counties.
-      ${PC ? 'The blue core and the redder suburbs follow how each neighborhood voted in 2024.' : ''}</p>` },
-  { fly: 12, hold: 9, drift: 0.008, labels: DFW, view: metro(DFW, 0.15), html: () => `
+  { fly: 3, hold: 10, size: 4, focus: EMPTY, view: () => countyView(EMPTY, 0.12), html: () => `
+      <div class="kicker">The emptiest county</div>
+      <h2>${EMPTY.name} County</h2>
+      <div class="big">${fmt(EMPTY.total)} voters<small>on ${fmt(Math.round(EMPTY.landSqMi))} square miles of land</small></div>
+      <p>Pull back, and that's the whole county: one voter for every ${Math.round(1 / EMPTY.density)} square miles. Each dot you can
+      see is one person who voted (drawn larger, so you can find them).</p>` },
+
+  // ---- out west ----
+  county(ELPASO, 'Out west', `
+      <p>The flight here crossed West Texas, where whole counties cast a few hundred or a few thousand votes.</p>`),
+  close(ELPASO, 'El Paso'),
+  county(LUBBOCK, 'The South Plains'),
+  close(LUBBOCK, 'Lubbock'),
+
+  // ---- Dallas-Fort Worth, and the most crowded county ----
+  far(DFW, 0.15, () => `
       <div class="kicker">Dallas–Fort Worth</div>
       <h2>${fmt(sumVoters(DFW))} voters</h2>
-      <p>${DFW.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ')}.</p>` },
-  { fly: 12, hold: 9, drift: -0.008, labels: I35, view: metro(I35, -0.1), html: () => `
-      <div class="kicker">Down I-35: Austin and San Antonio</div>
-      <h2>${fmt(sumVoters(I35))} voters</h2>
-      <p>${I35.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ')}.</p>` },
-  { fly: 12, hold: 9, drift: 0.008, labels: BORDER, view: metro(BORDER, 0.1), html: () => `
-      <div class="kicker">The border</div>
-      <h2>${fmt(sumVoters(BORDER))} voters</h2>
-      <p>${BORDER.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ')}. Between the cities, the map is nearly empty.</p>` },
-  { fly: 14, hold: 9, drift: -0.008, labels: [ELPASO], view: metro([ELPASO], -0.1), html: () => `
-      <div class="kicker">Out west</div>
-      <h2>${ELPASO.name} County: ${fmt(ELPASO.total)} voters</h2>
-      <p>The flight here crossed hundreds of miles of West Texas, where whole counties cast a few hundred or a few thousand votes.
-      ${ELPASO.name} County voted ${split(ELPASO)}.</p>` },
-  { fly: 9, hold: 6, view: () => stateView(), html: () => `
-      <div class="kicker">Up close</div>
-      <h2>County by county</h2>
-      <p>Next, the most crowded spot in ${TOUR.length} more counties. Each time, the camera comes down until single voters stand
-      apart: the more crowded the spot, the closer it gets.</p>` },
-  ...TOUR.map((c, i) => ({ fly: 5.5, hold: 6, focus: c, dot: gapMiles(c) / 3, view: () => closeView(c), html: v => `
-      <div class="kicker">Up close · ${i + 1} of ${TOUR.length}</div>
-      <h2>${c.name} County</h2>
-      <div class="big">About ${fmt(round2(c.hot.voters))} voters per square mile<small>in its most crowded half mile; this view is ${tall(v)} tall and holds about ${fmt(inView(c, v))}</small></div>
-      <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. ${fmt(c.total)} voters in the county: ${split(c)}.</p>` })),
+      <p>${lineup(DFW)}.</p>`),
+  county(CROWDED, 'Dallas–Fort Worth · the most crowded county', `
+      <p>About ${fmt(round2(CROWDED.density / EMPTY.density))} times as crowded as ${EMPTY.name} County.</p>`),
+  close(CROWDED, 'Dallas–Fort Worth'),
+
   { fly: 9, hold: Infinity, view: () => stateView(), html: () => `
       <h2>Same state, same election, one vote each</h2>
       <p>${EMPTY.name} County's ${fmt(EMPTY.total)} voters and ${CROWDED.name} County's ${fmt(CROWDED.total)} each cast a vote that counted the

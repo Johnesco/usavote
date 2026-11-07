@@ -93,11 +93,11 @@ county drawing code it uses is in [`map3d.js`](map3d.js).
 ## See every single voter (dot page)
 
 [`voters.html`](https://johnesco.github.io/texas/voters.html) is an animation that plays on its own, with one dot for each of the
-9,889,704 people who voted in the 2026 U.S. Senate race, always over the flat map. It shows the whole state, then the emptiest
-county (Loving), the county with the most voters (Harris) and the most crowded county (Dallas), then comes down into the most
-crowded neighborhood in the state until single voters stand apart, and shows the same zoom over Loving. Then it flies over
-Houston, Dallas–Fort Worth, Austin and San Antonio, the border and El Paso, and last visits the most crowded spot in seven more
-counties. Each close-up zooms in as far as that spot needs: the typical gap between voters there is drawn about 16 pixels
+9,889,704 people who voted in the 2026 U.S. Senate race, always over the flat map. After the whole state, it visits one
+place at a time, and each visit runs from far to near: the metro from high up, then one county, then down to its most
+crowded spot. Houston (Harris), the border (Hidalgo), Austin and San Antonio, ending in the most crowded neighborhood in the
+state; then, at that same zoom, the emptiest county (Loving), from very dense to nearly empty. Then El Paso, Lubbock and
+Dallas–Fort Worth (the most crowded county), in an order that keeps the flights short. Each close-up zooms in as far as that spot needs: the typical gap between voters there is drawn about 16 pixels
 wide. `?scene=N` opens it at scene N.
 
 The results give votes by county, not by address. Precinct results for 2026 aren't published yet, so the dots are placed by
