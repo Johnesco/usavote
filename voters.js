@@ -376,40 +376,127 @@ function showCaption(i) {
   const outlined = s.focus ? [s.focus] : s.labels || [];
   focusLine.geometry = outlined.length ? lineGeo(outlined.flatMap(c => c.edges)) : new THREE.BufferGeometry();
 }
-function jump(time) { t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
-function updateButton() { $('pause').textContent = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play'; }
-$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
+function jump(time) { leaveExplore(); resume = null; t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
+function updateButton() {
+  const label = explore ? 'Back to the show' : t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
+  $('pause').textContent = explore ? '▶ ' + label : label; $('pause').setAttribute('aria-label', label);
+  $('explore').style.display = explore ? 'none' : '';
+}
+$('pause').onclick = () => { if (explore) resumeShow(); else if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
 $('prev').onclick = () => { const i = sceneAt(t); jump(scenes[t - scenes[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
 $('next').onclick = () => { const i = sceneAt(t); if (i + 1 < scenes.length) jump(scenes[i + 1].start); };
 addEventListener('keydown', e => {
+  if (e.key === 'Escape' && explore) resumeShow();
   if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('pause').click(); }
   if (e.key === 'ArrowRight') $('next').click();
   if (e.key === 'ArrowLeft') $('prev').click();
 });
 
+// ---------- explore: drag, scroll or pinch to move around the map yourself ----------
+// Any of these pauses the show; "Back to the show" flies from wherever you are back into the scene you left.
+const page = document.querySelector('.voters'), stage = renderer.domElement;
+let explore = null;   // the camera while exploring
+let resume = null;    // { from, k, dur }: the flight back into the show
+let lastV = null;     // the view drawn last frame
+function enterExplore() {
+  if (explore || !lastV) return;
+  explore = { ...lastV }; resume = null; playing = false;
+  page.classList.add('exploring'); updateButton();
+}
+function leaveExplore() { if (explore) { explore = null; page.classList.remove('exploring'); updateButton(); } }
+function resumeShow() {
+  if (!explore) return;
+  const i = sceneAt(t), s = scenes[i], from = explore;
+  leaveExplore();
+  t = Math.min(END, s.start + s.fly); // arrived, so the scene's hold plays out after the flight back
+  resume = { from, k: 0, dur: Math.max(1.5, zoomPath(from, s.view()).S / SPEED) };
+  playing = true; updateButton();
+}
+$('explore').onclick = enterExplore;
+// the screen point the camera looks at, and the map directions of screen right and screen up
+const screenCenter = () => [W / 2 - area.ox, H / 2 - area.oy];
+const axes = h => [[Math.cos(h), Math.sin(h)], [-Math.sin(h), Math.cos(h)]];
+const unitsPerPx = v => 2 * v.d * TAN / H;
+function panBy(dx, dy) { // move the map with the pointer, dx/dy in screen pixels
+  const [r, f] = axes(explore.heading), u = unitsPerPx(explore);
+  explore.x -= (r[0] * dx - f[0] * dy) * u; explore.y -= (r[1] * dx - f[1] * dy) * u;
+  explore.x = Math.max(-650, Math.min(650, explore.x)); explore.y = Math.max(-650, Math.min(650, explore.y));
+}
+function zoomAt(sx, sy, factor) { // zoom by factor (> 1 = out), keeping the map point under (sx, sy) in place
+  const [cx, cy] = screenCenter(), [r, f] = axes(explore.heading), u = unitsPerPx(explore);
+  const ox = (r[0] * (sx - cx) - f[0] * (sy - cy)) * u, oy = (r[1] * (sx - cx) - f[1] * (sy - cy)) * u;
+  const d = Math.max(milesView({ x: 0, y: 0 }, 0.08).d, Math.min(stateView().d * 1.6, explore.d * factor));
+  const g = d / explore.d;
+  explore.x += ox * (1 - g); explore.y += oy * (1 - g); explore.d = d;
+}
+const pointers = new Map();
+const pointerXY = e => { const b = stage.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
+stage.addEventListener('pointerdown', e => {
+  enterExplore(); if (!explore) return;
+  stage.setPointerCapture(e.pointerId); pointers.set(e.pointerId, pointerXY(e)); stage.classList.add('dragging');
+});
+stage.addEventListener('pointermove', e => {
+  if (!explore || !pointers.has(e.pointerId)) return;
+  const before = [...pointers.values()];
+  pointers.set(e.pointerId, pointerXY(e));
+  const after = [...pointers.values()];
+  if (after.length === 1) panBy(after[0][0] - before[0][0], after[0][1] - before[0][1]);
+  else if (after.length >= 2) { // pinch: zoom around the two fingers' midpoint, and follow it
+    const mid = ps => [(ps[0][0] + ps[1][0]) / 2, (ps[0][1] + ps[1][1]) / 2];
+    const dist = ps => Math.hypot(ps[0][0] - ps[1][0], ps[0][1] - ps[1][1]) || 1;
+    const m0 = mid(before), m1 = mid(after);
+    zoomAt(m0[0], m0[1], dist(before) / dist(after));
+    panBy(m1[0] - m0[0], m1[1] - m0[1]);
+  }
+});
+const lift = e => { pointers.delete(e.pointerId); if (!pointers.size) stage.classList.remove('dragging'); };
+stage.addEventListener('pointerup', lift); stage.addEventListener('pointercancel', lift);
+stage.addEventListener('wheel', e => {
+  e.preventDefault(); enterExplore(); if (!explore) return;
+  const [sx, sy] = pointerXY(e), px = e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+  zoomAt(sx, sy, Math.exp(Math.max(-1, Math.min(1, px * 0.0018))));
+}, { passive: false });
+stage.addEventListener('dblclick', e => { enterExplore(); if (explore) { const [sx, sy] = pointerXY(e); zoomAt(sx, sy, 0.4); } });
+// while exploring, dots grow as you come down: about 4 pixels across from half a mile up, down to a single pixel by 8 miles
+const exploreDot = v => {
+  const m = viewMiles(v), px = 4 * clamp01((Math.log(8) - Math.log(m)) / Math.log(16));
+  return Math.max(1e-5, px * m / area.h);
+};
+
 function frame(now) {
   const dt = Math.min(0.25, (now - last) / 1000); last = now;
-  if (playing && t < END) { t = Math.min(END, t + dt); if (t >= END) updateButton(); }
+  if (playing && !resume && t < END) { t = Math.min(END, t + dt); if (t >= END) updateButton(); }
   const i = sceneAt(t), s = scenes[i], local = t - s.start;
   if (i !== cur) { showCaption(i); cur = i; }
   const prev = scenes[Math.max(0, i - 1)];
   const k = s.fly ? clamp01(local / s.fly) : 1;
   let v = k < 1 ? flight(endView(prev), s.view(), k) : s.view();
   if (k >= 1 && s.drift) v = { ...v, heading: v.heading + s.drift * Math.min(local - s.fly, isFinite(s.hold) ? s.hold : 0) };
-  setView(v); scaleBar(v);
   // dot size in map units, changing smoothly (on a log scale) from the last scene's to this one's
-  const e = ease(k), dot = Math.exp(Math.log(prev.dot) + (Math.log(s.dot) - Math.log(prev.dot)) * e);
+  const e = ease(k), lerpLog = (a, b, w) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * w);
+  let dot = lerpLog(prev.dot, s.dot, e);
+  if (explore) { // the reader's own view, leveling out to look straight down
+    explore.tilt += (0.0001 - explore.tilt) * Math.min(1, dt * 3);
+    v = explore; dot = exploreDot(v);
+  } else if (resume) { // flying back into the show
+    resume.k = Math.min(1, resume.k + dt / resume.dur);
+    v = flight(resume.from, v, resume.k);
+    dot = lerpLog(exploreDot(resume.from), s.dot, ease(resume.k));
+    if (resume.k >= 1) resume = null;
+  }
+  lastV = v;
+  setView(v); scaleBar(v);
   dots.uniforms.uWorld.value = dot * UPM;
   // a scene's `size` enlarges the dots of its county only, so a few voters can be found without slowing the whole map
   const dpr = renderer.getPixelRatio();
   dots.uniforms.uMinSize.value = dpr;
-  dots.uniforms.uFocus.value = s.size && s.focus ? ordered.indexOf(s.focus) : -1;
+  dots.uniforms.uFocus.value = s.size && s.focus && !explore ? ordered.indexOf(s.focus) : -1;
   dots.uniforms.uFocusSize.value = dpr * (1 + ((s.size || 1) - 1) * e);
-  dots.uniforms.uReveal.value = i === 0 ? clamp01(local / s.reveal) ** 1.6 : 1;
-  focusMat.opacity = clamp01(local / 0.4); // fades in over the first moment of the scene
+  dots.uniforms.uReveal.value = i === 0 && !explore ? clamp01(local / s.reveal) ** 1.6 : 1;
+  focusMat.opacity = explore ? 0 : clamp01(local / 0.4); // fades in over the first moment of the scene
   $('fill').style.width = `${100 * t / END}%`;
   renderer.render(scene, camera);
-  placeLabels(s, local);
+  placeLabels(explore ? {} : s, local);
   requestAnimationFrame(frame);
 }
 

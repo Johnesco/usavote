@@ -2,3 +2,5 @@
 __pycache__/
 data/raw/census-dl/
 data/blockgroups.json
+data/raw/us-atlas/
+texas-senate-2026-two-maps-*.png
