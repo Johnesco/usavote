@@ -2,6 +2,7 @@
 // groups of counties, the columns rise and fall, and the colors switch between "who won" and "how far it moved".
 // Every number in the cards is computed here from the data files; only the choice of which counties to visit is written by hand.
 import * as THREE from 'three';
+import { createCityLabels } from './cities.js';
 import { GEO_URL, buildMap, layout, H_FLAT, REP_C, DEM_C, LOSER_C, OTHER_C, winnerColor } from './map3d.js';
 
 const $ = id => document.getElementById(id);
@@ -208,7 +209,7 @@ scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-600, 900, 700); scene.add(sun);
 
 // Columns are stacked by vote (map3d.js): runner-up at the bottom, third-party and write-ins in gray, winner on top.
-const { mapGroup, pickables } = buildMap(scene, us, counties, { maxTotal: big.total, edgeOpacity: 0.45 });
+const { mapGroup, pickables, P } = buildMap(scene, us, counties, { maxTotal: big.total, edgeOpacity: 0.45 });
 for (const c of counties) Object.assign(c, { color: new THREE.Color(winnerColor(c)), lit: 1,
   lowerColor: new THREE.Color(c.dem > c.rep ? LOSER_C.rep : LOSER_C.dem), middleColor: new THREE.Color(OTHER_C) });
 // rise order: small counties first, so the cities rise last
@@ -261,6 +262,8 @@ function storyPos() { // a fractional step index: 2.5 = halfway from step 2 to s
 
 // ---------- labels, key, tooltip ----------
 const labelsEl = $('labels');
+// town names for reference on the flat map, clear of the key, the step dots and the story cards
+const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('key'), $('dots'), ...document.querySelectorAll('.step .card, .intro-card > *')] });
 let labelSet = [], curStep = -1;
 function setStep(i) {
   if (i === curStep) return;
@@ -368,6 +371,8 @@ function frame(now) {
     el.style.opacity = show && !clash && v.z < 1 ? 1 : 0;
     el.style.left = x + 'px'; el.style.top = y + 'px';
   }
+  // hidden once columns rise (a name on the ground would float over the wrong column); clear of the county labels shown
+  cityLabels.update(camera, mapGroup, W, H, 1 - clamp01(raise / 0.2), show ? placed : []);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

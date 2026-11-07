@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, precinctUnits } from './dots.js';
+import { createCityLabels } from './cities.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -411,6 +412,8 @@ function outlineGeometry(shapes) {
   return geo;
 }
 const labelsEl = document.getElementById('labels');
+// town names for reference on the flat map, clear of the race buttons, hint and controls
+const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [document.getElementById('races'), hintEl, document.querySelector('main .controls')] });
 let labeled = [], ready = false; // ready: camera + hover code below has been set up
 
 // ---------- voter dots (?voters=1): one dot per voter ----------
@@ -659,6 +662,7 @@ function frame(now) {
   if (controls.enabled) controls.update();
   renderer.render(scene, camera);
   const w = stage.clientWidth, h = stage.clientHeight, k = clamp01((progress - 0.7) / 0.3);
+  cityLabels.update(camera, mapGroup, w, h, 1 - clamp01(progress / 0.2)); // hidden once columns rise: they'd float over the wrong ones
   const placed = [];
   for (const { c, el } of labeled) { // largest first; hide a label that would overlap one already shown
     v.set(c.cx, c.cy, c.h).applyMatrix4(mapGroup.matrixWorld);

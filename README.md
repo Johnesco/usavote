@@ -132,6 +132,30 @@ python scripts/build_blockgroups.py
 python scripts/build_precincts.py
 ```
 
+## City names
+
+Every map names cities and towns for reference ([`cities.js`](cities.js)). Which names show depends on the zoom: with the
+whole state on screen, cities of about 100,000 people or more; zoomed in, smaller towns too, down to 500 people. Larger
+places win where names would overlap, and names keep clear of county labels and on-screen controls. On the 3D pages the names
+fade out while the columns are raised, since a name on the ground would float over the wrong column.
+[`scripts/build_cities.py`](scripts/build_cities.py) builds [`data/cities.json`](data/cities.json) (994 places) from the
+2020 Census redistricting file's place records: every incorporated city, town and village with at least 500 people, and
+census-designated places (unincorporated communities such as The Woodlands) with at least 10,000, each at its Census
+internal point.
+
+```bash
+python scripts/build_cities.py
+```
+
+## Infographic
+
+[`scripts/build_infographic.py`](scripts/build_infographic.py) draws the county map beside the one-dot-per-voter map, with
+legends and sources, at 4K (or `2` for 8K, `4` for 16K). The PNGs aren't committed.
+
+```bash
+python scripts/build_infographic.py 4
+```
+
 ## Share image
 
 [`scripts/panels.html`](scripts/panels.html) draws the two-panel image "Texas Looks Red / But Talarico Won" with stacked

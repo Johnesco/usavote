@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, precinctUnits, DOT_C } from './dots.js';
+import { createCityLabels } from './cities.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -336,6 +337,9 @@ function scaleBar(v) {
 
 // ---------- county labels (metro scenes), on the ground at each county's center ----------
 const labelsEl = $('labels'), labelEls = new Map(), lv = new THREE.Vector3();
+// town names for reference, more as the camera comes down; clear of the county labels and everything over the map
+const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('legend'), $('scalebar'), $('caption'), $('player'),
+  $('exploreHint'), document.querySelector('.voters .back')] });
 function labelFor(c) {
   if (!labelEls.has(c)) {
     const el = document.createElement('div'); el.className = 'label';
@@ -358,6 +362,7 @@ function placeLabels(s, local) {
     el.style.left = x + 'px'; el.style.top = y + 'px';
     el.style.opacity = ok ? clamp01((local - s.fly + 1) / 1) : 0;
   }
+  return placed; // so the city names keep clear of them
 }
 
 // ---------- the clock ----------
@@ -496,7 +501,7 @@ function frame(now) {
   focusMat.opacity = explore ? 0 : clamp01(local / 0.4); // fades in over the first moment of the scene
   $('fill').style.width = `${100 * t / END}%`;
   renderer.render(scene, camera);
-  placeLabels(explore ? {} : s, local);
+  cityLabels.update(camera, mapGroup, W, H, 1, placeLabels(explore ? {} : s, local));
   requestAnimationFrame(frame);
 }
 

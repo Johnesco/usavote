@@ -87,3 +87,23 @@
 .races-table a { color: var(--text); }
 .races-table tr.cur td, .races-table tr.cur a { color: var(--accent); font-weight: 650; }
 .table-wrap { overflow-x: auto; }
+
+/* City and town names on the maps (cities.js): a small dot at the place and its name beside it (cities.js places each
+   label with a transform, so these have no margins) */
+.city-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; transition: opacity .3s; }
+.city { position: absolute; left: 0; top: 0; padding-left: 10px; font-size: 11px; line-height: 14px; box-sizing: border-box;
+  color: #dfe5ee; text-shadow: 0 0 3px #000, 0 1px 2px #000, 0 0 1px #000; white-space: nowrap; opacity: 0; transition: opacity .25s; }
+.city::before { content: ''; position: absolute; left: 0; top: 4px; width: 6px; height: 6px; border-radius: 50%;
+  background: #f4f6f9; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+.city.on { opacity: .92; }
+.city.city-mid { font-size: 12px; font-weight: 600; line-height: 16px; }
+.city.city-mid::before { top: 5px; }
+.city.city-big { font-size: 13.5px; font-weight: 700; line-height: 18px; }
+.city.city-big::before { top: 6px; }
+/* name to the left of the dot, above it, or below it */
+.city.l { padding-left: 0; padding-right: 10px; }
+.city.l::before { left: auto; right: 0; }
+.city.a { padding: 0 0 8px; }
+.city.a::before { left: calc(50% - 3px); top: auto; bottom: 0; }
+.city.b { padding: 8px 0 0; }
+.city.b::before { left: calc(50% - 3px); top: 0; }

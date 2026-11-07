@@ -89,7 +89,7 @@ export function buildMap(scene, us, counties, { maxTotal, edgeOpacity = 0.55 } =
     paint(c.mesh, new THREE.Color(winnerColor(c)));
     layout(c, H_FLAT);
   }
-  return { mapGroup, pickables, tx };
+  return { mapGroup, pickables, tx, P };
 }
 
 // place a county's segments for a column of height h
