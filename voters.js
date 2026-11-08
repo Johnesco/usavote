@@ -1,13 +1,16 @@
-// "See every single voter": an animated flight over Texas with one dot for each person who voted in the 2026 U.S. Senate
-// race. It plays on its own, scene by scene, always over the flat map. After the whole state, it visits one place at a
-// time, in an order that keeps the flights short: the metro from high up, then one county, then down to its most crowded
+// Dot view: a flat map of Texas with one dot for each person who voted in any race, for the reader to move around.
+// It opens that way, with all the navigation in a bar across the top: the year and race, menus that go to a city, county or
+// precinct, and the guided flight, the Texas Population Density Tour of the 2026 U.S. Senate race. That plays on its own,
+// scene by scene (?tour=1 or ?scene=N open on it). After the whole state, the tour visits one place at a time, in an order that keeps the flights short: the metro from high up, then one county, then down to its most crowded
 // spot until single voters stand apart. Houston, the border, Austin and San Antonio (ending in the most crowded neighborhood
 // in Texas), then at that same zoom the emptiest county, El Paso, Lubbock and Dallas-Fort Worth.
 import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, precinctUnits, DOT_C } from './dots.js';
+import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
+import { createPlaceMenus, describePlace } from './places.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -17,10 +20,10 @@ const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 
 let res, us;
-try { [res, us] = await Promise.all([getJSON('data/results-2026.json'), getJSON(GEO_URL)]); }
+try { [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]); }
 catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; throw e; }
 
-// ---------- data: the 2026 U.S. Senate race, by county ----------
+// ---------- data: the 2026 U.S. Senate race, by county (the tour is written around it) ----------
 const race = res.races.find(r => r.id === 'u-s-senate');
 const counties = res.counties.map((c, i) => {
   const [dem, rep, other, total] = race.counties[i];
@@ -36,8 +39,8 @@ const BIGGEST = [...counties].sort((a, b) => b.total - a.total)[0];
 
 // ---------- map geometry (same projection as the other pages) ----------
 const geo = feature(us, us.objects.counties);
-const tx = { type: 'FeatureCollection', features: geo.features.filter(f => String(f.id).startsWith('48')) };
-const projection = geoConicEqualArea().parallels([27.5, 35]).rotate([99.5, 0]).fitExtent([[-500, -500], [500, 500]], tx);
+const tx = { type: 'FeatureCollection', features: geo.features.filter(f => String(f.id).startsWith(STATE.fips)) };
+const projection = geoConicEqualArea().parallels(STATE.parallels).rotate(STATE.rotate).fitExtent([[-500, -500], [500, 500]], tx);
 const P = ([lon, lat]) => { const [x, y] = projection([lon, lat]); return new THREE.Vector2(x, -y); };
 const ringPts = ring => { const pts = ring.map(P); pts.pop(); return pts; };
 // map units per mile, from 0.1 degree of latitude (about 6.9 miles) in the middle of the state
@@ -91,16 +94,13 @@ const dots = createDots({ depthTest: false }); // one flat layer: no need for de
 dots.uniforms.uP.value = 0; dots.uniforms.uReveal.value = 0;
 mapGroup.add(dots.points);
 
-$('legend').innerHTML = [[DOT_C.dem, `${D.last} (D)`], [DOT_C.rep, `${R.last} (R)`], [DOT_C.other, 'Other']]
-  .map(([c, t]) => `<span><i style="background:${c}"></i>${t}</span>`).join('');
-
 // Where to put each county's voters. The 2026 results are by county, so each party's county total is placed by precinct
 // the way that party's voters were spread in the 2024 Senate race, then on census blocks by adults (dots.js). If that file
 // fails to load, the dots are spread evenly over each county instead.
 const HOT_R = 0.5; // miles: a county's "most crowded spot" is the most voters within this distance
 $('loading').textContent = 'Loading precincts…';
 let PC = null;
-try { PC = await loadPrecincts(P); } catch (e) { console.error('Precincts did not load; dots spread evenly', e); }
+try { PC = await loadPrecincts(P, STATE.data.precincts, STATE.data.land); } catch (e) { console.error('Precincts did not load; dots spread evenly', e); }
 if (PC) for (const c of ordered) {
   const pc = PC.byFips.get(c.fips); if (!pc) continue;
   c.units = precinctUnits(pc, c);
@@ -114,16 +114,22 @@ if (PC) for (const c of ordered) {
 // the most crowded neighborhood in the state
 const DENSE = [...ordered].sort((a, b) => b.hot.voters - a.hot.voters)[0];
 
-// ---------- layout: the part of the screen not covered by the caption card ----------
-let W = 1, H = 1, area = { w: 1, h: 1, ox: 0, oy: 0 };
+// ---------- layout: the part of the screen not covered by the bar and the caption card ----------
+const page = document.querySelector('.voters');
+let explore = null;   // the camera while exploring
+// area: on the tour, beside or above its caption. free: while exploring, everything under the top bar.
+let W = 1, H = 1, area = { w: 1, h: 1, ox: 0, oy: 0 }, free = { w: 1, h: 1, ox: 0, oy: 0 };
+const off = { x: 0, y: 0 }; // the camera's current shift, easing between those two
 function resize() {
   W = $('stage').clientWidth; H = $('stage').clientHeight;
   renderer.setSize(W, H);
   camera.aspect = W / H;
-  const wide = W > 760;
+  const wide = W > 760, bar = $('topnav').offsetHeight;
+  page.style.setProperty('--bar', `${bar}px`);
   // wide screens: the caption sits on the left, so the map is centered in what's to its right; narrow: above the caption
-  area = wide ? { w: W - 440, h: H - 90, ox: -220, oy: 0 } : { w: W, h: H * 0.55, oy: H * 0.2, ox: 0 };
-  camera.setViewOffset(W, H, area.ox, area.oy, W, H);
+  area = wide ? { w: W - 440, h: H - 90 - bar, ox: -220, oy: -bar / 2 } : { w: W, h: H * 0.55, oy: H * 0.15, ox: 0 };
+  free = { w: W - 24, h: H - bar - 24, ox: 0, oy: -bar / 2 };
+  if (explore?.home) Object.assign(explore, homeView());
   camera.updateProjectionMatrix();
   dots.uniforms.uViewH.value = H * renderer.getPixelRatio();
 }
@@ -186,13 +192,13 @@ const close = (c, kicker) => ({ fly: 3, hold: 8, focus: c, dot: gapMiles(c) / 3,
       <h2>${c.name} County's most crowded spot</h2>
       <div class="big">About ${fmt(round2(c.hot.voters))} voters per square mile<small>this view is ${tall(v)} tall and holds about ${fmt(inView(c, v))}</small></div>
       <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. Each dot stands for one voter.</p>
-      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` });
+      <p class="note">Spots and colors are estimated.</p>` });
 const lineup = cs => cs.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ');
 
 const scenes = [
   { fly: 0, hold: 10, reveal: 7, view: () => stateView(), html: () => `
       <div class="kicker">Texas · U.S. Senate · Nov. 3, 2026</div>
-      <h1>See every single voter</h1>
+      <h1>${TOUR}</h1>
       <p><b class="hl">${fmt(TOT)}</b> Texans voted for U.S. Senate. Each of them is about to become one dot on this map.</p>` },
   { fly: 3, hold: 12, view: () => stateView(0.2), html: () => `
       <h2>One dot, one voter</h2>
@@ -246,7 +252,7 @@ const scenes = [
       <p>Now each dot stands for one person: about <b class="hl">${fmt(inView(DENSE, v))}</b> voters in a patch of land ${tall(v)} tall,
       in the most crowded neighborhood in Texas (${DENSE.name} County).</p>
       <p>Across the whole county, each ${DENSE.name} County voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>
-      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` },
+      <p class="note">Spots and colors are estimated.</p>` },
 
   // ---- from the most crowded to the emptiest, at the same zoom ----
   { fly: 3, hold: 11, size: 4, focus: EMPTY, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE, EMPTY), html: v => {
@@ -265,7 +271,7 @@ const scenes = [
       <div class="big">${fmt(EMPTY.total)} voters<small>on ${fmt(Math.round(EMPTY.landSqMi))} square miles of land</small></div>
       <p>Pull back, and that's the whole county: one voter for every ${Math.round(1 / EMPTY.density)} square miles. Each dot you can
       see stands for one person who voted (drawn larger, so you can find them).</p>
-      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` },
+      <p class="note">Spots and colors are estimated.</p>` },
 
   // ---- out west ----
   county(ELPASO, 'Out west', `
@@ -287,8 +293,9 @@ const scenes = [
       <h2>Same state, same election, one vote each</h2>
       <p>${EMPTY.name} County's ${fmt(EMPTY.total)} voters and ${CROWDED.name} County's ${fmt(CROWDED.total)} each cast a vote that counted the
       same. Statewide, ${D.last} won by <b class="hl">${fmt(D.votes - R.votes)}</b> votes, ${(100 * D.votes / TOT).toFixed(1)}% to ${(100 * R.votes / TOT).toFixed(1)}%.</p>
-      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="./?race=u-s-senate">Explore the full map →</a><a href="story.html">Fly through county by county →</a></div>` },
+      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="#" id="toMap">Explore the dot view →</a><a href="texas.html?race=u-s-senate">Bar view →</a></div>` },
 ];
+const TOUR = `${STATE.name} Population Density Tour`;
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 for (const s of scenes) { s.dot ??= DOT_FAR; if (REDUCED) s.drift = 0; }
 // where a scene's camera ends up, after its drift
@@ -359,8 +366,7 @@ function scaleBar(v) {
 // ---------- county labels (metro scenes), on the ground at each county's center ----------
 const labelsEl = $('labels'), labelEls = new Map(), lv = new THREE.Vector3();
 // town names for reference, more as the camera comes down; clear of the county labels and everything over the map
-const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('legend'), $('scalebar'), $('caption'), $('player'),
-  $('exploreHint'), document.querySelector('.voters .back')] });
+const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('topnav'), $('scalebar'), $('caption'), $('player')] });
 function labelFor(c) {
   if (!labelEls.has(c)) {
     const el = document.createElement('div'); el.className = 'label';
@@ -387,7 +393,7 @@ function placeLabels(s, local) {
 }
 
 // ---------- the clock ----------
-let t = 0, playing = true, cur = -1, last = performance.now();
+let t = 0, playing = false, toured = false, cur = -1, last = performance.now();
 const sceneAt = time => { let i = 0; while (i + 1 < scenes.length && scenes[i + 1].start <= time) i++; return i; };
 function showCaption(i) {
   const s = scenes[i], cap = $('caption');
@@ -396,6 +402,7 @@ function showCaption(i) {
     cap.innerHTML = s.html(s.view());
     cap.classList.remove('fade');
     $('again')?.addEventListener('click', e => { e.preventDefault(); jump(0); });
+    $('toMap')?.addEventListener('click', e => { e.preventDefault(); enterExplore(); });
   }, cur === -1 ? 0 : 350);
   focusLine.geometry.dispose();
   // the scene's county, or the counties it names
@@ -404,54 +411,74 @@ function showCaption(i) {
 }
 function jump(time) { leaveExplore(); resume = null; t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
 function updateButton() {
-  const label = explore ? 'Back to the show' : t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
-  $('pause').textContent = explore ? '▶ ' + label : label; $('pause').setAttribute('aria-label', label);
-  $('explore').style.display = explore ? 'none' : '';
+  const label = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
+  $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
+  // a tour left part way can be picked up again from the top bar
+  const partWay = toured && t < END;
+  $('tourPlay').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
+  $('tourRestart').hidden = !partWay;
 }
-$('pause').onclick = () => { if (explore) resumeShow(); else if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
+$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
 $('prev').onclick = () => { const i = sceneAt(t); jump(scenes[t - scenes[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
 $('next').onclick = () => { const i = sceneAt(t); if (i + 1 < scenes.length) jump(scenes[i + 1].start); };
 addEventListener('keydown', e => {
-  if (e.key === 'Escape' && explore) resumeShow();
+  if (e.target.matches?.('select, input, textarea')) return;
+  if (explore) { // arrows move the map, + and - zoom, Esc goes back to a tour under way
+    const move = { ArrowLeft: [90, 0], ArrowRight: [-90, 0], ArrowUp: [0, 90], ArrowDown: [0, -90] }[e.key];
+    if (move) { e.preventDefault(); panBy(...move); }
+    if (e.key === '+' || e.key === '=') zoomAt(...screenCenter(), 0.7);
+    if (e.key === '-') zoomAt(...screenCenter(), 1.4);
+    if (e.key === 'Escape' && toured) resumeShow();
+    return;
+  }
   if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('pause').click(); }
   if (e.key === 'ArrowRight') $('next').click();
   if (e.key === 'ArrowLeft') $('prev').click();
 });
 
 // ---------- explore: drag, scroll or pinch to move around the map yourself ----------
-// Any of these pauses the show; "Back to the show" flies from wherever you are back into the scene you left.
-const page = document.querySelector('.voters'), stage = renderer.domElement;
-let explore = null;   // the camera while exploring
-let resume = null;    // { from, k, dur }: the flight back into the show
+// The page opens this way. During the tour, any of these pauses it, and the bar's "Back to the tour" flies from wherever
+// you are back into the scene you left.
+const stage = renderer.domElement;
+let resume = null;    // { from, k, dur }: the flight from the reader's view into the tour
 let lastV = null;     // the view drawn last frame
 function enterExplore() {
   if (explore || !lastV) return;
-  explore = { ...lastV }; resume = null; playing = false;
+  explore = { ...lastV }; resume = null; playing = false; going = null;
   page.classList.add('exploring'); updateButton();
 }
 function leaveExplore() { if (explore) { explore = null; page.classList.remove('exploring'); updateButton(); } }
-function resumeShow() {
-  if (!explore) return;
-  const i = sceneAt(t), s = scenes[i], from = explore;
+// Fly from the reader's view into scene i of the tour. The tour is about the Senate race, so those dots come back first.
+let starting = false;
+async function playFrom(i) {
+  if (!explore || starting) return;
+  starting = true; $('race').disabled = $('year').disabled = true;
+  if (shown !== SENATE || chosen !== SENATE) await showRace(SENATE);
+  starting = false; $('race').disabled = $('year').disabled = false;
+  const s = scenes[i], from = explore;
+  going = null;
   leaveExplore();
-  t = Math.min(END, s.start + s.fly); // arrived, so the scene's hold plays out after the flight back
+  t = Math.min(END, s.start + s.fly); // arrived, so the scene's hold plays out after the flight
   resume = { from, k: 0, dur: Math.max(1.5, zoomPath(from, s.view()).S / SPEED) };
-  playing = true; updateButton();
+  playing = true; toured = true; updateButton();
 }
+const resumeShow = () => playFrom(sceneAt(t));
 $('explore').onclick = enterExplore;
 // the screen point the camera looks at, and the map directions of screen right and screen up
-const screenCenter = () => [W / 2 - area.ox, H / 2 - area.oy];
+const screenCenter = () => [W / 2 - off.x, H / 2 - off.y];
 const axes = h => [[Math.cos(h), Math.sin(h)], [-Math.sin(h), Math.cos(h)]];
 const unitsPerPx = v => 2 * v.d * TAN / H;
 function panBy(dx, dy) { // move the map with the pointer, dx/dy in screen pixels
   const [r, f] = axes(explore.heading), u = unitsPerPx(explore);
+  explore.home = false; going = null;
   explore.x -= (r[0] * dx - f[0] * dy) * u; explore.y -= (r[1] * dx - f[1] * dy) * u;
   explore.x = Math.max(-650, Math.min(650, explore.x)); explore.y = Math.max(-650, Math.min(650, explore.y));
 }
 function zoomAt(sx, sy, factor) { // zoom by factor (> 1 = out), keeping the map point under (sx, sy) in place
   const [cx, cy] = screenCenter(), [r, f] = axes(explore.heading), u = unitsPerPx(explore);
   const ox = (r[0] * (sx - cx) - f[0] * (sy - cy)) * u, oy = (r[1] * (sx - cx) - f[1] * (sy - cy)) * u;
-  const d = Math.max(milesView({ x: 0, y: 0 }, 0.08).d, Math.min(stateView().d * 1.6, explore.d * factor));
+  explore.home = false; going = null;
+  const d = Math.max(milesView({ x: 0, y: 0 }, 0.08).d, Math.min(homeView().d * 1.6, explore.d * factor));
   const g = d / explore.d;
   explore.x += ox * (1 - g); explore.y += oy * (1 - g); explore.d = d;
 }
@@ -483,6 +510,103 @@ stage.addEventListener('wheel', e => {
   zoomAt(sx, sy, Math.exp(Math.max(-1, Math.min(1, px * 0.0018))));
 }, { passive: false });
 stage.addEventListener('dblclick', e => { enterExplore(); if (explore) { const [sx, sy] = pointerXY(e); zoomAt(sx, sy, 0.4); } });
+// ---------- the top bar: which race the dots show ----------
+const SENATE = { ...race, year: 2026 };
+const RACES = res.races.map(r => r === race ? SENATE : { ...r, year: 2026 });
+const rowOf = new Map(res.counties.map((c, i) => [c.fips, i]));
+let chosen = SENATE; // the race asked for
+let shown = null;    // the race the dots show (they stay up until the next race's dots are ready)
+function fillRaces() {
+  const years = [...new Set(RACES.map(r => r.year))].sort((a, b) => b - a), inYear = RACES.filter(r => r.year === chosen.year);
+  const option = r => `<option value="${r.id}">${r.label}</option>`, groups = [...new Set(inYear.map(r => r.group))];
+  $('year').innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+  $('year').value = chosen.year;
+  $('race').innerHTML = groups.length > 1
+    ? groups.map(g => `<optgroup label="${g}">${inYear.filter(r => r.group === g).map(option).join('')}</optgroup>`).join('') : inYear.map(option).join('');
+  $('race').value = chosen.id;
+}
+let historyLoad = null;
+const loadHistory = () => historyLoad ??= getJSON(STATE.data.history)
+  .then(h => { RACES.push(...h.races); fillRaces(); })
+  .catch(e => console.error('Earlier years did not load', e));
+const raceWithId = id => RACES.find(r => r.id === id) || RACES.find(r => r.year === 2026 && `2026-${r.id}` === id);
+// this race's votes in each county, placed the same way as the Senate race's
+function votersOf(r) {
+  if (r === SENATE) return ordered;
+  return ordered.map(c => {
+    const [dem, rep, other, total] = r.counties[rowOf.get(c.fips)], v = { ...c, dem, rep, other, total };
+    if (c.units) v.units = precinctUnits(PC.byFips.get(c.fips), v);
+    return v;
+  });
+}
+const HOW_TO_MOVE = $('raceStatus').textContent;
+async function showRace(r) {
+  chosen = r; fillRaces();
+  $('raceStatus').textContent = `Placing ${fmt(r.counties.reduce((s, row) => s + row[3], 0))} voters…`;
+  // (if another race is asked for before this one is ready, this one never finishes)
+  await dots.place(votersOf(r), { per: 1, seed: 2026 + RACES.indexOf(r) });
+  shown = r;
+  $('raceStatus').textContent = HOW_TO_MOVE;
+  const [dem, rep, tot] = r.counties.reduce((s, row) => [s[0] + row[0], s[1] + row[1], s[2] + row[3]], [0, 0, 0]);
+  const d = r.candidates.find(c => c.party === 'DEM'), e = r.candidates.find(c => c.party === 'REP');
+  const dName = r.chamber ? 'Democrats' : d.last, rName = r.chamber ? 'Republicans' : e.last;
+  $('raceCount').innerHTML = `<b>${fmt(tot)} voters</b>, one dot each · ${dName} ${(100 * dem / tot).toFixed(1)}%, ${rName} ${(100 * rep / tot).toFixed(1)}%`;
+  $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
+    .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
+  // back to the map, on the same race
+  $('back').href = `texas.html?race=${r.id}`;
+  $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
+  renderPlace();
+  if (explore) try { history.replaceState(null, '', `?race=${r.id}`); } catch {} // (a link's own address stays as it opened)
+}
+$('race').onchange = e => { const r = raceWithId(e.target.value); if (r) showRace(r); };
+// a new year keeps the same office if that year had it, otherwise opens its first race
+$('year').onchange = e => {
+  const inYear = RACES.filter(r => r.year === +e.target.value);
+  showRace(inYear.find(r => r.label === chosen.label) || inYear[0]);
+};
+$('tourPlay').onclick = () => playFrom(toured && t < END ? sceneAt(t) : 0);
+$('tourRestart').onclick = () => playFrom(0);
+
+// ---------- go to a city, county or precinct ----------
+// A flight here is quicker than the tour's: the reader asked for this place, and is waiting for it.
+let going = null;  // { from, to, k, dur }
+let place = null;  // what the menus last chose (places.js)
+const placeMat = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false });
+const placeLine = new THREE.LineSegments(new THREE.BufferGeometry(), placeMat);
+placeLine.renderOrder = 2; mapGroup.add(placeLine);
+function goTo(view) {
+  if (!explore) enterExplore();
+  if (!explore) return;
+  explore.home = false;
+  const dur = REDUCED ? 0.01 : Math.min(4, Math.max(1.2, zoomPath(explore, view).S));
+  going = { from: { ...explore }, to: view, k: 0, dur };
+}
+const mapView = (x, y, halfW, halfH) => ({ x, y, d: Math.max(halfW * H / (TAN * free.w), halfH * H / (TAN * free.h)), tilt: 0.0001, heading: 0 });
+function homeView() { return { ...mapView(0, 0, 520, 520), home: true }; }
+// the line under the menus: facts about the place, for the race on screen where we have them by place
+function renderPlace() {
+  $('placeInfo').innerHTML = describePlace(place, chosen, c => {
+    const [dem, rep, , tot] = chosen.counties[rowOf.get(c.fips)];
+    return [dem, rep, tot];
+  });
+}
+function outline(edges) {
+  placeLine.geometry.dispose();
+  placeLine.geometry = edges ? lineGeo(edges) : new THREE.BufferGeometry();
+}
+const menus = createPlaceMenus({ counties: ordered, P, upm: UPM, cityUrl: STATE.data.cities,
+  getVtds: c => PC?.byFips.get(c.fips)?.vtds || [],
+  onChoose: p => {
+    place = p; renderPlace();
+    outline(p?.c ? [...p.c.edges, ...(p.boxEdges || [])] : null);
+    if (p) goTo(mapView(p.view.x, p.view.y, p.view.halfW, p.view.halfH));
+  } });
+$('goHome').onclick = () => {
+  menus.clear(); outline(null); place = null; renderPlace();
+  goTo(homeView());
+};
+
 // while exploring, dots grow as you come down: about 4 pixels across from half a mile up, down to a single pixel by 8 miles
 const exploreDot = v => {
   const m = viewMiles(v), px = 4 * clamp01((Math.log(8) - Math.log(m)) / Math.log(16));
@@ -501,8 +625,20 @@ function frame(now) {
   // dot size in map units, changing smoothly (on a log scale) from the last scene's to this one's
   const e = ease(k), lerpLog = (a, b, w) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * w);
   let dot = lerpLog(prev.dot, s.dot, e);
+  if (going) { // a flight to the place the menus chose
+    going.k = Math.min(1, going.k + dt / going.dur);
+    const home = going.to.home;
+    Object.assign(explore, flight(going.from, going.to, going.k));
+    if (going.k >= 1) { explore.home = !!home; going = null; }
+  }
+  // the camera eases between the tour's framing and the explorer's
+  const aim = explore ? free : area, ease1 = REDUCED ? 1 : Math.min(1, dt * 4);
+  off.x += (aim.ox - off.x) * ease1; off.y += (aim.oy - off.y) * ease1;
+  camera.setViewOffset(W, H, off.x, off.y, W, H);
+  placeLine.visible = !!explore;
   if (explore) { // the reader's own view, leveling out to look straight down
     explore.tilt += (0.0001 - explore.tilt) * Math.min(1, dt * 3);
+    explore.heading += -explore.heading * Math.min(1, dt * 3); // north up again, so the arrow keys and the drag feel right
     v = explore; dot = exploreDot(v);
   } else if (resume) { // flying back into the show
     resume.k = Math.min(1, resume.k + dt / resume.dur);
@@ -518,7 +654,9 @@ function frame(now) {
   dots.uniforms.uMinSize.value = dpr;
   dots.uniforms.uFocus.value = s.size && s.focus && !explore ? ordered.indexOf(s.focus) : -1;
   dots.uniforms.uFocusSize.value = dpr * (1 + ((s.size || 1) - 1) * e);
-  dots.uniforms.uReveal.value = i === 0 && !explore ? clamp01(local / s.reveal) ** 1.6 : 1;
+  // the tour opens by building the map up from nothing; flying into it from the reader's map, the dots clear first
+  const rs = resume && resume.k < 1 ? 1 - ease(resume.k) : null; // (resume ends just above, on its last frame)
+  dots.uniforms.uReveal.value = i !== 0 || explore ? 1 : rs ?? clamp01(local / s.reveal) ** 1.6;
   focusMat.opacity = explore ? 0 : clamp01(local / 0.4); // fades in over the first moment of the scene
   $('fill').style.width = `${100 * t / END}%`;
   renderer.render(scene, camera);
@@ -526,15 +664,30 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-new ResizeObserver(resize).observe($('stage'));
+const fit = new ResizeObserver(resize);
+fit.observe($('stage')); fit.observe($('topnav'));
 resize();
 timeline();
-$('loading').textContent = `Placing ${fmt(TOT)} voters…`;
 dots.setLand(PC?.land);
-await dots.place(ordered, { per: 1, seed: 2026 });
+const query = new URLSearchParams(location.search), asked = query.get('race') || '';
+// ?scene=N (1-based) starts the tour at that scene, already arrived; ?tour=1 starts it from the beginning
+const startAt = +query.get('scene'), onTour = (startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1';
+// a race from an earlier year needs that file first; otherwise it comes in behind the map, for the race menu
+if (!onTour && /^\d{4}-/.test(asked) && !asked.startsWith('2026-')) await loadHistory();
+fillRaces();
+const firstRace = onTour ? SENATE : raceWithId(asked) || SENATE;
+$('loading').textContent = `Placing ${fmt(firstRace.counties.reduce((s, row) => s + row[3], 0))} voters…`;
+await showRace(firstRace);
 $('loading').remove();
-// ?scene=N (1-based) starts at that scene, already arrived
-const startAt = +new URLSearchParams(location.search).get('scene');
-if (startAt > 1 && startAt <= scenes.length) { t = scenes[startAt - 1].start + scenes[startAt - 1].fly; updateButton(); }
+if (onTour) {
+  page.classList.remove('exploring');
+  if (startAt > 1) t = scenes[startAt - 1].start + scenes[startAt - 1].fly;
+  playing = toured = true;
+} else {
+  explore = homeView();
+  off.x = free.ox; off.y = free.oy;
+}
+updateButton();
 last = performance.now();
 requestAnimationFrame(frame);
+loadHistory();

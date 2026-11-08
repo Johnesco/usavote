@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>See Every Single Voter</title>
-<meta name="description" content="An animated flight over Texas with one dot for each of the 9.9 million people who voted in the 2026 U.S. Senate race, from the emptiest county to the most crowded, close enough to see single voters." />
+<title>Dot View: Texas Election Results</title>
+<meta name="description" content="A map of Texas with one dot for each voter, in any race. Go to any city, county or precinct, down to single voters, or play the Texas Population Density Tour." />
 <link rel="canonical" href="https://johnesco.github.io/texas/voters.html" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Texas Votes, Raised" />
 <meta property="og:url" content="https://johnesco.github.io/texas/voters.html" />
-<meta property="og:title" content="See every single voter: 9.9 million Texans, one dot each" />
-<meta property="og:description" content="Fly over Texas with one dot for every voter in the 2026 U.S. Senate race, from Loving County's 67 voters to Dallas County's 783,714." />
+<meta property="og:title" content="Dot view: 9.9 million Texans, one dot each" />
+<meta property="og:description" content="Explore Texas with one dot for every voter, from Loving County's 67 voters to Dallas County's 783,714, or play the Texas Population Density Tour." />
 <meta property="og:image" content="https://johnesco.github.io/texas/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://johnesco.github.io/texas/share.png" />
@@ -25,22 +25,45 @@
 </script>
 </head>
 <body class="voters-page">
-<main class="voters">
+<main class="voters exploring">
   <div id="stage"></div>
   <div id="labels"></div>
   <div id="loading">Loading map…</div>
-  <a class="back" href="./">← Explore the full map</a>
   <section class="caption" id="caption" aria-live="polite"></section>
-  <div class="legend-dots" id="legend" aria-hidden="true"></div>
+  <header class="topnav" id="topnav">
+    <nav class="nav-row" aria-label="Dot view">
+      <a class="back" id="back" href="texas.html">← Bar view</a>
+      <button class="ghost" id="goHome" title="Back to the whole state">Whole state</button>
+      <span class="flight-badge" id="flightBadge">Texas Population Density Tour · 2026 U.S. Senate</span>
+      <div class="nav-group"><label>Year <select id="year"></select></label><label class="grow">Race <select id="race"></select></label></div>
+      <div class="nav-group" role="group" aria-label="Go to a place">
+        <span class="nav-label">Go to</span>
+        <select id="goCity" aria-label="Go to a city"><option value="">City…</option></select>
+        <select id="goCounty" aria-label="Go to a county"><option value="">County…</option></select>
+        <select id="goPrecinct" aria-label="Go to a precinct in the county" title="Pick a county first" disabled><option value="">Precinct…</option></select>
+      </div>
+      <div class="nav-group nav-flight">
+        <span class="nav-label">Guided flight</span>
+        <button id="tourPlay">▶ Texas Population Density Tour</button>
+        <button class="ghost" id="tourRestart" hidden>Start over</button>
+      </div>
+    </nav>
+    <div class="nav-info">
+      <span id="raceCount"></span>
+      <span id="placeInfo" aria-live="polite"></span>
+      <span class="nav-note"><span id="raceStatus" aria-live="polite">Drag to move. Scroll, pinch or double-click to zoom.</span> Spots and colors are estimated.</span>
+      <details class="how"><summary>How?</summary><p>Each county's total for the race is real. Its voters are placed by how each party's 2024 Senate vote was spread across the county's precincts, then by where adults lived in 2020.</p></details>
+      <div class="legend-dots" id="legend" aria-hidden="true"></div>
+    </div>
+  </header>
   <div class="scalebar" id="scalebar" aria-hidden="true"><i></i><span></span></div>
   <div class="player" id="player">
     <button class="ghost" id="prev" aria-label="Previous scene">‹</button>
     <button id="pause" aria-label="Pause">Pause</button>
     <button class="ghost" id="next" aria-label="Next scene">›</button>
     <div class="track" id="track" aria-hidden="true"><i id="fill"></i></div>
-    <button class="ghost" id="explore" title="Pause the show and move around the map yourself">Explore</button>
+    <button class="ghost" id="explore" title="Pause the tour and move around the map yourself">Explore</button>
   </div>
-  <div class="explore-hint" id="exploreHint">Drag to move · scroll, pinch or double-click to zoom · spots and colors are estimated</div>
 </main>
 <script type="module" src="voters.js"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>

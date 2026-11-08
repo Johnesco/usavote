@@ -173,8 +173,7 @@ const STEPS = [
     <h2>Most of the map, fewer of the votes</h2>
     <p>${R.last} won ${S.cntR} counties and ${pct(S.landR, land)} of the land. ${D.last} won where people vote, and the state by <b class="hl">${fmt(S.dem - S.rep)}</b> votes.</p>
     <div class="links">
-      <a class="cta" href="./?race=u-s-senate"><b>Explore the map yourself →</b><span>All 18 statewide races, every county, hover for details</span></a>
-      <a class="cta" href="history.html"><b>How we got there →</b><span>Every major statewide race since 2008</span></a>
+      <a class="cta" href="texas.html?race=u-s-senate"><b>See all the results →</b><span>Any race in any year, every county, hover for details</span></a>
     </div>
     <p class="note">Sources: Texas Secretary of State, election-night returns as of ${res.meta.resultsUpdated} (unofficial until the canvass) and 2024 final county results;
       U.S. Census Bureau land area and county boundaries. Column height is proportional to votes cast in the Senate race; each column is split by candidate.</p>` },

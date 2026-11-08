@@ -6,7 +6,7 @@ template for other states; it has not been tried on another state yet.
 
 **How this was checked (2026-11-08):**
 
-- All the data builds were rerun from the local raw files. All five published data files came out byte-identical to the hashes in Part 3.
+- All the data builds were rerun from the local raw files. All five published data files then on the site came out byte-identical to the hashes in Part 3; `data/precinct-shapes.json.gz` was added later the same day and its hash is from its first build.
 - Five source files were downloaded again and compared. The results feed, the precinct results, the precinct shapes, the county
   shapes and the land-area file all matched exactly.
 - The two big Census files were compared by size only (they match). They were not downloaded again.
@@ -76,7 +76,8 @@ Run these in order from the repo root. Each script stops with an error if a chec
 | 1 | `python scripts/build_data.py` | 1 s | `data/results-2026.json` | `7f34c02bb451acb7` |
 | 2 | `python scripts/build_history.py` (needs #1) | 1 s | `data/results-history.json` | `a2188f1957d6e3b6` |
 | 3 | `python scripts/build_cities.py` | 4 s | `data/cities.json` | `f20625af55f659e7` |
-| 4 | `python scripts/build_precincts.py` | 3 min | `data/precincts.json.gz` | `5fdeeed11e825648` |
+| 4 | `python scripts/build_precincts.py` | 3 min | `data/precincts.json.gz` | `32ee28870ca8fcc9` |
+|   | (same script as #4) | | `data/precinct-shapes.json.gz` | `06539cd799cf987e` |
 | 5 | `python scripts/build_landmask.py` | 1 min | `data/landmask.bin.gz` | `44544362e7852d66` |
 
 `build_blockgroups.py` isn't needed if you downloaded the Census file in step 2.1. Its output was used by an earlier placement method and the site no longer reads it.
@@ -97,7 +98,8 @@ What each one does, and the numbers to expect for Texas:
 3. Assigns each block to the precinct containing its center point. All matched by containment here.
 4. Merges any precinct under 10 votes into the nearest precinct in its county, for voter privacy (143 merged, 550 votes). Stops unless every vote is still there.
 5. Finds each county's most crowded spot: the most adults within half a mile of a block.
-6. Writes a compact gzipped file.
+6. Writes a compact gzipped file, with each precinct's code for the "go to a precinct" menu (a merged precinct lists every code in it).
+7. Writes the precincts' outlines to `data/precinct-shapes.json.gz`, in the same order, simplifying to about 55 m along shared borders so neighbors still meet. A merged precinct keeps all its pieces. Expect 9,206 outlines, 377,785 points and a 0.94 MB file.
 
 **#5 Where dots can't go.** Draws every block with people or housing units onto a 100 m grid in the map's projection. Everything else is empty, such as lakes, bays, airports and big parks. Expect 455,943 blocks drawn on a 13,180 × 12,083 grid, and a 1.03 MB file.
 
@@ -114,7 +116,7 @@ These write the 4K and 16K images, which aren't committed. `scripts/panels.html`
 
 Nothing is computed on a server. Each page fetches its files and works everything out in the browser.
 
-**Pages:** `index.html` and `history.html` run `app.js`, `story.html` runs `story.js`, and `voters.html` runs `voters.js`.
+**Pages:** `index.html` is the U.S. homepage (`home.js`). Bar view and dot view share the go-to menus (`places.js`). `texas.html` runs `app.js` and shows every race and year (`history.html` only forwards old links there), `story.html` runs `story.js`, and `voters.html` runs `voters.js`.
 
 **The map:**
 - Projection: d3 equal-area conic, parallels 27.5° and 35°, centered on 99.5° W, fitted to ±500 map units.
@@ -123,16 +125,18 @@ Nothing is computed on a server. Each page fetches its files and works everythin
 - Stacking: runner-up at the bottom, others in the middle, winner on top.
 - City names (`cities.js`): about 100,000 people and up when the whole state shows, and smaller places as you zoom in. At most 30 show at once.
 
-**One dot per voter** (`dots.js`, `dots-worker.js`), on `voters.html` and the map pages with `?voters=1`:
+**Bar view by precinct** (`precinct-columns.js`), on the results page's **By precinct** toggle: one mesh holds every precinct's column, stacked in the shader. Height is on one scale at every zoom: 70 map units for the 2024 Senate race's largest precinct. Votes are as counted for the 2024 U.S. Senate race and otherwise estimated by step 1 below, and labeled so on screen.
+
+**Dot view: one dot per voter** (`dots.js`, `dots-worker.js`), on `voters.html`, which the **Dot view** button in bar view opens for the race on screen (`?race=`). It shows any race and year, always on the flat map:
 1. **Share by precinct:** each party's 2026 county total is split among precincts by that party's share of its 2024 county vote there.
 2. **Share by block:** each precinct's share is split among its blocks by adults.
 3. **Whole dots:** systematic rounding turns those shares into whole dots, so every county adds up exactly to its 2026 result.
 4. **Place each dot:** a random spot around its block, on a bell curve whose standard deviation is 0.75 of the block's radius, cut off at 2.5 standard deviations.
 5. **Keep it off empty land:** a dot on an empty grid cell tries again, up to 16 tries in all, then sits at the block's center. In Texas about 183,000 of 9,889,704 dots get a new spot and 31 end at the center.
 
-The random numbers are seeded, so a given race draws the same dots each time (seed 2026 on `voters.html`, 1 + the race's position on the map pages). Phones and tablets on the map pages get one dot per 10 voters. If the precinct file fails to load, dots spread evenly over each county; if the grid fails, dots skip step 5.
+The random numbers are seeded, so a given race draws the same dots each time (seed 2026 + the race's position in the list; the U.S. Senate race is first, so 2026). If the precinct file fails to load, dots spread evenly over each county; if the grid fails, dots skip step 5.
 
-**The voter tour** (`voters.js`): the counties to visit are chosen by hand and the numbers are computed from the data. Each visit shows a metro from high up, then one county, then its most crowded spot. Close-ups zoom until the typical gap between voters is drawn 16 pixels wide. Camera moves use a smooth zoom-and-pan path (van Wijk and Nuij, 2003) that favors zooming out over panning.
+**The voter tour** (`voters.js`), the Texas Population Density Tour, offered in that page's top bar for the U.S. Senate race: the counties to visit are chosen by hand and the numbers are computed from the data. Each visit shows a metro from high up, then one county, then its most crowded spot. Close-ups zoom until the typical gap between voters is drawn 16 pixels wide. Camera moves use a smooth zoom-and-pan path (van Wijk and Nuij, 2003) that favors zooming out over panning.
 
 **Publishing:** GitHub Pages serves the `main` branch as it is. Only what's in the repo goes out, so keep raw data out.
 
@@ -141,7 +145,7 @@ The random numbers are seeded, so a given race draws the same dots each time (se
 These came out of decisions made along the way. Keep them in any state.
 
 - **No voter files.** Ballots are secret, so a person's vote can't be known. Voter lists are also restricted in how they can be used, and putting names at home locations would be a privacy problem.
-- **Label estimates.** A dot's spot and color are estimates, and every close view has to say so. Current wording: "Spots and colors are estimated, not real people or real votes."
+- **Label estimates.** A dot's spot and color are estimates, and every close view has to say so. Current wording: "Spots and colors are estimated."
 - **Hide very small precincts.** Merge anything under 10 votes before publishing, even if the source publishes it.
 - **Don't go down to households.** Stop at blocks and a coarse land grid, and don't use building locations in a way that points to individual homes.
 - **Every total must match the source.** County totals have to match exactly, and the scripts should stop if they don't.
@@ -163,13 +167,13 @@ These came out of decisions made along the way. Keep them in any state.
 
 | Where | What to change |
 |---|---|
-| `app.js`, `map3d.js`, `voters.js` | State code `'48'`, county count `254`, and the projection's parallels and center |
+| `state.js` | Name, state code, county count, projection, data file paths and where the state's results are and its county flights. Adding a state to `STATES` opens it on the homepage |
 | `build_precincts.py` | Census file names, adult total (`TX_ADULTS`), precinct shape reader (fields `VTDKEY`, `CNTY`, `Shape_area`; the Lambert parameters), results reader (columns `AllredD`, `CruzR`) |
 | `build_landmask.py` | Download URL and the projection constants, which must match the pages |
 | `build_cities.py` | Census file names and the `Houston` sanity check |
 | `build_data.py` | The whole script: feed format, `RACES` table, name fixes, chamber names, county count |
 | `build_history.py` | The whole script, if you want a history page |
-| `app.js`, `story.js`, `voters.js`, HTML | Written copy, sources, and hand-picked counties and metro groups |
+| `app.js`, `story.js`, `voters.js`, HTML | Written copy and sources still name Texas in places, plus hand-picked counties and metro groups. `FEATURED` and `MAJOR` in `app.js` list race ids |
 | `build_infographic.py` | Copy, sources and projection |
 
 ### Choosing the projection
@@ -214,5 +218,5 @@ These are from general knowledge and haven't been checked state by state.
 - **Scale limits:**
   - The dot format stores a county index in 8 bits (at most 256 counties), so each state gets its own map; all U.S. counties can't share one map this way.
   - Each dot takes 8 bytes, so a state with 15 million voters needs about 120 MB for dots alone.
-  - The precinct file and land grid grow with the state. Texas's are 2.1 MB and 1.03 MB, and larger files make the site slower to load.
+  - The precinct files and land grid grow with the state. Texas's are 2.1 MB, 0.94 MB and 1.03 MB, and larger files make the site slower to load.
 - **Census age:** the 2020 counts get less accurate where growth is fast. A new census means new block files and new hashes.

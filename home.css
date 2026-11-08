@@ -1,0 +1,43 @@
+/* The U.S. homepage. Colors come from style.css. */
+html, body { height: auto; }
+.home { max-width: 1240px; margin: 0 auto; padding: 36px 32px 48px; }
+.home header { margin-bottom: 26px; max-width: 720px; }
+.home h1 { font-size: 38px; letter-spacing: -0.02em; margin: 0 0 8px; }
+.home header p { color: var(--muted); font-size: 17px; margin: 0; }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 32px; align-items: start; }
+#map svg { display: block; width: 100%; height: auto; }
+.st { fill: #252c38; stroke: var(--bg); stroke-width: 1; transition: fill .15s; }
+.st:hover { fill: #333c4b; }
+.st.on { fill: var(--accent); stroke: var(--bg); cursor: pointer; }
+a:hover .st.on, a:focus-visible .st.on { fill: #ffd76a; }
+a:focus-visible .st.on { stroke: #fff; stroke-width: 2; }
+.st-name { font-size: 15px; font-weight: 700; fill: #111; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+#status { min-height: 22px; font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
+
+.state-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.state-card h2 { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; text-transform: none; margin: 2px 0 6px; }
+.summary { font-size: 14px; color: var(--muted); margin: 0 0 14px; }
+.view { display: block; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); text-decoration: none; }
+.view:hover, .view:focus-visible { border-color: var(--accent); background: rgba(242,193,78,.08); }
+.view b { display: block; font-size: 15px; }
+.view span { display: block; font-size: 13px; color: var(--muted); }
+.view.first { border-color: var(--accent); background: rgba(242,193,78,.08); }
+.view.first b { color: var(--accent); }
+
+.all { margin-top: 36px; border-top: 1px solid var(--line); padding-top: 4px; }
+#list { list-style: none; margin: 0; padding: 0; columns: 5 150px; column-gap: 20px; font-size: 13.5px; }
+#list li { padding: 2px 0; break-inside: avoid; color: #6d7888; }
+#list a.on { color: var(--accent); font-weight: 650; }
+
+.home footer { margin-top: 32px; font-size: 12.5px; color: var(--muted); }
+.home footer p { margin: 0 0 6px; }
+.home footer a { color: #b8c3d4; }
+
+@media (max-width: 860px) {
+  .home { padding: 22px 16px 36px; }
+  .home h1 { font-size: 30px; }
+  .home header p { font-size: 15px; }
+  .layout { grid-template-columns: 1fr; gap: 18px; }
+}

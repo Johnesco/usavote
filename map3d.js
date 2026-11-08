@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
+import { STATE } from './state.js';
 
 export const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 export const H_MAX = 420, H_FLAT = 0.8;
@@ -49,8 +50,8 @@ function outlineGeometry(shapes) {
 export function buildMap(scene, us, counties, { maxTotal, edgeOpacity = 0.55 } = {}) {
   const byFips = new Map(counties.map(c => [c.fips, c]));
   const geo = feature(us, us.objects.counties);
-  const tx = { type: 'FeatureCollection', features: geo.features.filter(f => String(f.id).startsWith('48')) };
-  const projection = geoConicEqualArea().parallels([27.5, 35]).rotate([99.5, 0]).fitExtent([[-500, -500], [500, 500]], tx);
+  const tx = { type: 'FeatureCollection', features: geo.features.filter(f => String(f.id).startsWith(STATE.fips)) };
+  const projection = geoConicEqualArea().parallels(STATE.parallels).rotate(STATE.rotate).fitExtent([[-500, -500], [500, 500]], tx);
   const P = ([lon, lat]) => { const [x, y] = projection([lon, lat]); return new THREE.Vector2(x, -y); };
   const ringPts = ring => { const pts = ring.map(P); pts.pop(); return pts; };
   const mapGroup = new THREE.Group();

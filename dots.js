@@ -1,10 +1,10 @@
-// One dot per voter, shared by the ?voters=1 view of the map pages (app.js) and the "See every single voter" page (voters.js).
+// One dot per voter, for the dot view (voters.js).
 // dots-worker.js places the dots; this module turns them into one THREE.Points drawn by a small shader.
 //
 // We only know how many people voted in each county, not where they live, so each county's voters are placed by precinct
 // and census block (loadPrecincts, precinctUnits), and kept off land where the 2020 Census counted no one (loadLand).
-// Each dot also knows its place in the county's raised column
-// (uniforms.uP: 0 = flat map, 1 = raised), so the main map's columns can be built from voters.
+// Each dot also knows its place in a raised column (uniforms.uP: 0 = flat map, 1 = raised). No page raises them today:
+// the dots stay flat, and only the county map (app.js) has 3D columns.
 import * as THREE from 'three';
 
 export const DOT_C = { dem: '#6c7dff', rep: '#ff3b3b', other: '#9aa6b8' };
@@ -23,24 +23,27 @@ export function countyTris(shapes) {
 
 // Where each county's voters live and how each neighborhood votes, from data/precincts.json.gz (scripts/build_precincts.py):
 // every 2024 voting district (VTD) with its 2024 U.S. Senate votes and the census blocks inside it, each with its adults
-// and a circle the size of its land area. Returns Map(fips -> { vtds: [{ d, r, o, adults, pts: Float32Array (x, y,
+// and a circle the size of its land area. Returns Map(fips -> { vtds: [{ d, r, o, name (its code or codes), adults, pts: Float32Array (x, y,
 // radius in map units, adults per block) }], D, R, O (county totals, 2024), adults }), and hot: each county's most
 // crowded spot, [lon, lat, adults per square mile within half a mile].
 // The file is stored gzipped to keep the site small; it's unzipped here unless the server already did (as when it's sent
 // with Content-Encoding: gzip).
-export async function loadPrecincts(P, url = 'data/precincts.json.gz') {
+export async function fetchJsonGz(url) {
   const res = await fetch(url); if (!res.ok) throw new Error(res.status);
   const buf = new Uint8Array(await res.arrayBuffer());
   const zipped = buf[0] === 0x1f && buf[1] === 0x8b;
   const text = zipped ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
     : new TextDecoder().decode(buf);
-  const data = JSON.parse(text);
+  return JSON.parse(text);
+}
+export async function loadPrecincts(P, url = 'data/precincts.json.gz', landUrl = 'data/landmask.bin.gz') {
+  const data = await fetchJsonGz(url);
   // map units per meter, from 0.1 degree of latitude (about 11.1 km) in the middle of the state
   const upm = P([-99.5, 31]).distanceTo(P([-99.5, 31.1])) / 11113;
   const out = new Map();
   for (const [fips, vtds] of Object.entries(data.counties)) {
     let D = 0, R = 0, O = 0;
-    const list = vtds.map(([d, r, o, flat]) => {
+    const list = vtds.map(([d, r, o, flat, name]) => {
       D += d; R += r; O += o;
       const pts = new Float32Array(flat.length);
       let x = 0, y = 0, adults = 0;
@@ -50,17 +53,17 @@ export async function loadPrecincts(P, url = 'data/precincts.json.gz') {
         pts[i] = p.x; pts[i + 1] = p.y; pts[i + 2] = flat[i + 2] * 10 * upm; pts[i + 3] = flat[i + 3];
         adults += flat[i + 3];
       }
-      return { d, r, o, adults, pts };
+      return { d, r, o, adults, pts, name };
     });
     out.set(fips, { vtds: list, D, R, O, adults: list.reduce((s, v) => s + v.adults, 0) });
   }
-  return { byFips: out, hot: data.hot, meta: data.meta, land: await loadLand(P) };
+  return { byFips: out, hot: data.hot, meta: data.meta, land: landUrl ? await loadLand(P, landUrl) : null };
 }
 
 // Where the 2020 Census counted anyone, from data/landmask.bin.gz (scripts/build_landmask.py), so that dots stay off lakes,
 // bays, airports and the like: { bits (one per cell, row by row), w, h, sx, ox, sy, oy }, where a map point (x, y) is in
 // grid cell (ox + x * sx, oy + y * sy). Dots are placed without it (null) if it doesn't load.
-async function loadLand(P, url = 'data/landmask.bin.gz') {
+async function loadLand(P, url) {
   try {
     const res = await fetch(url); if (!res.ok) throw new Error(res.status);
     const gz = new Uint8Array(await res.arrayBuffer());
@@ -89,20 +92,26 @@ async function loadLand(P, url = 'data/landmask.bin.gz') {
 // Each party's county total (dem, rep, other: the race being shown) is shared among the VTDs in proportion to that party's
 // 2024 Senate votes there, then among each VTD's blocks by adults. A party with no 2024 votes in the county is shared by
 // all 2024 votes instead.
-export function precinctUnits({ vtds, D, R, O }, { dem, rep, other }) {
-  const T = D + R + O, n = vtds.reduce((s, v) => s + v.pts.length / 4, 0);
-  const units = new Float32Array(n * 6);
-  // this VTD's share of a party's county votes: its share of that party's 2024 votes (or of all 2024 votes)
-  const share = (v, own, countyOwn) => countyOwn > 0 ? own / countyOwn : (v.d + v.r + v.o) / T;
+export function precinctUnits(county, votes) {
+  const { vtds } = county, n = vtds.reduce((s, v) => s + v.pts.length / 4, 0);
+  const units = new Float32Array(n * 6), est = precinctVotes(county, votes);
   let j = 0;
-  for (const v of vtds) {
-    const ed = dem * share(v, v.d, D), er = rep * share(v, v.r, R), eo = other * share(v, v.o, O);
+  vtds.forEach((v, k) => {
+    const { d, r, o } = est[k];
     for (let i = 0; i < v.pts.length; i += 4) {
       const s = v.adults > 0 ? v.pts[i + 3] / v.adults : 0;
-      units.set([v.pts[i], v.pts[i + 1], v.pts[i + 2], ed * s, er * s, eo * s], j); j += 6;
+      units.set([v.pts[i], v.pts[i + 1], v.pts[i + 2], d * s, r * s, o * s], j); j += 6;
     }
-  }
+  });
   return units;
+}
+
+// Each precinct's expected votes in a race known only by county: { d, r, o }, adding up to the county's result.
+export function precinctVotes({ vtds, D, R, O }, { dem, rep, other }) {
+  const T = D + R + O;
+  // this VTD's share of a party's county votes: its share of that party's 2024 votes (or of all 2024 votes)
+  const share = (v, own, countyOwn) => countyOwn > 0 ? own / countyOwn : (v.d + v.r + v.o) / T;
+  return vtds.map(v => ({ d: dem * share(v, v.d, D), r: rep * share(v, v.r, R), o: other * share(v, v.o, O) }));
 }
 
 const glslColor = h => { const c = new THREE.Color(h); return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`; };

@@ -12,9 +12,12 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
     font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  .app { display: grid; grid-template-columns: 390px 1fr; height: 100vh; }
+  .app { display: grid; grid-template-columns: clamp(280px, 28vw, 390px) minmax(0, 1fr); height: 100vh; }
+  /* the map page: the controls in a bar across the top, the map below them */
+  .app main { display: flex; flex-direction: column; }
+  .map-area { position: relative; flex: 1; min-height: 0; overflow: hidden; }
   aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 22px 22px 32px; }
-  main { position: relative; min-width: 0; }
+  main { position: relative; min-width: 0; overflow: hidden; }
   #stage { position: absolute; inset: 0; }
   #stage canvas { display: block; touch-action: none; }
   h1 { font-size: 22px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
@@ -40,12 +43,35 @@
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); padding: 8px 14px; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   input[type=range] { width: 180px; accent-color: var(--accent); }
-  .hint { position: absolute; bottom: 76px; left: 0; right: 0; text-align: center; font-size: 12px; color: var(--muted); pointer-events: none; padding: 0 16px; }
-  .races { position: absolute; top: 14px; left: 16px; right: 16px; display: flex; flex-wrap: wrap; gap: 6px; z-index: 4; pointer-events: none; }
-  .races button { pointer-events: auto; background: rgba(21,26,34,.88); color: var(--text); border: 1px solid var(--line); padding: 7px 14px; font-size: 14px; }
-  .races button[aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
-  .races select { pointer-events: auto; font: inherit; font-size: 14px; color: var(--text); background: rgba(21,26,34,.88); border: 1px solid var(--line);
-    border-radius: 999px; padding: 7px 12px; max-width: 100%; cursor: pointer; }
+  /* two choices joined together: bar view or dot view (a link to its page), by county or by precinct */
+  .seg { display: inline-flex; }
+  .seg[hidden] { display: none; }
+  .seg > * { font-size: 13px; font-weight: 600; line-height: 1.3; padding: 5px 11px; border: 1px solid var(--line); background: var(--bg); color: var(--text); text-decoration: none; white-space: nowrap; border-radius: 0; }
+  .seg > :focus-visible { position: relative; z-index: 1; }
+  .seg > :first-child { border-radius: 999px 0 0 999px; }
+  .seg > :last-child { border-radius: 0 999px 999px 0; margin-left: -1px; }
+  .seg > [aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
+  .seg > a:hover, .seg > a:focus-visible { color: var(--accent); }
+  .place-note:not(:first-child)::before { content: " · "; }
+  .races { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px 6px; z-index: 4; }
+  /* each group wraps as a whole, and the bar always takes as little height as the width allows */
+  .bar-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+  .group { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  #picker { flex: 1 1 220px; max-width: 320px; }
+  #raceSelect { flex: 1; width: 0; min-width: 0; }
+  #yearSelect { flex: none; }
+  #goRow { flex: 1 1 340px; max-width: 520px; }
+  #goRow select { flex: 1; width: 0; min-width: 0; }
+  .pick-label { font-size: 12px; font-weight: 600; color: var(--muted); white-space: nowrap; }
+  /* a line kept open under the groups, so the map doesn't jump when something appears in it */
+  .info-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 14px; min-height: 18px; margin-top: 5px; font-size: 12.5px; line-height: 18px; color: var(--muted); }
+  .place-info b { color: var(--text); }
+  .hint { margin-left: auto; font-size: 12px; white-space: nowrap; }
+  @media (max-width: 1200px) { .place-info:not(:empty) + .hint { display: none; } }
+  .races select { font: inherit; font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+  .races select:disabled { opacity: .5; cursor: default; }
+  .races select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .races select option, .races select optgroup { background: var(--panel); color: var(--text); }
   #tip { position: absolute; pointer-events: none; background: rgba(14,17,22,.95); border: 1px solid var(--line); border-radius: 8px;
     padding: 10px 12px; font-size: 13px; min-width: 230px; display: none; z-index: 5; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
@@ -61,13 +87,23 @@
   .sources a { color: #b8c3d4; }
   #loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); text-align: center; padding: 16px; }
   @media (max-width: 820px) {
-    .app { grid-template-columns: 1fr; grid-template-rows: 62vh auto; height: auto; }
-    main { order: -1; height: 62vh; }
+    .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; height: auto; }
+    main { order: -1; }
+    .map-area { flex: none; height: 58vh; min-height: 300px; }
     aside { border-right: 0; border-top: 1px solid var(--line); padding: 18px 16px 28px; }
-    input[type=range] { width: 90px; }
+    input[type=range] { width: 44px; }
+    .controls { gap: 6px; padding: 6px 8px 6px 6px; bottom: 12px; }
+    .controls button { font-size: 13px; padding: 7px 10px; }
+    .controls input[type=range] { width: 36px; }
     .hint { display: none; }
-    .races button { display: none; }
-    .races select { width: 100%; }
+    .races { padding: 8px 12px 6px; }
+    #viewRow, #picker, #goRow { flex: none; width: 100%; max-width: none; }
+    #viewRow { justify-content: space-between; }
+    .seg > * { padding: 5px 9px; font-size: 12px; }
+    .controls .seg > * { padding: 7px 8px; }
+    #goRow select { padding: 5px 8px; }
+    #goRow .pick-label { display: none; }
+    .info-row { font-size: 12px; }
     button { padding: 8px 12px; }
   }
 /* "How we got there" link on the 2026 page, and the way back on the history page */
@@ -78,11 +114,20 @@
 .cta span { font-size: 12.5px; color: var(--muted); }
 .back { display: inline-block; font-size: 13px; color: var(--accent); margin: 0 0 12px; text-decoration: none; }
 .back:hover { text-decoration: underline; }
-/* history page: every race in one table */
+/* the guided flights: set apart from the results, on every page that offers them */
+.flights { margin: 14px 0 4px; }
+.flights h2 { margin: 0 0 6px; color: var(--accent); }
+.flights-note { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+.flight { display: block; margin-bottom: 8px; padding: 10px 13px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(242,193,78,.08); color: var(--text); text-decoration: none; }
+.flight:hover, .flight:focus-visible { background: rgba(242,193,78,.18); }
+.flight b { display: block; font-size: 15px; color: var(--accent); }
+.flight span { display: block; font-size: 12.5px; color: var(--muted); }
+.kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+/* the race tables */
 .races-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 .races-table th { text-align: left; font-weight: 600; color: var(--muted); padding: 0 3px 4px 0; white-space: nowrap; }
 .races-table td { padding: 4px 3px 4px 0; border-top: 1px solid var(--line); white-space: nowrap; }
-.races-table tr.yr td { border-top-color: #4a5568; }
+.races-table td:first-child { white-space: normal; min-width: 92px; }
 .races-table .n { text-align: right; }
 .races-table a { color: var(--text); }
 .races-table tr.cur td, .races-table tr.cur a { color: var(--accent); font-weight: 650; }

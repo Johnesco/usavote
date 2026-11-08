@@ -1,4 +1,5 @@
-"""Build data/precincts.json.gz: where each county's voters live and how each neighborhood votes, for the ?voters=1 view.
+"""Build data/precincts.json.gz: where each county's voters live and how each neighborhood votes, for the voter dot page;
+and data/precinct-shapes.json.gz: the same precincts' outlines, for the precinct columns on the results page.
 
 Results for 2026 are known by county only. Precinct (VTD) results for 2026 aren't published yet, so this uses the
 pattern of the 2024 U.S. Senate race (Allred vs. Cruz) inside each county:
@@ -18,9 +19,14 @@ Sources (downloaded into data/raw/census-dl/, which is not committed):
   * U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171), Texas: each block's internal point, land area and
     population 18 and over (P3_001N). Downloaded by scripts/build_blockgroups.py.
 
-Output: { meta, counties: { fips: [[dem24, rep24, other24, blocks], ...] }, hot } with one entry per VTD; blocks is a flat
+Output: { meta, counties: { fips: [[dem24, rep24, other24, blocks, name], ...] }, hot } with one entry per VTD; blocks is a flat
 list [lon, lat, radius, adults, ...]: lon/lat in 1e-4 degree steps, delta-encoded within the VTD; radius in units of 10 m.
+name: the VTD's code, for the "go to a precinct" menu; a merged VTD lists every code in it.
 hot: each county's most crowded spot (adults per square mile within half a mile of a census block), for the close-ups.
+
+precinct-shapes.json.gz: { meta, counties: { fips: [polygons, ...] } }, in the same order as precincts.json.gz. polygons is
+[[outer, hole, ...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degree steps, not closed. Neighbors share their
+simplified borders exactly, so columns meet without gaps.
 
 Run:  python scripts/build_precincts.py
 """
@@ -113,7 +119,7 @@ while pos < len(shp):
             rings.append([inv(pts[2 * k], pts[2 * k + 1]) for k in range(a, b)])
     key = int(float(fld(i, "VTDKEY")))
     cnty = int(fld(i, "CNTY"))
-    vtds.append({"key": key, "fips": f"48{cnty:03d}", "rings": rings,
+    vtds.append({"key": key, "fips": f"48{cnty:03d}", "rings": rings, "name": fld(i, "VTD"),
                  "areaM2": float(fld(i, "Shape_area"))})
     i += 1
 print(f"{len(vtds):,} VTD shapes")
@@ -195,12 +201,15 @@ for fips, vs in by_cnty.items():
         merged += 1; merged_votes += sum(small["votes"]); moved_adults += sum(b[4] for b in small["blocks"])
         to["votes"] = [a + b for a, b in zip(to["votes"], small["votes"])]
         to["blocks"] += small["blocks"]
+        to["name"] += ", " + small["name"]
+        to["rings"] = to["rings"] + small["rings"]
         live.remove(small); small["votes"] = [0, 0, 0]
 print(f"merged {merged} VTDs under {MIN_VOTES} votes ({merged_votes:,} votes, {moved_adults:,} adults in their blocks)")
 assert [sum(v["votes"][k] for v in vtds) for k in range(3)] == tot, "merging must keep every vote"
 
 # ---------- write ----------
 counties, no_blocks = defaultdict(list), 0
+entries = defaultdict(list)  # the VTDs written, in file order, for the shapes file
 for v in vtds:
     d, r, o = v["votes"]
     if d + r + o == 0: continue
@@ -213,7 +222,8 @@ for v in vtds:
         qx, qy = round(x * Q), round(y * Q)
         flat += [qx - px, qy - py, max(1, round(math.sqrt(area / math.pi) / 10)), adults]
         px, py = qx, qy
-    counties[v["fips"]].append([d, r, o, flat])
+    counties[v["fips"]].append([d, r, o, flat, v["name"]])
+    entries[v["fips"]].append(v)
 assert len(counties) == 254, len(counties)
 print(f"VTDs with votes but no adults on record (placed as one circle): {no_blocks}")
 
@@ -244,7 +254,7 @@ out = {
         "shapesUrl": "https://data.capitol.texas.gov/dataset/vtds",
         "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
         "merged": f"VTDs with fewer than {MIN_VOTES} votes are merged into the nearest VTD in their county",
-        "format": "counties[fips] = [[dem24, rep24, other24, blocks]...], one per VTD; blocks = [dlon, dlat, radius, adults, ...]: "
+        "format": "counties[fips] = [[dem24, rep24, other24, blocks, name]...], one per VTD (name: its VTD code or codes); blocks = [dlon, dlat, radius, adults, ...]: "
                   "lon/lat in 1e-4 degrees, delta-encoded within the VTD (the first is absolute); radius in 10 m units. "
                   "hot[fips] = [lon, lat, adults per square mile within half a mile]: the county's most crowded spot.",
         "totals2024": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
@@ -257,3 +267,124 @@ import gzip
 path = ROOT / "data" / "precincts.json.gz"
 path.write_bytes(gzip.compress(json.dumps(out, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
 print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
+
+
+# ---------- precinct outlines: simplified along shared borders, so neighbors still meet ----------
+TOLERANCE = 5.0  # simplification, in 1e-4 degree steps (about 55 m)
+KX = math.cos(math.radians(31))  # a step of longitude is shorter than a step of latitude
+
+
+def quantized(ring):
+    pts = []
+    for x, y in ring:
+        p = (round(x * Q), round(y * Q))
+        if not pts or pts[-1] != p: pts.append(p)
+    if len(pts) > 1 and pts[0] == pts[-1]: pts.pop()
+    return pts
+
+
+def peucker(arc):
+    """Douglas-Peucker, for an arc whose two ends differ."""
+    keep = [False] * len(arc)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(arc) - 1)]
+    while stack:
+        a, b = stack.pop()
+        if b - a < 2: continue
+        ax, ay = arc[a][0] * KX, arc[a][1]
+        dx, dy = arc[b][0] * KX - ax, arc[b][1] - ay
+        len2 = dx * dx + dy * dy or 1
+        far, at = -1, None
+        for i in range(a + 1, b):
+            px, py = arc[i][0] * KX - ax, arc[i][1] - ay
+            s = max(0, min(1, (px * dx + py * dy) / len2))
+            d = (px - s * dx) ** 2 + (py - s * dy) ** 2
+            if d > far: far, at = d, i
+        if far > TOLERANCE * TOLERANCE:
+            keep[at] = True
+            stack += [(a, at), (at, b)]
+    return [p for p, k in zip(arc, keep) if k]
+
+
+def simplify_arc(arc):
+    if arc[0] != arc[-1]: return peucker(arc)
+    # a loop: split at the point farthest from its start
+    far = max(range(len(arc)), key=lambda i: (arc[i][0] - arc[0][0]) ** 2 + (arc[i][1] - arc[0][1]) ** 2)
+    if far == 0: return arc
+    return peucker(arc[:far + 1])[:-1] + peucker(arc[far:])
+
+
+rings_of = {id(v): [r for r in map(quantized, v["rings"]) if len(r) >= 3] for vs in entries.values() for v in vs}
+neighbors = defaultdict(set)
+for rings in rings_of.values():
+    for r in rings:
+        for i, p in enumerate(r):
+            neighbors[p].add(r[i - 1]); neighbors[r[i - 1]].add(p)
+junctions = {p for p, ns in neighbors.items() if len(ns) > 2}
+arcs = {}
+
+
+def simplified(arc):
+    key = min(tuple(arc), tuple(reversed(arc)))
+    if key not in arcs: arcs[key] = simplify_arc(list(key))
+    return arcs[key] if tuple(arc) == key else arcs[key][::-1]
+
+
+def signed_area(r):
+    return sum(r[i - 1][0] * p[1] - p[0] * r[i - 1][1] for i, p in enumerate(r)) / 2
+
+
+def simplify_ring(r):
+    at = [i for i, p in enumerate(r) if p in junctions]
+    if not at:  # no neighbor changes along it: start where anyone drawing this loop would start
+        k = r.index(min(r))
+        return simplified(r[k:] + r[:k] + [r[k]])[:-1]
+    r = r[at[0]:] + r[:at[0]]
+    at = [i - at[0] for i in at] + [len(r)]
+    out, closed = [], r + [r[0]]
+    for a, b in zip(at, at[1:]):
+        out += simplified(closed[a:b + 1])[:-1]
+    return out
+
+
+def to_polygons(rings):
+    """Rings run clockwise around land and counterclockwise around holes; each hole goes with the smallest ring around it."""
+    outers = [r for r in rings if signed_area(r) < 0]
+    holes = [r for r in rings if signed_area(r) > 0]
+    if not outers: outers, holes = holes, []
+    polys = [[o] for o in outers]
+    for h in holes:
+        around = [p for p in polys if inside(h[0][0], h[0][1], [p[0]])]
+        if around: min(around, key=lambda p: abs(signed_area(p[0]))).append(h)
+    return polys
+
+
+def encode(r):
+    out, px, py = [], 0, 0
+    for x, y in r:
+        out += [x - px, y - py]
+        px, py = x, y
+    return out
+
+
+shapes, n_points, kept_whole = defaultdict(list), 0, 0
+for fips, vs in entries.items():
+    for v in vs:
+        rings = rings_of[id(v)]
+        small = [s for s in map(simplify_ring, rings) if len(s) >= 3 and signed_area(s) != 0]
+        if not small:  # too small to survive simplifying: keep it as drawn
+            small = rings; kept_whole += 1
+        n_points += sum(len(s) for s in small)
+        shapes[fips].append([[encode(r) for r in poly] for poly in to_polygons(small)])
+assert {f: len(s) for f, s in shapes.items()} == {f: len(c) for f, c in counties.items()}, "shapes must line up with precincts"
+print(f"{sum(map(len, shapes.values())):,} precinct outlines, {n_points:,} points, {len(arcs):,} border pieces; kept as drawn: {kept_whole}")
+path = ROOT / "data" / "precinct-shapes.json.gz"
+path.write_bytes(gzip.compress(json.dumps({
+    "meta": {
+        "source": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries), simplified along shared borders; merged precincts as in precincts.json.gz",
+        "url": "https://data.capitol.texas.gov/dataset/vtds",
+        "format": "counties[fips] = one entry per precinct, in the order of precincts.json.gz: [[outer, hole...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degrees, not closed.",
+    },
+    "counties": shapes,
+}, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+print(f"wrote {path} ({path.stat().st_size / 1e6:.2f} MB)")
