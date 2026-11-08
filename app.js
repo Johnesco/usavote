@@ -173,7 +173,7 @@ function setRace(id) {
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows the county winner's share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
-    <p>The data file and the script that builds it are <a href="https://github.com/johnesco/texas">on GitHub</a>.</p>`;
+    <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
   finishRace();
 }
 function finishRace() {
@@ -245,7 +245,7 @@ function renderChamber(nm) {
     <p><b>Column height</b> is proportional to votes cast, on the same scale as every other race. Each raised column is stacked by party, and
     <b>color</b> shows the leading party's share of all ${race.label} votes cast in the county, in 10-point bands.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded).</p>
-    <p>The data file and the script that builds it are <a href="https://github.com/johnesco/texas">on GitHub</a>.</p>`;
+    <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
 }
 
 // Earlier years: the facts of the selected race, stated the same way for every year and both parties.
@@ -291,7 +291,7 @@ function renderHistory(minor, nm) {
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race and year). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows which candidate carried the county and their share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
     <p><b>Land area</b> is the Census Bureau's 2024 land area for each county (water excluded). The shapes are the Census Bureau's 2017 simplified county boundaries; the same 254 counties are used for every year.</p>
-    <p>The data files and the scripts that build them are <a href="https://github.com/johnesco/texas">on GitHub</a>.</p>`;
+    <p>The data files and the scripts that build them are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
 }
 
 // The tables: every race in the year shown, and the office shown in every year. Each row opens that race on the map.

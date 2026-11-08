@@ -69,7 +69,7 @@ document.getElementById('rightText').innerHTML = `<h1>But ${W.last} Won</h1>
   <p>Column height = votes cast in each county.</p>
   <div class="key"><span><i style="background:${LOSER_C.dem}"></i>${D.last} votes</span><span><i style="background:${LOSER_C.rep}"></i>${R.last} votes</span><span><i style="background:${OTHER_C}"></i>Others</span></div>`;
 document.getElementById('foot').textContent = `2026 ${race.label} election in Texas. Data: Texas Secretary of State, unofficial returns as of ` +
-  `${res.meta.resultsUpdated.replace(' (Central)', ' CT').replace(/^0?(\d+)\/0?(\d+)\//, '$1/$2/').replace(/ 0(\d:)/, ' $1')}; U.S. Census Bureau (land area).   johnesco.github.io/texas`;
+  `${res.meta.resultsUpdated.replace(' (Central)', ' CT').replace(/^0?(\d+)\/0?(\d+)\//, '$1/$2/').replace(/ 0(\d:)/, ' $1')}; U.S. Census Bureau (land area).   johnesco.github.io/usavote`;
 
 function panel(el, raised, pose) {
   const w = el.clientWidth, h = el.clientHeight;

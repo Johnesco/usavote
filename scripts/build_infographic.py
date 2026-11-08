@@ -389,7 +389,7 @@ for label, body in src:
         else:
             line = trial
     dr.text((x0, sy + 1), line, font=F_SMALL, fill=MUTED); sy += 46
-dr.text((W - 120, H - 50), "johnesco.github.io/texas", font=F_LEG, fill=GOLD, anchor="rs")
+dr.text((W - 120, H - 50), "johnesco.github.io/usavote", font=F_LEG, fill=GOLD, anchor="rs")
 
 img.save(OUT, optimize=True)
 print(f"wrote {OUT} ({OUT.stat().st_size / 1e6:.1f} MB)")

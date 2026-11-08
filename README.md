@@ -10,7 +10,7 @@ statewide races, from U.S. Senate and Governor to the state's high courts. The m
 whose height is the number of votes cast there. The point is to show why a map that is mostly red can still belong to
 a statewide Democratic win. Each race has its own link, e.g. `?race=governor`.
 
-**Live:** https://johnesco.github.io/texas/ (the Texas results are [`texas.html`](https://johnesco.github.io/texas/texas.html); older links with `?race=`, `?voters=` or to `history.html` still reach the right place)
+**Live:** https://johnesco.github.io/usavote/ (the Texas results are [`texas.html`](https://johnesco.github.io/usavote/texas.html); older links with `?race=`, `?voters=` or to `history.html` still reach the right place)
 
 Two guided flights about the 2026 U.S. Senate race are labeled as such and offered only where they match the view: the **County Flythrough** in bar view, and the **Texas Population Density Tour** in dot view.
 
@@ -20,24 +20,24 @@ Two guided flights about the 2026 U.S. Senate race are labeled as such and offer
 
 | Race | Democrat | Republican | Statewide | Counties won (R / D) | Land in R-won counties |
 |---|---|---|---|---|---|
-| [U.S. Senate](https://johnesco.github.io/texas/texas.html?race=u-s-senate) | James Talarico | Ken Paxton | D 55.1% – R 43.0% | 214 / 40 | 78% |
-| [Governor](https://johnesco.github.io/texas/texas.html?race=governor) | Gina Hinojosa | Greg Abbott (inc.) | D 52.8% – R 45.7% | 217 / 37 | 79% |
-| [Lieutenant Governor](https://johnesco.github.io/texas/texas.html?race=lieutenant-governor) | Vikki Goodwin | Dan Patrick (inc.) | D 51.7% – R 45.6% | 218 / 36 | 80% |
-| [Attorney General](https://johnesco.github.io/texas/texas.html?race=attorney-general) | Nathan Johnson | Mayes Middleton | D 52.4% – R 45.9% | 218 / 36 | 80% |
-| [Comptroller of Public Accounts](https://johnesco.github.io/texas/texas.html?race=comptroller) | Sarah Eckhardt | Don Huffines | D 51.3% – R 46.2% | 220 / 34 | 80% |
-| [Commissioner of the General Land Office](https://johnesco.github.io/texas/texas.html?race=land-commissioner) | Benjamin Flores | Dawn Buckingham (inc.) | D 51.4% – R 47.0% | 219 / 35 | 79% |
-| [Commissioner of Agriculture](https://johnesco.github.io/texas/texas.html?race=agriculture-commissioner) | Clayton Tucker | Nate Sheets | D 51.3% – R 46.6% | 219 / 35 | 79% |
-| [Railroad Commissioner](https://johnesco.github.io/texas/texas.html?race=railroad-commissioner) | Jon Rosenthal | Bo French | D 52.5% – R 45.5% | 218 / 36 | 80% |
-| [Supreme Court, Chief Justice](https://johnesco.github.io/texas/texas.html?race=supreme-court-chief-justice) | Maggie Ellis | Jimmy Blacklock (inc.) | D 52.4% – R 47.6% | 219 / 35 | 80% |
-| [Supreme Court, Place 2 (unexpired term)](https://johnesco.github.io/texas/texas.html?race=supreme-court-place-2) | Chari Kelly | James P. Sullivan (inc.) | D 52.3% – R 47.7% | 220 / 34 | 80% |
-| [Supreme Court, Place 7](https://johnesco.github.io/texas/texas.html?race=supreme-court-place-7) | Kristen Hawkins | Kyle Hawkins (inc.) | D 52.8% – R 47.2% | 219 / 35 | 80% |
-| [Supreme Court, Place 8](https://johnesco.github.io/texas/texas.html?race=supreme-court-place-8) | Gisela D. Triana | Brett Busby (inc.) | D 52.0% – R 48.0% | 220 / 34 | 80% |
-| [Court of Criminal Appeals, Place 3](https://johnesco.github.io/texas/texas.html?race=criminal-appeals-place-3) | Okey Anyiam | Thomas Smith | D 50.0% – R 47.6% | 220 / 34 | 80% |
-| [Court of Criminal Appeals, Place 4](https://johnesco.github.io/texas/texas.html?race=criminal-appeals-place-4) | Audra Riley | Kevin Patrick Yeary (inc.) | D 51.7% – R 48.3% | 220 / 34 | 80% |
-| [Court of Criminal Appeals, Place 9](https://johnesco.github.io/texas/texas.html?race=criminal-appeals-place-9) | Holly Taylor | John Messinger | D 52.3% – R 47.7% | 220 / 34 | 80% |
-| [15th Court of Appeals, Chief Justice](https://johnesco.github.io/texas/texas.html?race=fifteenth-court-chief-justice) | Jerry Zimmerer | Scott Brister (inc.) | D 51.8% – R 48.2% | 220 / 34 | 80% |
-| [15th Court of Appeals, Place 2](https://johnesco.github.io/texas/texas.html?race=fifteenth-court-place-2) | Tom Baker | Scott K. Field (inc.) | D 52.0% – R 48.0% | 220 / 34 | 80% |
-| [15th Court of Appeals, Place 3](https://johnesco.github.io/texas/texas.html?race=fifteenth-court-place-3) | Marc M. Meyer | April Farris (inc.) | D 51.5% – R 48.5% | 220 / 34 | 80% |
+| [U.S. Senate](https://johnesco.github.io/usavote/texas.html?race=u-s-senate) | James Talarico | Ken Paxton | D 55.1% – R 43.0% | 214 / 40 | 78% |
+| [Governor](https://johnesco.github.io/usavote/texas.html?race=governor) | Gina Hinojosa | Greg Abbott (inc.) | D 52.8% – R 45.7% | 217 / 37 | 79% |
+| [Lieutenant Governor](https://johnesco.github.io/usavote/texas.html?race=lieutenant-governor) | Vikki Goodwin | Dan Patrick (inc.) | D 51.7% – R 45.6% | 218 / 36 | 80% |
+| [Attorney General](https://johnesco.github.io/usavote/texas.html?race=attorney-general) | Nathan Johnson | Mayes Middleton | D 52.4% – R 45.9% | 218 / 36 | 80% |
+| [Comptroller of Public Accounts](https://johnesco.github.io/usavote/texas.html?race=comptroller) | Sarah Eckhardt | Don Huffines | D 51.3% – R 46.2% | 220 / 34 | 80% |
+| [Commissioner of the General Land Office](https://johnesco.github.io/usavote/texas.html?race=land-commissioner) | Benjamin Flores | Dawn Buckingham (inc.) | D 51.4% – R 47.0% | 219 / 35 | 79% |
+| [Commissioner of Agriculture](https://johnesco.github.io/usavote/texas.html?race=agriculture-commissioner) | Clayton Tucker | Nate Sheets | D 51.3% – R 46.6% | 219 / 35 | 79% |
+| [Railroad Commissioner](https://johnesco.github.io/usavote/texas.html?race=railroad-commissioner) | Jon Rosenthal | Bo French | D 52.5% – R 45.5% | 218 / 36 | 80% |
+| [Supreme Court, Chief Justice](https://johnesco.github.io/usavote/texas.html?race=supreme-court-chief-justice) | Maggie Ellis | Jimmy Blacklock (inc.) | D 52.4% – R 47.6% | 219 / 35 | 80% |
+| [Supreme Court, Place 2 (unexpired term)](https://johnesco.github.io/usavote/texas.html?race=supreme-court-place-2) | Chari Kelly | James P. Sullivan (inc.) | D 52.3% – R 47.7% | 220 / 34 | 80% |
+| [Supreme Court, Place 7](https://johnesco.github.io/usavote/texas.html?race=supreme-court-place-7) | Kristen Hawkins | Kyle Hawkins (inc.) | D 52.8% – R 47.2% | 219 / 35 | 80% |
+| [Supreme Court, Place 8](https://johnesco.github.io/usavote/texas.html?race=supreme-court-place-8) | Gisela D. Triana | Brett Busby (inc.) | D 52.0% – R 48.0% | 220 / 34 | 80% |
+| [Court of Criminal Appeals, Place 3](https://johnesco.github.io/usavote/texas.html?race=criminal-appeals-place-3) | Okey Anyiam | Thomas Smith | D 50.0% – R 47.6% | 220 / 34 | 80% |
+| [Court of Criminal Appeals, Place 4](https://johnesco.github.io/usavote/texas.html?race=criminal-appeals-place-4) | Audra Riley | Kevin Patrick Yeary (inc.) | D 51.7% – R 48.3% | 220 / 34 | 80% |
+| [Court of Criminal Appeals, Place 9](https://johnesco.github.io/usavote/texas.html?race=criminal-appeals-place-9) | Holly Taylor | John Messinger | D 52.3% – R 47.7% | 220 / 34 | 80% |
+| [15th Court of Appeals, Chief Justice](https://johnesco.github.io/usavote/texas.html?race=fifteenth-court-chief-justice) | Jerry Zimmerer | Scott Brister (inc.) | D 51.8% – R 48.2% | 220 / 34 | 80% |
+| [15th Court of Appeals, Place 2](https://johnesco.github.io/usavote/texas.html?race=fifteenth-court-place-2) | Tom Baker | Scott K. Field (inc.) | D 52.0% – R 48.0% | 220 / 34 | 80% |
+| [15th Court of Appeals, Place 3](https://johnesco.github.io/usavote/texas.html?race=fifteenth-court-place-3) | Marc M. Meyer | April Farris (inc.) | D 51.5% – R 48.5% | 220 / 34 | 80% |
 
 In every race the Democrat won statewide while the Republican won most counties and most of the land.
 
@@ -90,7 +90,7 @@ The results page is **bar view**: columns and colors, flat or in 3D. A **By coun
 
 ## County Flythrough (story page, a guided flight)
 
-[`story.html`](https://johnesco.github.io/texas/story.html) is a scrolling infographic of the 2026 U.S. Senate race. The map
+[`story.html`](https://johnesco.github.io/usavote/story.html) is a scrolling infographic of the 2026 U.S. Senate race. The map
 stays on screen while story cards scroll past; each card flies the camera to a group of counties (the reddest Panhandle
 counties, Harris and the smallest counties, the five biggest counties, the flipped Dallas–Fort Worth suburbs, the Rio Grande
 Valley), raises or flattens the columns, and lights up the counties it talks about. Raised columns are stacked by vote, as on
@@ -102,7 +102,7 @@ county drawing code it uses is in [`map3d.js`](map3d.js).
 
 ## Dot view
 
-The **Dot view** button in bar view opens [`voters.html`](https://johnesco.github.io/texas/voters.html): a flat map with
+The **Dot view** button in bar view opens [`voters.html`](https://johnesco.github.io/usavote/voters.html): a flat map with
 one dot for each voter in the race you were looking at, any race and year, for you to move around. A bar across its top picks the year and race, goes to any city, county or precinct, and offers the Texas Population Density Tour.
 A link with `?race=` opens that race, and older links with `?voters=1` come here too.
 To stay fast, the page draws only what's on screen, stops drawing when nothing moves, and, zoomed far out, leaves out dots stacked on the same pixel. From about a large metro inward, every voter's dot is drawn. `docs/PIPELINE.md` has the details.
