@@ -159,26 +159,86 @@ export function createDots({ depthTest = true } = {}) {
         outColor = vec4(vColor, 1.);
       }`,
   });
-  const points = new THREE.Points(new THREE.BufferGeometry(), material);
-  points.frustumCulled = false; // the bounding sphere would be computed from the fixed-point values
+  // The dots are all in one buffer, sorted into layers and each layer into tiles row by row. Each stretch of them to draw gets its own
+  // THREE.Points, sharing that buffer: the tiles on screen in one row sit next to each other in it, so there's at most one stretch a
+  // row in each layer drawn.
+  const group = new THREE.Group(), stretches = [];
+  // a fixed sphere: otherwise three.js would read all the dots to work one out, and the buffer is gone once it's on the graphics card
+  const WHOLE_MAP = new THREE.Sphere(new THREE.Vector3(), 1e5);
+  let attr = null, tiles = null;
+  const stretch = i => {
+    if (!stretches[i]) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', attr); g.boundingSphere = WHOLE_MAP;
+      const s = new THREE.Points(g, material);
+      s.frustumCulled = false; s.visible = false;
+      stretches[i] = s; group.add(s);
+    }
+    return stretches[i];
+  };
+  function clear() {
+    for (const s of stretches) { s.geometry.dispose(); group.remove(s); } // (disposing them also frees the shared buffer)
+    stretches.length = 0; attr = tiles = null;
+  }
   const worker = new Worker(new URL('./dots-worker.js', import.meta.url));
   let job = 0, done = null;
-  worker.onmessage = ({ data: { buf, table, counts, job: j } }) => {
+  worker.onmessage = ({ data: { buf, table, counts, job: j, tiles: t } }) => {
     if (j !== job) return; // a newer request came in while this one was being placed
-    points.geometry.dispose();
-    const g = new THREE.BufferGeometry();
+    clear();
     // read as integers (ivec4): Direct3D, behind WebGL on Windows, can't turn 16-bit integers into floats itself, and
     // converting ten million dots on the CPU every frame is far too slow
-    const attr = new THREE.Int16BufferAttribute(buf, 4);
+    attr = new THREE.Int16BufferAttribute(buf, 4);
     attr.gpuType = THREE.IntType;
-    g.setAttribute('position', attr);
-    points.geometry = g;
+    attr.onUpload(function () { this.array = null; }); // the graphics card has them now; no need for a second copy here
+    tiles = t;
     uniforms.uCounties.value?.dispose();
     const tex = new THREE.DataTexture(table, table.length / 4, 1, THREE.RGBAFormat, THREE.FloatType);
     tex.needsUpdate = true;
     uniforms.uCounties.value = tex;
     done({ n: counts[0] + counts[1] + counts[2], counts });
   };
+  // Before drawing: choose the tiles this camera can see, assuming the dots lie flat on the ground (map group rotated -90 degrees
+  // about x, so map y is world -z). Looks a little past the screen's edges, since a dot's middle can be off screen and part of it on.
+  // Then choose how many layers: a level is used only if its cells are at most half a pixel across at the nearest ground on screen, so
+  // close up every dot is drawn. So is every dot while some are enlarged or still appearing, since then more of them can be seen.
+  const corner = new THREE.Vector3(), forward = new THREE.Vector3(), MARGIN = 1.1;
+  function showVisible(camera) {
+    if (!tiles) return;
+    const { n, x0: gx, y0: gy, size, sides, starts } = tiles;
+    camera.updateMatrixWorld();
+    forward.setFromMatrixColumn(camera.matrixWorld, 2).negate();
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, all = false, nearest = Infinity;
+    for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+      corner.set(sx * MARGIN, sy * MARGIN, 0.5).applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld);
+      const o = camera.position, dy = corner.y - o.y;
+      if (dy >= 0) { all = true; break; } // this ray never reaches the ground
+      const k = -o.y / dy, x = o.x + (corner.x - o.x) * k, y = -(o.z + (corner.z - o.z) * k);
+      nearest = Math.min(nearest, (corner.x - o.x) * k * forward.x + (corner.y - o.y) * k * forward.y + (corner.z - o.z) * k * forward.z);
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    const tile = v => Math.floor(v / size);
+    const c0 = all ? 0 : Math.max(0, tile(x0 - gx)), c1 = all ? n - 1 : Math.min(n - 1, tile(x1 - gx));
+    const r0 = all ? 0 : Math.max(0, tile(y0 - gy)), r1 = all ? n - 1 : Math.min(n - 1, tile(y1 - gy));
+    let layers = sides.length + 1; // all of them
+    if (!all && uniforms.uFocus.value < 0 && uniforms.uReveal.value >= 1) {
+      const pixel = nearest * 2 / (camera.projectionMatrix.elements[5] * uniforms.uViewH.value); // map units across one pixel there
+      const fits = sides.findIndex(s => size / s <= pixel / 2);
+      if (fits >= 0) layers = fits + 1;
+    }
+    let used = 0, first = 0, end = -1;
+    const flush = () => {
+      if (end > first) { const s = stretch(used++); s.geometry.setDrawRange(first, end - first); s.visible = true; }
+    };
+    const w = n * n + 1;
+    if (c0 <= c1) for (let l = 0; l < layers; l++) for (let r = r0; r <= r1; r++) {
+      const a = starts[l * w + r * n + c0], b = starts[l * w + r * n + c1 + 1];
+      if (a === b) continue;
+      if (a === end) { end = b; continue; } // right after the last stretch, as when all of each row is on screen
+      flush(); first = a; end = b;
+    }
+    flush();
+    for (let i = used; i < stretches.length; i++) stretches[i].visible = false;
+  }
   // land: from loadPrecincts, once, before place(): where dots placed by `units` may land
   const setLand = land => { if (land) worker.postMessage({ land }, [land.bits.buffer]); };
   // counties: [{ tris, w (optional triangle weights) or units (places, from precinctUnits), dem, rep, other, target (raised
@@ -190,5 +250,5 @@ export function createDots({ depthTest = true } = {}) {
         counties: counties.map(({ tris, w, units, dem, rep, other, target = 0, delay = 0 }) => ({ tris, w, units, dem, rep, other, target, delay })) });
     });
   }
-  return { points, uniforms, place, setLand };
+  return { group, uniforms, place, setLand, showVisible, clear };
 }

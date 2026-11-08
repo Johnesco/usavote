@@ -105,6 +105,7 @@ county drawing code it uses is in [`map3d.js`](map3d.js).
 The **Dot view** button in bar view opens [`voters.html`](https://johnesco.github.io/texas/voters.html): a flat map with
 one dot for each voter in the race you were looking at, any race and year, for you to move around. A bar across its top picks the year and race, goes to any city, county or precinct, and offers the Texas Population Density Tour.
 A link with `?race=` opens that race, and older links with `?voters=1` come here too.
+To stay fast, the page draws only what's on screen, stops drawing when nothing moves, and, zoomed far out, leaves out dots stacked on the same pixel. From about a large metro inward, every voter's dot is drawn. `docs/PIPELINE.md` has the details.
 
 The **Texas Population Density Tour**, a guided flight, plays on its own (`?tour=1` opens on it), with one dot for each of the 9,889,704 people who voted in the 2026 U.S. Senate race.
 After the whole state, it visits one

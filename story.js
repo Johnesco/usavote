@@ -12,6 +12,7 @@ try {
   [res, us, hist] = await Promise.all([getJSON('data/results-2026.json'), getJSON(GEO_URL), getJSON('data/results-history.json')]);
 } catch (e) {
   $('loading').textContent = 'Could not load the map data. Please reload the page.';
+  $('loading').classList.add('failed');
   throw e;
 }
 

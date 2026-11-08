@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, precinctUnits, DOT_C } from './dots.js';
+import { createBusy } from './busy.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
@@ -21,7 +22,7 @@ const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.statu
 
 let res, us;
 try { [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]); }
-catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; throw e; }
+catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; $('loading').classList.add('failed'); throw e; }
 
 // ---------- data: the 2026 U.S. Senate race, by county (the tour is written around it) ----------
 const race = res.races.find(r => r.id === 'u-s-senate');
@@ -92,7 +93,7 @@ focusLine.renderOrder = 2; mapGroup.add(focusLine);
 
 const dots = createDots({ depthTest: false }); // one flat layer: no need for depth
 dots.uniforms.uP.value = 0; dots.uniforms.uReveal.value = 0;
-mapGroup.add(dots.points);
+mapGroup.add(dots.group);
 
 // Where to put each county's voters. The 2026 results are by county, so each party's county total is placed by precinct
 // the way that party's voters were spread in the 2024 Senate race, then on census blocks by adults (dots.js). If that file
@@ -117,6 +118,7 @@ const DENSE = [...ordered].sort((a, b) => b.hot.voters - a.hot.voters)[0];
 // ---------- layout: the part of the screen not covered by the bar and the caption card ----------
 const page = document.querySelector('.voters');
 let explore = null;   // the camera while exploring
+let needsDraw = true; // something changed that the camera can't show: see the end of frame()
 // area: on the tour, beside or above its caption. free: while exploring, everything under the top bar.
 let W = 1, H = 1, area = { w: 1, h: 1, ox: 0, oy: 0 }, free = { w: 1, h: 1, ox: 0, oy: 0 };
 const off = { x: 0, y: 0 }; // the camera's current shift, easing between those two
@@ -132,6 +134,7 @@ function resize() {
   if (explore?.home) Object.assign(explore, homeView());
   camera.updateProjectionMatrix();
   dots.uniforms.uViewH.value = H * renderer.getPixelRatio();
+  needsDraw = true;
 }
 // A view: the camera looks at map point (x, y) from distance d, tilted `tilt` radians from straight down, from the
 // direction `heading` (0 = from the south, looking north).
@@ -408,6 +411,7 @@ function showCaption(i) {
   // the scene's county, or the counties it names
   const outlined = s.focus ? [s.focus] : s.labels || [];
   focusLine.geometry = outlined.length ? lineGeo(outlined.flatMap(c => c.edges)) : new THREE.BufferGeometry();
+  needsDraw = true;
 }
 function jump(time) { leaveExplore(); resume = null; t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
 function updateButton() {
@@ -445,9 +449,9 @@ let lastV = null;     // the view drawn last frame
 function enterExplore() {
   if (explore || !lastV) return;
   explore = { ...lastV }; resume = null; playing = false; going = null;
-  page.classList.add('exploring'); updateButton();
+  page.classList.add('exploring'); updateButton(); needsDraw = true;
 }
-function leaveExplore() { if (explore) { explore = null; page.classList.remove('exploring'); updateButton(); } }
+function leaveExplore() { if (explore) { explore = null; page.classList.remove('exploring'); updateButton(); needsDraw = true; } }
 // Fly from the reader's view into scene i of the tour. The tour is about the Senate race, so those dots come back first.
 let starting = false;
 async function playFrom(i) {
@@ -539,14 +543,15 @@ function votersOf(r) {
     return v;
   });
 }
-const HOW_TO_MOVE = $('raceStatus').textContent;
+const busy = createBusy($('stage').parentElement);
+let landed = false; // new dots are waiting for the next drawing, which sends them to the graphics card
 async function showRace(r) {
   chosen = r; fillRaces();
-  $('raceStatus').textContent = `Placing ${fmt(r.counties.reduce((s, row) => s + row[3], 0))} voters…`;
+  const placing = `Placing ${fmt(r.counties.reduce((s, row) => s + row[3], 0))} voters…`;
+  if ($('loading')) $('loading').textContent = placing; else busy.show('race', placing);
   // (if another race is asked for before this one is ready, this one never finishes)
   await dots.place(votersOf(r), { per: 1, seed: 2026 + RACES.indexOf(r) });
-  shown = r;
-  $('raceStatus').textContent = HOW_TO_MOVE;
+  shown = r; needsDraw = landed = true;
   const [dem, rep, tot] = r.counties.reduce((s, row) => [s[0] + row[0], s[1] + row[1], s[2] + row[3]], [0, 0, 0]);
   const d = r.candidates.find(c => c.party === 'DEM'), e = r.candidates.find(c => c.party === 'REP');
   const dName = r.chamber ? 'Democrats' : d.last, rName = r.chamber ? 'Republicans' : e.last;
@@ -594,6 +599,7 @@ function renderPlace() {
 function outline(edges) {
   placeLine.geometry.dispose();
   placeLine.geometry = edges ? lineGeo(edges) : new THREE.BufferGeometry();
+  needsDraw = true;
 }
 const menus = createPlaceMenus({ counties: ordered, P, upm: UPM, cityUrl: STATE.data.cities,
   getVtds: c => PC?.byFips.get(c.fips)?.vtds || [],
@@ -613,6 +619,9 @@ const exploreDot = v => {
   return Math.max(1e-5, px * m / area.h);
 };
 
+// what the picture was last drawn from, so an unchanged picture isn't drawn again
+let drawn = null;
+const sameView = (a, b, eps) => !!b && a.every((x, i) => Math.abs(x - b[i]) <= eps[i]);
 function frame(now) {
   const dt = Math.min(0.25, (now - last) / 1000); last = now;
   if (playing && !resume && t < END) { t = Math.min(END, t + dt); if (t >= END) updateButton(); }
@@ -659,11 +668,26 @@ function frame(now) {
   dots.uniforms.uReveal.value = i !== 0 || explore ? 1 : rs ?? clamp01(local / s.reveal) ** 1.6;
   focusMat.opacity = explore ? 0 : clamp01(local / 0.4); // fades in over the first moment of the scene
   $('fill').style.width = `${100 * t / END}%`;
-  renderer.render(scene, camera);
-  cityLabels.update(camera, mapGroup, W, H, 1, placeLabels(explore ? {} : s, local));
+  // Ten million dots are a lot of work, so nothing is drawn while nothing moves: not during a tour under way or a flight, and only once
+  // the camera has settled, to within what could be seen (differences are measured from the last picture drawn, so slow drifts add up).
+  const uW = dots.uniforms.uWorld.value;
+  const state = [v.x, v.y, v.d, v.tilt, v.heading, off.x, off.y, uW, dots.uniforms.uReveal.value, dots.uniforms.uFocus.value, dots.uniforms.uFocusSize.value, focusMat.opacity];
+  const eps = [v.d * 1e-5, v.d * 1e-5, v.d * 1e-5, 1e-4, 1e-4, 0.02, 0.02, uW * 1e-3, 1e-3, 0, 1e-3, 1e-3];
+  const moving = (playing && t < END) || resume || going;
+  if (moving || needsDraw || !sameView(state, drawn, eps)) {
+    dots.showVisible(camera);
+    renderer.render(scene, camera);
+    cityLabels.update(camera, mapGroup, W, H, 1, placeLabels(explore ? {} : s, local));
+    drawn = state; needsDraw = false;
+    if (landed) { landed = false; busy.hide('race'); }
+  }
   requestAnimationFrame(frame);
 }
 
+// A lost graphics context takes the dots with it, and there's no copy here to send again, so they're placed again.
+stage.addEventListener('webglcontextlost', () => dots.clear());
+stage.addEventListener('webglcontextrestored', () => { showRace(chosen); });
+document.addEventListener('visibilitychange', () => { needsDraw = true; });
 const fit = new ResizeObserver(resize);
 fit.observe($('stage')); fit.observe($('topnav'));
 resize();
@@ -676,7 +700,6 @@ const startAt = +query.get('scene'), onTour = (startAt >= 1 && startAt <= scenes
 if (!onTour && /^\d{4}-/.test(asked) && !asked.startsWith('2026-')) await loadHistory();
 fillRaces();
 const firstRace = onTour ? SENATE : raceWithId(asked) || SENATE;
-$('loading').textContent = `Placing ${fmt(firstRace.counties.reduce((s, row) => s + row[3], 0))} voters…`;
 await showRace(firstRace);
 $('loading').remove();
 if (onTour) {

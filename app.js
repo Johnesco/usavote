@@ -7,6 +7,7 @@ import { loadPrecincts, precinctVotes } from './dots.js';
 import { createPrecinctColumns, loadPrecinctShapes } from './precinct-columns.js';
 import { createPlaceMenus, describePlace } from './places.js';
 import { STATE } from './state.js';
+import { createBusy } from './busy.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -23,6 +24,7 @@ try {
   ]);
 } catch (e) {
   document.getElementById('loading').textContent = 'Could not load the map data. Please reload the page.';
+  document.getElementById('loading').classList.add('failed');
   throw e;
 }
 const meta = res.meta;
@@ -682,7 +684,10 @@ let precincts = null;
 const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: UPM, cityUrl: STATE.data.cities,
   getVtds: async c => {
     precincts ??= loadPrecincts(P, STATE.data.precincts, null).catch(e => { console.error('Precincts did not load', e); return null; });
-    return (await precincts)?.byFips.get(c.fips)?.vtds || [];
+    busy.show('precincts', 'Loading precincts…');
+    const list = await precincts;
+    busy.hide('precincts');
+    return list?.byFips.get(c.fips)?.vtds || [];
   },
   onChoose: async p => {
     place = p; focus = p?.c ? { view: p.view, kind: p.kind, c: p.c, v: p.v } : null;
@@ -703,6 +708,7 @@ const PAL_DEM = REP_C.length, PAL_LOSER_R = PAL_DEM + DEM_C.length, PAL_LOSER_D 
 const countyFloor = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
 countyFloor.visible = false; mapGroup.add(countyFloor);
 let precinctUnit = 1, precinctCounties = [], loadingColumns = null;
+const busy = createBusy(document.querySelector('.map-area'));
 function showChosen() { columns?.setChosen(place?.kind === 'precinct' && byPrecinct ? precinctOf.get(place.v) : -1); }
 function setPrecinctRows() {
   const actual = race.id === ACTUAL_PRECINCTS, values = [];
@@ -757,18 +763,20 @@ async function setBy(on) {
   try { history.replaceState(null, '', `?race=${race.id}${on ? '&by=precinct' : ''}`); } catch {}
   if (on && !columns) {
     $('placeInfo').textContent = 'Loading precincts…';
-    try { await loadColumns(); }
+    try { await busy.showNow('columns', 'Loading precincts…'); await loadColumns(); }
     catch (e) {
+      busy.hide('columns');
       console.error('The precinct shapes did not load', e);
       $('placeInfo').textContent = 'The precinct map did not load. Please reload the page to try again.';
       byPrecinct = false; showBy(); loadingColumns = null; return;
     }
-    if (!byPrecinct) return; // changed back while it was loading
+    if (!byPrecinct) { busy.hide('columns'); return; } // changed back while it was loading
   }
   if (on) setPrecinctRows();
   else columns?.setHover(-1);
   restyle(); showChosen(); renderPlace(); outlinePlace(place); updateMode();
   if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
+  busy.hide('columns');
 }
 $('byCounty').onclick = () => setBy(false);
 $('byPrecinct').onclick = () => setBy(true);

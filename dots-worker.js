@@ -13,12 +13,19 @@
 //        units that lands on an empty cell gets a new spot around the same place.
 // Out: { buf: Int16Array, 4 per dot: x, y (fixed point around the county's center), height * Z, party * 256 + county index;
 //        table: Float32Array, 4 per county: center x, center y, map units per x/y step, rise delay;
-//        counts: [dem, rep, other] dots; job }
+//        counts: [dem, rep, other] dots; job;
+//        tiles: { n, x0, y0, size, sides, starts }: the dots are sorted into layers (see intoTiles), one per entry of `sides` and a
+//        last one for the rest, and each layer into an n x n grid of square tiles, row by row. In layer l, with w = n * n + 1, a tile's
+//        dots are starts[l * w + row * n + col] up to starts[l * w + row * n + col + 1]. }
 // party: 0 = Democratic, 1 = Republican, 2 = everyone else.
 const Z = 64; // the tallest column is 420 map units
 const STEPS = 32000; // x/y steps from a county's center to its farthest edge (Int16 holds ±32767)
 const SPREAD = 0.75; // a place's spread (one standard deviation), as a share of its radius
 const TRIES = 16; // spots tried for a dot before settling on its place's center, which is in the block itself
+const GRID = 256; // tiles along each side of the map: about 4 map units, or 3 miles, across in Texas
+// For leaving out dots from far away, level by level (intoTiles): cells along each side of a tile, and the most dots kept in a cell.
+// The caps rise as well as the cells shrinking, so each step closer is truer to the whole than the last.
+const SIDES = [4, 8, 16, 32], CAPS = [4, 4, 8, 16];
 
 let land = null;
 const lived = (x, y) => {
@@ -36,6 +43,87 @@ function rng(seed) {
     t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
+}
+
+// Sort the dots for drawing. First into tiles, row by row, so the page can draw only the ones on screen. Then, inside the buffer, into
+// layers, so a far-off view can leave out dots that couldn't be seen anyway: a pixel shows only the last dot drawn on it, and with the
+// whole state on screen about 99 land on each. Each level cuts a tile into cells and keeps at most so many dots a cell, so crowded
+// places lose only dots piled on others, and an empty county keeps all of its own. Each level holds all of the one before it, so coming
+// closer only ever adds dots; past the last level, every dot is drawn. The dots are looked at in big even steps through the tile, not
+// in the order placed, so what's kept in a cell is a fair sample of the places and parties there.
+// (A dot among the first few in a big cell is among the first few in the smaller cell it's in, which is why the levels nest.)
+function intoTiles(buf, table) {
+  const N = buf.length / 4, cell = new Uint16Array(N); // GRID * GRID cells fit in 16 bits
+  // the grid covers every county's reach (a county with nothing to place has no center, and fails these comparisons)
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let c = 0; c < table.length; c += 4) {
+    const r = table[c + 2] * (STEPS + 1);
+    if (table[c] - r < x0) x0 = table[c] - r; if (table[c] + r > x1) x1 = table[c] + r;
+    if (table[c + 1] - r < y0) y0 = table[c + 1] - r; if (table[c + 1] + r > y1) y1 = table[c + 1] + r;
+  }
+  const size = Math.max(x1 - x0, y1 - y0, 1e-6) / GRID, tile = new Uint32Array(GRID * GRID + 1), last = GRID - 1;
+  for (let i = 0, j = 0; i < N; i++, j += 4) {
+    const c = (buf[j + 3] & 255) * 4, step = table[c + 2];
+    let col = (table[c] + buf[j] * step - x0) / size | 0, row = (table[c + 1] + buf[j + 1] * step - y0) / size | 0;
+    col = col < 0 ? 0 : col > last ? last : col; row = row < 0 ? 0 : row > last ? last : row;
+    const k = cell[i] = row * GRID + col;
+    tile[k + 1]++;
+  }
+  let biggest = 0;
+  for (let i = 0; i < GRID * GRID; i++) { biggest = Math.max(biggest, tile[i + 1]); tile[i + 1] += tile[i]; }
+  const next = tile.slice(), out = new Int16Array(buf.length);
+  for (let i = 0, j = 0; i < N; i++, j += 4) {
+    const o = next[cell[i]]++ * 4;
+    out[o] = buf[j]; out[o + 1] = buf[j + 1]; out[o + 2] = buf[j + 2]; out[o + 3] = buf[j + 3];
+  }
+  // which layer each dot belongs to: the first level that keeps it, or the last layer if none does
+  const L = SIDES.length, layer = new Uint8Array(N);
+  const top = SIDES[L - 1], fine = new Uint16Array(biggest); // each of a tile's dots' smallest cell
+  const gcd = (x, y) => { while (y) [x, y] = [y, x % y]; return x; };
+  const firstCell = [];
+  let cells = 0;
+  for (const s of SIDES) { firstCell.push(cells); cells += s * s; }
+  const seen = new Uint8Array(cells), row = GRID * GRID + 1, starts = new Uint32Array((L + 1) * row);
+  for (let t = 0; t < GRID * GRID; t++) {
+    const a = tile[t], n = tile[t + 1] - a;
+    if (!n) continue;
+    if (n <= CAPS[0]) { starts[t + 1] += n; continue; } // too few to reach any cap: all in the first layer
+    const tx = x0 + (t % GRID) * size, ty = y0 + (t / GRID | 0) * size;
+    seen.fill(0);
+    for (let q = 0, j = a * 4; q < n; q++, j += 4) {
+      const c = (out[j + 3] & 255) * 4, step = table[c + 2];
+      let fx = (table[c] + out[j] * step - tx) / size * top | 0, fy = (table[c + 1] + out[j + 1] * step - ty) / size * top | 0;
+      fx = fx < 0 ? 0 : fx >= top ? top - 1 : fx; fy = fy < 0 ? 0 : fy >= top ? top - 1 : fy;
+      fine[q] = fy * top + fx;
+    }
+    let by = Math.round(n * 0.618034) || 1, i = 0, got = 0; // the golden ratio's steps never bunch up, and visit every dot once
+    while (gcd(by, n) !== 1) by++;
+    for (let q = 0; q < n; q++, i = (i + by) % n) {
+      const f = fine[i], fx = f % top, fy = (f - fx) / top;
+      // from the smallest cells up: once one is full, so are the bigger ones around it
+      got = L;
+      for (let l = L - 1; l >= 0; l--) {
+        const s = SIDES[l], d = top / s, k = firstCell[l] + (fy / d | 0) * s + (fx / d | 0);
+        if (seen[k] >= CAPS[l]) break;
+        seen[k]++; got = l;
+      }
+      layer[a + i] = got; starts[got * row + t + 1]++;
+    }
+  }
+  // counts to positions in the buffer: layer by layer, and in each layer tile by tile
+  let at = 0;
+  for (let l = 0; l <= L; l++) {
+    const o = l * row;
+    starts[o] = at;
+    for (let t = 0; t < GRID * GRID; t++) starts[o + t + 1] += starts[o + t];
+    at = starts[o + GRID * GRID];
+  }
+  const place = starts.slice();
+  for (let t = 0; t < GRID * GRID; t++) for (let i = tile[t]; i < tile[t + 1]; i++) {
+    const o = place[layer[i] * row + t]++ * 4, j = i * 4;
+    buf[o] = out[j]; buf[o + 1] = out[j + 1]; buf[o + 2] = out[j + 2]; buf[o + 3] = out[j + 3];
+  }
+  return { tiles: { n: GRID, x0, y0, size, sides: SIDES, starts } };
 }
 
 onmessage = ({ data }) => {
@@ -144,5 +232,6 @@ onmessage = ({ data }) => {
       put(x, y, party);
     }
   });
-  postMessage({ buf, table, counts, job }, [buf.buffer, table.buffer]);
+  const { tiles } = intoTiles(buf, table);
+  postMessage({ buf, table, counts, job, tiles }, [buf.buffer, table.buffer, tiles.starts.buffer]);
 };
