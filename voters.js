@@ -185,7 +185,8 @@ const close = (c, kicker) => ({ fly: 3, hold: 8, focus: c, dot: gapMiles(c) / 3,
       <div class="kicker">${kicker} · up close</div>
       <h2>${c.name} County's most crowded spot</h2>
       <div class="big">About ${fmt(round2(c.hot.voters))} voters per square mile<small>this view is ${tall(v)} tall and holds about ${fmt(inView(c, v))}</small></div>
-      <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. Each dot is one voter.</p>` });
+      <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. Each dot stands for one voter.</p>
+      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` });
 const lineup = cs => cs.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ');
 
 const scenes = [
@@ -242,9 +243,10 @@ const scenes = [
       <p>This view is about ${Math.round(viewMiles(v))} miles from top to bottom, around the most crowded part of ${DENSE.name} County.</p>` },
   { fly: 3, hold: 11, focus: DENSE, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE), html: v => `
       <h2>Every single voter</h2>
-      <p>Now each dot is one person: about <b class="hl">${fmt(inView(DENSE, v))}</b> voters in a patch of land ${tall(v)} tall,
+      <p>Now each dot stands for one person: about <b class="hl">${fmt(inView(DENSE, v))}</b> voters in a patch of land ${tall(v)} tall,
       in the most crowded neighborhood in Texas (${DENSE.name} County).</p>
-      <p>Across the whole county, each ${DENSE.name} County voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>` },
+      <p>Across the whole county, each ${DENSE.name} County voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>
+      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` },
 
   // ---- from the most crowded to the emptiest, at the same zoom ----
   { fly: 3, hold: 11, size: 4, focus: EMPTY, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE, EMPTY), html: v => {
@@ -262,7 +264,8 @@ const scenes = [
       <h2>${EMPTY.name} County</h2>
       <div class="big">${fmt(EMPTY.total)} voters<small>on ${fmt(Math.round(EMPTY.landSqMi))} square miles of land</small></div>
       <p>Pull back, and that's the whole county: one voter for every ${Math.round(1 / EMPTY.density)} square miles. Each dot you can
-      see is one person who voted (drawn larger, so you can find them).</p>` },
+      see stands for one person who voted (drawn larger, so you can find them).</p>
+      <p class="note">Spots and colors are estimated, not real people or real votes.</p>` },
 
   // ---- out west ----
   county(ELPASO, 'Out west', `

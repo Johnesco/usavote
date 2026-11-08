@@ -6,7 +6,9 @@ pattern of the 2024 U.S. Senate race (Allred vs. Cruz) inside each county:
   * each county's 2026 votes for each party are shared among its 2024 voting districts (VTDs) in proportion to that
     party's 2024 votes there (done in the browser, so each county still adds up exactly to its 2026 result);
   * inside a VTD, its voters are shared among its census blocks in proportion to their population 18 and over, and
-    placed at random within a circle the size of the block's land area.
+    placed at random within a circle the size of the block's land area;
+  * a VTD with fewer than MIN_VOTES 2024 votes is merged into the nearest VTD in its county, votes and blocks together, so
+    this file can't show how a handful of identifiable people voted.
 
 Sources (downloaded into data/raw/census-dl/, which is not committed):
   * Texas Legislative Council, Capitol Data Portal, 2024 General Election, U.S. Senator, results by VTD:
@@ -39,6 +41,7 @@ VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
 PL_ZIP = DL / "pl" / "tx2020.pl.zip"
 TX_ADULTS = 21_866_700
+MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
 
 
@@ -178,11 +181,28 @@ for b in blocks:
     hit["blocks"].append(b)
 print(f"blocks matched by nearest VTD instead of containment: {unplaced:,}")
 
+# ---------- merge VTDs with very few votes into the nearest VTD in the county, smallest first ----------
+for v in vtds:
+    v["votes"] = list(sen[v["key"]][1:]) if v["key"] in sen and "blocks" in v else [0, 0, 0]
+merged = merged_votes = moved_adults = 0
+for fips, vs in by_cnty.items():
+    live = [v for v in vs if sum(v["votes"]) > 0]
+    assert sum(sum(v["votes"]) for v in live) >= MIN_VOTES, fips
+    while True:
+        small = min(live, key=lambda v: sum(v["votes"]))
+        if sum(small["votes"]) >= MIN_VOTES: break
+        to = min((v for v in live if v is not small), key=lambda v: (v["c"][0] - small["c"][0]) ** 2 + (v["c"][1] - small["c"][1]) ** 2)
+        merged += 1; merged_votes += sum(small["votes"]); moved_adults += sum(b[4] for b in small["blocks"])
+        to["votes"] = [a + b for a, b in zip(to["votes"], small["votes"])]
+        to["blocks"] += small["blocks"]
+        live.remove(small); small["votes"] = [0, 0, 0]
+print(f"merged {merged} VTDs under {MIN_VOTES} votes ({merged_votes:,} votes, {moved_adults:,} adults in their blocks)")
+assert [sum(v["votes"][k] for v in vtds) for k in range(3)] == tot, "merging must keep every vote"
+
 # ---------- write ----------
 counties, no_blocks = defaultdict(list), 0
 for v in vtds:
-    if v["key"] not in sen or "blocks" not in v: continue
-    _, d, r, o = sen[v["key"]]
+    d, r, o = v["votes"]
     if d + r + o == 0: continue
     bl = v["blocks"]
     if not bl:  # votes but no adults on record: one circle the size of the VTD at its center
@@ -223,6 +243,7 @@ out = {
         "shapesSource": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries)",
         "shapesUrl": "https://data.capitol.texas.gov/dataset/vtds",
         "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
+        "merged": f"VTDs with fewer than {MIN_VOTES} votes are merged into the nearest VTD in their county",
         "format": "counties[fips] = [[dem24, rep24, other24, blocks]...], one per VTD; blocks = [dlon, dlat, radius, adults, ...]: "
                   "lon/lat in 1e-4 degrees, delta-encoded within the VTD (the first is absolute); radius in 10 m units. "
                   "hot[fips] = [lon, lat, adults per square mile within half a mile]: the county's most crowded spot.",

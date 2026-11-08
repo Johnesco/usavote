@@ -436,7 +436,7 @@ function requestDots() {
   const list = meshes.map(m => { const c = m.userData; return c.pc ? { ...c, units: precinctUnits(c.pc, c) } : c; });
   dots.place(list, { per: DOT_PER, seed: 1 + races.indexOf(race) }).then(({ n }) => {
     if (job !== dotJob) return;
-    dotInfo = `${fmt(n)} dots · 1 dot = ${DOT_PER === 1 ? '1 voter' : `${DOT_PER} voters`}${PC ? ' · placed by 2024 precinct' : ''}`;
+    dotInfo = `${fmt(n)} dots · 1 dot = ${DOT_PER === 1 ? '1 voter' : `${DOT_PER} voters`}${PC ? ' · spots and colors estimated from 2024 precincts' : ''}`;
     if (ready) updateMode();
   });
 }

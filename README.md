@@ -119,7 +119,8 @@ evenly over each county.
 to keep the site small; [`dots.js`](dots.js) unzips it in the browser) from the Texas Legislative Council's
 [Capitol Data Portal](https://data.capitol.texas.gov) (2024 general election, U.S. Senator by VTD, and the `VTDs_24PG`
 boundaries, converted from their Lambert conformal conic projection) and the 2020 Census block points, land areas and adults
-(P.L. 94-171, `P3_001N`). Each block is assigned to the VTD that contains its internal point. It also finds each county's most
+(P.L. 94-171, `P3_001N`). Each block is assigned to the VTD that contains its internal point. A VTD with fewer than 10 votes in 2024 is merged into the
+nearest VTD in its county, so the file can't show how a handful of identifiable people voted. It also finds each county's most
 crowded spot (adults within half a mile) for the close-ups. The Census files come from
 [`scripts/build_blockgroups.py`](scripts/build_blockgroups.py), which downloads them into `data/raw/census-dl/` and checks that
 the adults add up to the state total (21,866,700); run it first. (It also writes `data/blockgroups.json`, adults by block group,
@@ -173,6 +174,9 @@ chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-s
 ```
 
 ## Data and method
+
+[`docs/PIPELINE.md`](docs/PIPELINE.md) is the full record, from raw files to the screen: every source, hash and build step, plus a
+template for doing the same in another state.
 
 - **Results:** Texas Secretary of State, Election Night Returns, 2026 November General Election (election id 53815),
   county-level results for every statewide race, as of 11/04/2026 04:59 PM Central, retrieved 2026-11-04. All precincts are
