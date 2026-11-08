@@ -1,6 +1,12 @@
 .claude/
 __pycache__/
-data/raw/census-dl/
 data/blockgroups.json
-data/raw/us-atlas/
 texas-senate-2026-two-maps-*.png
+texas-looks-red.gif
+texas-looks-red-panels*.png
+
+# raw data stays local, except what was read by hand from pages that can't be downloaded again by script
+data/raw/*
+!data/raw/sos-enr-*-extract.json
+!data/raw/sos-house-*.json
+!data/raw/sos-senate-*.json

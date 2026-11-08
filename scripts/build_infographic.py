@@ -4,10 +4,11 @@ with the one-dot-per-voter map, with legends and sources.
 The dots are placed the way the site places them (dots-worker.js): each party's 2026 county total is shared among the 2024
 voting districts in proportion to that party's 2024 Senate votes there, then among each district's census blocks by
 adults, by systematic rounding so every county adds up exactly; each dot is then scattered around its block with a bell
-curve (one standard deviation = 0.75 of the block's radius, cut off at 2.5). Where several voters share a pixel, the pixel
+curve (one standard deviation = 0.75 of the block's radius, cut off at 2.5), and kept off land where the 2020 Census
+counted no one (data/landmask.bin.gz). Where several voters share a pixel, the pixel
 takes their average party color, brighter the more voters there are.
 
-Inputs: data/results-2026.json, data/precincts.json.gz, and the us-atlas county boundaries the site draws
+Inputs: data/results-2026.json, data/precincts.json.gz, data/landmask.bin.gz, and the us-atlas county boundaries the site draws
 (downloaded into data/raw/us-atlas/, not committed).
 Run:  python scripts/build_infographic.py [scale]   (scale 1 = 4K, the default; 2 = 8K; 4 = 16K)
       writes texas-senate-2026-two-maps-4k.png (or -8k, -16k)
@@ -63,6 +64,40 @@ def project(lon, lat):
     phi = np.radians(np.asarray(lat, float))
     rho = np.sqrt(C - 2 * N * np.sin(phi)) / N
     return RE * rho * np.sin(N * lam), RE * (math.sqrt(C) / N - rho * np.cos(N * lam))
+
+
+# ---------- where the Census counted anyone (scripts/build_landmask.py), one True per lived-on cell ----------
+_b = gzip.decompress((ROOT / "data/landmask.bin.gz").read_bytes())
+_n = int.from_bytes(_b[:4], "little")
+_h = json.loads(_b[4:4 + _n])
+LW, LH = _h["w"], _h["h"]
+land = np.zeros((LH, LW), bool)
+_p = 4 + _n
+for _y in range(LH):
+    _x, _on = 0, False
+    while _x < LW:
+        _v, _s = 0, 0
+        while True:
+            _c = _b[_p]; _p += 1
+            _v |= (_c & 127) << _s; _s += 7
+            if _c < 128:
+                break
+        if _on:
+            land[_y, _x:_x + _v] = True
+        _x += _v; _on = not _on
+_ax, _ay = project(_h["a"][0], _h["a"][1])
+_bx, _by = project(_h["b"][0], _h["b"][1])
+_sx, _sy = (_h["b"][2] - _h["a"][2]) / (_bx - _ax), (_h["b"][3] - _h["a"][3]) / (_by - _ay)
+
+
+def lived(x, y):
+    """x, y in meters (arrays) -> True where the land grid says the Census counted anyone."""
+    gx = np.floor(_h["a"][2] + (x - _ax) * _sx).astype(np.int64)
+    gy = np.floor(_h["a"][3] + (y - _ay) * _sy).astype(np.int64)
+    ok = (gx >= 0) & (gx < LW) & (gy >= 0) & (gy < LH)
+    out = np.zeros(len(x), bool)
+    out[ok] = land[gy[ok], gx[ok]]
+    return out
 
 
 # ---------- county shapes from TopoJSON ----------
@@ -168,12 +203,22 @@ for fips, vtds in pc["counties"].items():
         k[-1] += n26 - k.sum()  # the last block takes any rounding left over, so the county total is exact
         k = np.maximum(k, 0)
         idx = np.repeat(np.arange(len(k)), k)
-        # bell-curve spread around each block, cut off at 2.5 standard deviations
-        u = rng.random(len(idx)) * (1 - math.exp(-2.5 ** 2 / 2))
-        g = np.sqrt(-2 * np.log(1 - u))
-        a = rng.random(len(idx)) * 2 * math.pi
-        rr = 0.75 * rad[idx] * g
-        xs.append(px[idx] + rr * np.cos(a)); ys.append(py[idx] + rr * np.sin(a)); parties.append(np.full(len(idx), p, np.int8))
+        # bell-curve spread around each block, cut off at 2.5 standard deviations; a dot on empty land gets a new spot, and
+        # after 16 tries settles on the block's own center
+        dx, dy = px[idx].copy(), py[idx].copy()
+        todo = np.arange(len(idx))
+        for _ in range(16):
+            u = rng.random(len(todo)) * (1 - math.exp(-2.5 ** 2 / 2))
+            g = np.sqrt(-2 * np.log(1 - u))
+            a = rng.random(len(todo)) * 2 * math.pi
+            rr = 0.75 * rad[idx[todo]] * g
+            nx, ny = px[idx[todo]] + rr * np.cos(a), py[idx[todo]] + rr * np.sin(a)
+            good = lived(nx, ny)
+            dx[todo[good]], dy[todo[good]] = nx[good], ny[good]
+            todo = todo[~good]
+            if not len(todo):
+                break
+        xs.append(dx); ys.append(dy); parties.append(np.full(len(idx), p, np.int8))
 xs, ys, parties = np.concatenate(xs), np.concatenate(ys), np.concatenate(parties)
 print(f"placed {len(xs):,} dots (expected {TOT:,})")
 assert len(xs) == TOT
@@ -329,7 +374,7 @@ src = [
      f"{res['meta']['resultsUpdated']}. Percentages are of all votes cast, including third-party and write-in votes."),
     ("Dot placement: ", "An estimate, not a record of any person's vote; ballots are secret and 2026 precinct results aren't out yet. Each party's 2026 "
      "county total is shared among 2024 voting districts by that party's 2024 U.S. Senate votes there (Texas Legislative Council, "
-     "Capitol Data Portal), then among 2020 census blocks by population 18 and over (U.S. Census Bureau, 2020 P.L. 94-171). "
+     "Capitol Data Portal), then among 2020 census blocks by population 18 and over (U.S. Census Bureau, 2020 P.L. 94-171), off land where the Census counted no one (2020 TIGER/Line blocks). "
      "Every county adds up exactly to its 2026 result."),
     ("Boundaries: ", "U.S. Census Bureau county boundaries via us-atlas (1:10m). Equal-area conic projection; both maps at the same scale."),
 ]

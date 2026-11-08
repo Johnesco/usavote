@@ -9,6 +9,8 @@
 //      or, instead of tris/w, units: Float32Array, 6 per place (x, y, radius in map units, expected Democratic, Republican and
 //        other votes there). Each party's dots are shared among the places in proportion to that party's expected votes, and
 //        scattered around each place with a soft spread about its size, so a place's dots carry its own party mix.
+//      A separate { land } message (dots.js, loadLand) gives the grid of where the Census counted anyone; a dot placed by
+//        units that lands on an empty cell gets a new spot around the same place.
 // Out: { buf: Int16Array, 4 per dot: x, y (fixed point around the county's center), height * Z, party * 256 + county index;
 //        table: Float32Array, 4 per county: center x, center y, map units per x/y step, rise delay;
 //        counts: [dem, rep, other] dots; job }
@@ -16,6 +18,15 @@
 const Z = 64; // the tallest column is 420 map units
 const STEPS = 32000; // x/y steps from a county's center to its farthest edge (Int16 holds ±32767)
 const SPREAD = 0.75; // a place's spread (one standard deviation), as a share of its radius
+const TRIES = 16; // spots tried for a dot before settling on its place's center, which is in the block itself
+
+let land = null;
+const lived = (x, y) => {
+  const gx = Math.floor(land.ox + x * land.sx), gy = Math.floor(land.oy + y * land.sy);
+  if (gx < 0 || gy < 0 || gx >= land.w || gy >= land.h) return false;
+  const i = gy * land.w + gx;
+  return (land.bits[i >> 3] >> (i & 7) & 1) === 1;
+};
 
 // small fast seeded random (mulberry32), so a race always draws the same dots
 function rng(seed) {
@@ -27,7 +38,9 @@ function rng(seed) {
   };
 }
 
-onmessage = ({ data: { counties, per, seed, job } }) => {
+onmessage = ({ data }) => {
+  if (data.land) { land = data.land; return; }
+  const { counties, per, seed, job } = data;
   const n = c => [Math.round(c.dem / per), Math.round(c.rep / per), Math.round(c.other / per)];
   let total = 0;
   for (const c of counties) total += n(c).reduce((a, b) => a + b, 0);
@@ -90,10 +103,16 @@ onmessage = ({ data: { counties, per, seed, job } }) => {
           kk[party]--; m--;
           // a soft spread around the place (a bell curve, cut off at 2.5 spreads) rather than a hard-edged circle, so
           // neighboring places blend into each other instead of showing as separate discs
-          let g;
-          do g = Math.sqrt(-2 * Math.log(1 - rand())); while (g > 2.5);
-          const rr = SPREAD * pr * g, a = 2 * Math.PI * rand();
-          put(px + rr * Math.cos(a), py + rr * Math.sin(a), party);
+          let x, y, tries = 0, ok;
+          do {
+            let g;
+            do g = Math.sqrt(-2 * Math.log(1 - rand())); while (g > 2.5);
+            const rr = SPREAD * pr * g, a = 2 * Math.PI * rand();
+            x = px + rr * Math.cos(a); y = py + rr * Math.sin(a);
+            ok = !land || lived(x, y);
+          } while (!ok && ++tries < TRIES);
+          if (!ok) { x = px; y = py; }
+          put(x, y, party);
         }
       }
       return;

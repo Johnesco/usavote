@@ -2,7 +2,8 @@
 // dots-worker.js places the dots; this module turns them into one THREE.Points drawn by a small shader.
 //
 // We only know how many people voted in each county, not where they live, so each county's voters are placed by precinct
-// and census block (loadPrecincts, precinctUnits). Each dot also knows its place in the county's raised column
+// and census block (loadPrecincts, precinctUnits), and kept off land where the 2020 Census counted no one (loadLand).
+// Each dot also knows its place in the county's raised column
 // (uniforms.uP: 0 = flat map, 1 = raised), so the main map's columns can be built from voters.
 import * as THREE from 'three';
 
@@ -53,7 +54,35 @@ export async function loadPrecincts(P, url = 'data/precincts.json.gz') {
     });
     out.set(fips, { vtds: list, D, R, O, adults: list.reduce((s, v) => s + v.adults, 0) });
   }
-  return { byFips: out, hot: data.hot, meta: data.meta };
+  return { byFips: out, hot: data.hot, meta: data.meta, land: await loadLand(P) };
+}
+
+// Where the 2020 Census counted anyone, from data/landmask.bin.gz (scripts/build_landmask.py), so that dots stay off lakes,
+// bays, airports and the like: { bits (one per cell, row by row), w, h, sx, ox, sy, oy }, where a map point (x, y) is in
+// grid cell (ox + x * sx, oy + y * sy). Dots are placed without it (null) if it doesn't load.
+async function loadLand(P, url = 'data/landmask.bin.gz') {
+  try {
+    const res = await fetch(url); if (!res.ok) throw new Error(res.status);
+    const gz = new Uint8Array(await res.arrayBuffer());
+    const zipped = gz[0] === 0x1f && gz[1] === 0x8b;
+    const b = zipped ? new Uint8Array(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()) : gz;
+    const n = new DataView(b.buffer, b.byteOffset).getUint32(0, true);
+    const { w, h, a, b: e } = JSON.parse(new TextDecoder().decode(b.subarray(4, 4 + n)));
+    const bits = new Uint8Array(Math.ceil(w * h / 8));
+    let p = 4 + n, cell = 0;
+    for (let y = 0; y < h; y++) { // each row: run lengths in cells, empty first, then lived on, taking turns
+      const end = (y + 1) * w;
+      for (let on = false; cell < end; on = !on) {
+        let run = 0, shift = 0, c;
+        do { c = b[p++]; run += (c & 127) * 2 ** shift; shift += 7; } while (c > 127);
+        if (on) for (let i = cell; i < cell + run; i++) bits[i >> 3] |= 1 << (i & 7);
+        cell += run;
+      }
+    }
+    const pa = P([a[0], a[1]]), pe = P([e[0], e[1]]);
+    const sx = (e[2] - a[2]) / (pe.x - pa.x), sy = (e[3] - a[3]) / (pe.y - pa.y);
+    return { bits, w, h, sx, ox: a[2] - pa.x * sx, sy, oy: a[3] - pa.y * sy };
+  } catch (err) { console.error('The land grid did not load; dots may land on empty land', err); return null; }
 }
 
 // The places for one county's dots (dots-worker.js `units`): each census block with the votes it is expected to hold.
@@ -141,6 +170,8 @@ export function createDots({ depthTest = true } = {}) {
     uniforms.uCounties.value = tex;
     done({ n: counts[0] + counts[1] + counts[2], counts });
   };
+  // land: from loadPrecincts, once, before place(): where dots placed by `units` may land
+  const setLand = land => { if (land) worker.postMessage({ land }, [land.bits.buffer]); };
   // counties: [{ tris, w (optional triangle weights) or units (places, from precinctUnits), dem, rep, other, target (raised
   // height, map units), delay (rise delay, 0..0.25) }]
   function place(counties, { per = 1, seed = 1 } = {}) {
@@ -150,5 +181,5 @@ export function createDots({ depthTest = true } = {}) {
         counties: counties.map(({ tris, w, units, dem, rep, other, target = 0, delay = 0 }) => ({ tris, w, units, dem, rep, other, target, delay })) });
     });
   }
-  return { points, uniforms, place };
+  return { points, uniforms, place, setLand };
 }

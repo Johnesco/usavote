@@ -429,7 +429,7 @@ const dots = DOT ? createDots() : null;
 // by precinct, or (if that fails to load) evenly over each county
 const PC = DOT ? await loadPrecincts(P).catch(e => { console.error('Precincts did not load', e); return null; }) : null;
 let dotJob = 0, dotInfo = '';
-if (DOT) { edgeMat.opacity = 0.18; dots.uniforms.uWorld.value = 0; mapGroup.add(dots.points); }
+if (DOT) { dots.setLand(PC?.land); edgeMat.opacity = 0.18; dots.uniforms.uWorld.value = 0; mapGroup.add(dots.points); }
 function requestDots() {
   dotInfo = 'Placing dots…'; if (ready) updateMode();
   const job = ++dotJob;

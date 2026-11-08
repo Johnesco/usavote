@@ -105,7 +105,8 @@ the pattern of the 2024 U.S. Senate race (Allred vs. Cruz) inside each county. E
 county's 2024 voting districts (VTDs) in proportion to that party's 2024 votes there, so every county still adds up exactly to
 its 2026 result and each neighborhood keeps its own party mix. Within each VTD, the dots are shared among its census blocks by
 population 18 and over (2020 Census), and scattered around each block with a soft bell-curve spread about the block's size, so
-neighboring blocks blend together. [`dots-worker.js`](dots-worker.js) places the dots in a background thread;
+neighboring blocks blend together. A dot that lands where the 2020 Census counted no one (a lake, a bay, an airport, a big park)
+gets a new spot around the same block; that moves about 2% of the dots. [`dots-worker.js`](dots-worker.js) places the dots in a background thread;
 [`dots.js`](dots.js) draws them.
 
 The map pages take the same dots with `?voters=1`: the 3D view's columns are built from one dot per voter (one per 10 on
@@ -124,12 +125,18 @@ crowded spot (adults within half a mile) for the close-ups. The Census files com
 the adults add up to the state total (21,866,700); run it first. (It also writes `data/blockgroups.json`, adults by block group,
 which the site no longer uses and isn't committed.)
 
+[`scripts/build_landmask.py`](scripts/build_landmask.py) builds [`data/landmask.bin.gz`](data/landmask.bin.gz) (about 1 MB): a
+100 m grid over Texas, in the map's projection, of the cells touching any census block with people or housing units (2020
+TIGER/Line tabulation blocks, `POP20` and `HOUSING20`; a 750 MB download into `data/raw/census-dl/tiger/`). Every other cell is
+empty. It marks land nobody was counted on, not homes: inside a block that has people, a dot can land anywhere.
+
 ```bash
 python scripts/build_blockgroups.py
 ```
 
 ```bash
 python scripts/build_precincts.py
+python scripts/build_landmask.py
 ```
 
 ## City names
@@ -181,7 +188,8 @@ chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-s
   write-ins, on a linear scale (one scale shared by all races). Counties with very few votes get a thin minimum height so they stay visible.
 - **Color** is the county winner's share of all votes cast there, in 10-point bands.
 
-The raw snapshots are in [`data/raw/`](data/raw). [`scripts/build_data.py`](scripts/build_data.py) rebuilds
+The raw snapshots are kept locally in `data/raw/`, not in this repo, except for the hand-read extracts linked on this page. They
+are in the repo's history up to this change, and the sources are listed below. [`scripts/build_data.py`](scripts/build_data.py) rebuilds
 [`data/results-2026.json`](data/results-2026.json) from them. That file holds all 18 races that were on the ballot in
 all 254 counties, and the page offers every one of them. The script stops with an
 error unless all of these hold, for every race:

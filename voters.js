@@ -199,7 +199,8 @@ const scenes = [
       and adults who didn't vote aren't on this map. Only the ${fmt(TOT)} who cast a ballot for U.S. Senate are.</p>
       ${PC ? `<p class="note">The 2026 results are by county; precinct results aren't out yet. So each county's voters for each
       party are placed by precinct the way that party's voters were spread in the 2024 Senate race, then on census blocks by
-      how many adults live there, scattered at random around each block. Each county still adds up exactly to its 2026 result.</p>`
+      how many adults live there, scattered at random around each block and kept off land where the Census counted no one, like
+      lakes and airports. Each county still adds up exactly to its 2026 result.</p>`
       : `<p class="note">The results say how many people voted in each county, not where they live. So each county's voters are
       placed where its adults live, by census block group, at random within each one. The colors are mixed across the whole
       county: a dot's color shows how its county voted, not its neighborhood.</p>`}` },
@@ -526,6 +527,7 @@ new ResizeObserver(resize).observe($('stage'));
 resize();
 timeline();
 $('loading').textContent = `Placing ${fmt(TOT)} voters…`;
+dots.setLand(PC?.land);
 await dots.place(ordered, { per: 1, seed: 2026 });
 $('loading').remove();
 // ?scene=N (1-based) starts at that scene, already arrived
