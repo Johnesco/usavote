@@ -66,5 +66,44 @@ const OKLAHOMA = {
   base: null,            // no precinct results or shapes here (docs/PIPELINE.md, Part 7)
 };
 
-export const STATES = [TEXAS, OKLAHOMA];
+const KANSAS = {
+  slug: 'kansas',
+  name: 'Kansas',
+  fips: '20',
+  countyCount: 105,
+  parallels: [37.5, 39.5], // scripts/build_landmask.py must use the same values
+  rotate: [98.3, 0],
+  middle: [-98.3, 38.5],
+  radiusScaleAt: [-98.3, 38.5], // where dots.js measures a block's radius; the default is a spot in Texas, far outside this state's parallels
+  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Unofficial results.',
+  data: {
+    results: 'data/ks/results-2026.json',
+    history: null,
+    precincts: 'data/ks/precincts.json.gz',
+    precinctShapes: 'data/ks/precinct-shapes.json.gz',
+    land: 'data/ks/landmask.bin.gz',
+    cities: 'data/ks/cities.json',
+  },
+  results: { href: 'kansas.html', title: 'See the results', text: 'U.S. Senate and the other statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
+  dots: 'kansas-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Kansas Secretary of State',
+  returns: 'unofficial results',
+  unofficialUntil: 'the State Board of Canvassers certifies them, due by Dec. 1, 2026',
+  // Provisional ballots aren't counted yet and some margins are under 1%, so the pages say who leads, not who won (docs/records/kansas.md)
+  won: 'led',
+  winner: 'leader',
+  votesCounted: "the votes reported in the selected race in each county, for every candidate on the ballot. Per the Secretary of State, they don't include provisional ballots, which counties count in their canvass by Nov. 16, 2026, or votes for write-in candidates, so totals can change.",
+  otherVotes: 'third-party votes',
+  twoCandidates: "Two candidates on the ballot. Write-ins aren't in these results.",
+  // The precinct votes here are for a race that isn't on these pages, so no race's precinct columns are as counted; raceId matches nothing
+  base: {
+    raceId: null, label: '2024 President', dem: 'Harris', rep: 'Trump',
+    asCounted: '',
+    method: `<p><b>By precinct:</b> one column for each voting precinct, on 2024 precinct lines (IKE Lab), stacked and colored like the county columns. Every column is an estimate: each party's 2026 county total is shared among the county's precincts by that party's share of its 2024 presidential vote there, so each county still adds up to its result, but a precinct's own number is not a real count. The 2024 presidential votes shown for a chosen precinct are as counted, and they match the Secretary of State's 2024 figures in every county. Precincts with fewer than 10 votes are merged into the nearest one in their county, and precincts with no 2024 votes aren't drawn. All columns share one height scale, which stays the same at every zoom.</p>`,
+  },
+};
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

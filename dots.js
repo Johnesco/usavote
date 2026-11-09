@@ -6,6 +6,7 @@
 // Each dot also knows its place in a raised column (uniforms.uP: 0 = flat map, 1 = raised). No page raises them today:
 // the dots stay flat, and only the county map (app.js) has 3D columns.
 import * as THREE from 'three';
+import { STATE } from './state.js';
 
 export const DOT_C = { dem: '#6c7dff', rep: '#ff3b3b', other: '#9aa6b8' };
 
@@ -39,7 +40,8 @@ export async function fetchJsonGz(url) {
 export async function loadPrecincts(P, url = 'data/precincts.json.gz', landUrl = 'data/landmask.bin.gz') {
   const data = await fetchJsonGz(url);
   // map units per meter, from 0.1 degree of latitude (about 11.1 km) in the middle of the state
-  const upm = P([-99.5, 31]).distanceTo(P([-99.5, 31.1])) / 11113;
+  const [lon, lat] = STATE.radiusScaleAt ?? [-99.5, 31];
+  const upm = P([lon, lat]).distanceTo(P([lon, lat + 0.1])) / 11113;
   const out = new Map();
   for (const [fips, vtds] of Object.entries(data.counties)) {
     let D = 0, R = 0, O = 0;

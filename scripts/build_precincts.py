@@ -33,7 +33,10 @@ format. Each county is one unit holding all its census blocks, with its 2026 U.S
 (run scripts/build_ok_results.py first). So its dots follow where adults live, with one party mix across the county. It uses
 no precinct shapes: see docs/PIPELINE.md, Part 7.
 
-Run:  python scripts/build_precincts.py [ok]
+Kansas (python scripts/build_precincts.py ks) writes both files into data/ks/, Texas's way, from IKE Lab's 2024 precinct file: its
+2024 President votes and shapes. Run scripts/build_ks_results.py first. See docs/records/kansas.md.
+
+Run:  python scripts/build_precincts.py [ok|ks]
 """
 import csv
 import io
@@ -52,10 +55,10 @@ DL = ROOT / "data" / "raw" / "census-dl"
 SEN_URL = "https://ted.capitol.texas.gov/api/Offices/510/2/vtd"
 VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837027b73e/resource/"
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
-PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip"}[ST]
-COUNTY_COUNT = {"tx": 254, "ok": 77}[ST]
-MID_LAT = {"tx": 31, "ok": 35.5}[ST]  # for how much shorter a step of longitude is than a step of latitude
-OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok"}[ST]
+PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip"}[ST]
+COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105}[ST]
+MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5}[ST]  # for how much shorter a step of longitude is than a step of latitude
+OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks"}[ST]
 TX_ADULTS = 21_866_700
 MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
@@ -143,6 +146,63 @@ if ST == "tx":
     print(f"{len(vtds):,} VTD shapes")
     missing = set(sen) - {v["key"] for v in vtds}
     assert not missing, f"VTDs with votes but no shape: {sorted(missing)[:10]}"
+if ST == "ks":
+    # ---------- 2024 President by precinct and its shapes, from one file (IKE Lab), read like Texas's above ----------
+    # scripts/build_ks_results.py checks these votes against the state's; run it first. Coordinates are Kansas North state plane:
+    # Lambert conformal conic in U.S. survey feet.
+    fips_of = {c["name"]: c["fips"] for c in json.loads((OUT_DIR / "results-2026.json").read_text(encoding="utf-8"))["counties"]}
+    A, F_, FOOT = 6378137.0, 1 / 298.257222101, 0.3048006096012192
+    E = math.sqrt(2 * F_ - F_ * F_)
+    L0, P1, P2, PO = map(math.radians, (-98.0, 38.71666666666667, 39.78333333333333, 38.33333333333334))
+    FE, FN = 1312333.333333333, 0.0
+    m = lambda p: math.cos(p) / math.sqrt(1 - (E * math.sin(p)) ** 2)
+    t = lambda p: math.tan(math.pi / 4 - p / 2) / ((1 - E * math.sin(p)) / (1 + E * math.sin(p))) ** (E / 2)
+    N = (math.log(m(P1)) - math.log(m(P2))) / (math.log(t(P1)) - math.log(t(P2)))
+    FF = m(P1) / (N * t(P1) ** N)
+    RHO0 = A * FF * t(PO) ** N
+
+
+    def inv(x, y):
+        x, y = (x - FE) * FOOT, RHO0 - (y - FN) * FOOT
+        rho = math.copysign(math.hypot(x, y), N)
+        tt = (rho / (A * FF)) ** (1 / N)
+        lam = math.atan2(x, y) / N + L0
+        phi = math.pi / 2 - 2 * math.atan(tt)
+        for _ in range(6):
+            phi = math.pi / 2 - 2 * math.atan(tt * ((1 - E * math.sin(phi)) / (1 + E * math.sin(phi))) ** (E / 2))
+        return math.degrees(lam), math.degrees(phi)
+
+
+    z = zipfile.ZipFile(ROOT / "data" / "raw" / "ks" / "shapes" / "ks_2024g.zip")
+    dbf = z.read("ks_2024g.dbf")
+    n, hlen, rlen = struct.unpack("<IHH", dbf[4:12])
+    fields, off, s = {}, 32, 1
+    while dbf[off] != 0x0D:
+        name, ln = dbf[off:off + 11].split(b"\0")[0].decode(), dbf[off + 16]
+        fields[name] = (s, ln); s += ln; off += 32
+    fld = lambda i, name: dbf[hlen + i * rlen + fields[name][0]: hlen + i * rlen + fields[name][0] + fields[name][1]].decode("latin-1").strip()
+    shp = z.read("ks_2024g.shp")
+    vtds, sen, pos, i = [], {}, 100, 0
+    while pos < len(shp):
+        _, clen = struct.unpack(">II", shp[pos:pos + 8])
+        rec = shp[pos + 8: pos + 8 + clen * 2]; pos += 8 + clen * 2
+        assert struct.unpack("<i", rec[:4])[0] == 15, "expected only polygons"  # with heights, which are after the points and unused
+        nparts, npts = struct.unpack("<ii", rec[36:44])
+        parts = struct.unpack(f"<{nparts}i", rec[44:44 + 4 * nparts])
+        pts = struct.unpack(f"<{2 * npts}d", rec[44 + 4 * nparts: 44 + 4 * nparts + 16 * npts])
+        rings = []
+        area = 0.0
+        for p in range(nparts):
+            a, b = parts[p], parts[p + 1] if p + 1 < nparts else npts
+            rings.append([inv(pts[2 * k], pts[2 * k + 1]) for k in range(a, b)])
+            area -= sum(pts[2 * k] * pts[2 * k + 3] - pts[2 * k + 2] * pts[2 * k + 1] for k in range(a, b - 1)) / 2  # outer rings run clockwise
+        county = fld(i, "coname")
+        vtds.append({"key": i, "fips": fips_of[county], "rings": rings, "name": fld(i, "precinct").removeprefix(county + "-"), "areaM2": abs(area) * FOOT * FOOT})
+        d, r, others = int(fld(i, "G24PREDHAR")), int(fld(i, "G24PRERTRU")), int(fld(i, "G24PRELOLI")) + int(fld(i, "G24PREIKEN"))
+        sen[i] = (county, d, r, others)
+        i += 1
+    tot = [sum(v[k] for v in sen.values()) for k in (1, 2, 3)]
+    print(f"{len(vtds):,} precinct shapes; 2024 President: Harris {tot[0]:,}, Trump {tot[1]:,}, others {tot[2]:,}")
 
 # ---------- census blocks: internal point, land area, adults ----------
 pl = zipfile.ZipFile(PL_ZIP)
@@ -186,7 +246,7 @@ def inside(x, y, rings):
     return c
 
 
-if ST == "tx":
+if ST in ("tx", "ks"):
     CELL = 0.05
     by_cnty = defaultdict(list)
     for v in vtds:
@@ -299,12 +359,24 @@ out = {
     "counties": counties,
     "hot": hot,
 }
+if ST == "ks":
+    out["meta"] = {
+        "race": "2024 general election, President (Harris D, Trump R; others = Oliver, Kennedy), by precinct",
+        "resultsSource": "IKE Lab, Wichita State University, Precinct Result Shapefiles, 2024 General (checked against the Kansas Secretary of State's 2024 totals)",
+        "resultsUrl": "https://ike-lab.com/files/ks_2024g.zip",
+        "shapesSource": "IKE Lab, ks_2024g (2024 precincts), CC-BY: https://creativecommons.org/licenses/by/4.0/",
+        "shapesUrl": "https://ike-lab.com/electionresults.html",
+        "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
+        "merged": f"Precincts with fewer than {MIN_VOTES} votes are merged into the nearest precinct in their county; precincts with no votes are left out",
+        "format": FORMAT,
+        "totals2024": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
+    }
 # gzipped (mtime 0, so a rebuild with the same data gives the same file); dots.js unzips it in the browser
 import gzip
-path = OUT_DIR / ("precincts.json.gz" if ST == "tx" else "blocks.json.gz")
+path = OUT_DIR / ("blocks.json.gz" if ST == "ok" else "precincts.json.gz")
 path.write_bytes(gzip.compress(json.dumps(out, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
 print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
-if ST != "tx": sys.exit()  # no precinct outlines
+if ST == "ok": sys.exit()  # no precinct outlines
 
 
 # ---------- precinct outlines: simplified along shared borders, so neighbors still meet ----------
@@ -419,8 +491,8 @@ print(f"{sum(map(len, shapes.values())):,} precinct outlines, {n_points:,} point
 path = OUT_DIR / "precinct-shapes.json.gz"
 path.write_bytes(gzip.compress(json.dumps({
     "meta": {
-        "source": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries), simplified along shared borders; merged precincts as in precincts.json.gz",
-        "url": "https://data.capitol.texas.gov/dataset/vtds",
+        "source": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries), simplified along shared borders; merged precincts as in precincts.json.gz" if ST == "tx" else "IKE Lab, ks_2024g (2024 precincts, CC-BY), simplified along shared borders; merged precincts as in precincts.json.gz",
+        "url": "https://data.capitol.texas.gov/dataset/vtds" if ST == "tx" else "https://ike-lab.com/electionresults.html",
         "format": "counties[fips] = one entry per precinct, in the order of precincts.json.gz: [[outer, hole...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degrees, not closed.",
     },
     "counties": shapes,

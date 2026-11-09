@@ -19,7 +19,9 @@ on, taking turns. Runs compress far better than one bit per cell.
 Oklahoma (python scripts/build_landmask.py ok) gets the same grid in its own projection, written to data/ok/. The values
 here must match state.js.
 
-Run:  python scripts/build_landmask.py [ok]
+Kansas: python scripts/build_landmask.py ks, into data/ks/.
+
+Run:  python scripts/build_landmask.py [ok|ks]
 """
 import gzip
 import io
@@ -41,6 +43,7 @@ ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
 NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "tx": ("Texas", "48", "census-dl/tiger", "data/landmask.bin.gz", 27.5, 35, 99.5),
     "ok": ("Oklahoma", "40", "ok/census", "data/ok/landmask.bin.gz", 34.2, 36.4, 98.7),
+    "ks": ("Kansas", "20", "ks/census", "data/ks/landmask.bin.gz", 37.5, 39.5, 98.3),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
