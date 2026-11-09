@@ -148,6 +148,7 @@ The random numbers are seeded, so a given race draws the same dots each time (se
 
 These came out of decisions made along the way. Keep them in any state.
 
+- **Check publishing rights before publishing anything.** Before any data, page, doc, commit message, pull request or issue text goes online, read the source's terms of use and confirm they cover this use: redrawing, simplifying and republishing. If they're silent or unclear, keep that data and anything built from it local and git-ignored, and ask the source or the owner first. Pushing to any branch publishes, because the repository is public: a pull request that's never merged is still online. Taking something down afterward doesn't reliably remove it. In 2026, Oregon's results reached a pushed branch before its terms were settled, and the only way to remove them was to delete and recreate the repository.
 - **No voter files.** Ballots are secret, so a person's vote can't be known. Voter lists are also restricted in how they can be used, and putting names at home locations would be a privacy problem.
 - **Label estimates.** A dot's spot and color are estimates, and every close view has to say so. Current wording: "Spots and colors are estimated."
 - **Hide very small precincts.** Merge anything under 10 votes before publishing, even if the source publishes it.

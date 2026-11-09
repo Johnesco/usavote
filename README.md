@@ -3,6 +3,8 @@
 A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio and Iowa so far.
 Other states show as not available yet; [`state.js`](state.js) holds what the pages need to know about a state.
 
+**Check publishing rights before publishing anything.** This repository is public, so pushing any branch publishes it. Before data or anything built from it goes into a commit, read the source's terms and confirm they cover this use; if they're unclear, keep it local and git-ignored. See [`docs/PIPELINE.md`](docs/PIPELINE.md), Part 5.
+
 ## Kansas, South Carolina, Ohio and Iowa
 
 These show the Nov. 3, 2026 general election, on the same code as Texas, with each state's data in `data/<code>/`. All are **unofficial** until the state certifies them, and each needs a rebuild after that.
