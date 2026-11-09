@@ -1,20 +1,23 @@
 // The "go to a city, county or precinct" menus, shared by the results page (app.js) and the voter dot page (voters.js).
-// The page has <select id="goCity">, <select id="goCounty"> and <select id="goPrecinct">. This fills them and says what was
+// The page has <select id="goCity">, <select id="goCounty"> and, if the state has precincts, <select id="goPrecinct">. This fills them and says what was
 // chosen; the page moves its own camera, draws its own outline and shows describePlace() where it likes.
 //
 // onChoose gets null (nothing chosen) or { kind: 'city' | 'county' | 'precinct', view: { x, y, halfW, halfH } in map units:
 // the area to show, and for each kind: city: name, people; county: c; precinct: c, v (from loadPrecincts), boxEdges: a box
 // around its census blocks, for a line drawing (the pages don't have precinct boundaries) }.
+import { STATE } from './state.js';
+
 const fmt = n => n.toLocaleString('en-US');
 const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
 
-// counties: [{ fips, name, box: { x0, y0, x1, y1 } }]; upm: map units per mile; getVtds: county -> its precincts, maybe later
+// counties: [{ fips, name, box: { x0, y0, x1, y1 } }]; upm: map units per mile; getVtds: county -> its precincts, maybe later (null: no precinct menu)
 export function createPlaceMenus({ counties, P, upm, cityUrl, getVtds, onChoose }) {
   const $ = id => document.getElementById(id);
   const byFips = new Map(counties.map(c => [c.fips, c]));
   let cities = [], vtds = [], job = 0;
 
   function fillPrecincts(c, list, waiting) {
+    if (!getVtds) return;
     vtds = list;
     $('goPrecinct').disabled = !list.length;
     $('goPrecinct').title = list.length ? `Go to a precinct in ${c.name} County` : 'Pick a county first';
@@ -33,11 +36,11 @@ export function createPlaceMenus({ counties, P, upm, cityUrl, getVtds, onChoose 
     const c = byFips.get(e.target.value), mine = ++job;
     fillPrecincts(c, [], !!c);
     onChoose(c ? countyPlace(c) : null);
-    if (!c) return;
+    if (!c || !getVtds) return;
     const list = await getVtds(c);
     if (mine === job) fillPrecincts(c, list || [], false);
   });
-  $('goPrecinct').addEventListener('change', e => {
+  $('goPrecinct')?.addEventListener('change', e => {
     const c = byFips.get($('goCounty').value), v = vtds[e.target.value];
     if (!v) { onChoose(c ? countyPlace(c) : null); return; }
     // its extent: every block in it, each with its radius
@@ -70,7 +73,7 @@ export function describePlace(p, race, votesOf) {
   if (!p) return '';
   if (p.kind === 'city') return `<b>${p.name}</b>: ${fmt(p.people)} people in the 2020 Census`;
   if (p.kind === 'precinct') return `<b>Precinct ${p.v.name}, ${p.c.name} County</b> (box shows its rough extent): ` +
-    `2024 U.S. Senate, Allred ${fmt(p.v.d)}, Cruz ${fmt(p.v.r)}, others ${fmt(p.v.o)}`;
+    `${STATE.base.label}, ${STATE.base.dem} ${fmt(p.v.d)}, ${STATE.base.rep} ${fmt(p.v.r)}, others ${fmt(p.v.o)}`;
   const [dem, rep, tot] = votesOf(p.c), who = party => race.candidates.find(k => k.party === party).last;
   const d = race.chamber ? 'Democrats' : who('DEM'), r = race.chamber ? 'Republicans' : who('REP');
   return `<b>${p.c.name} County</b>: ${fmt(tot)} voters · ` + (tot ? `${d} ${pct(dem, tot)}, ${r} ${pct(rep, tot)}` : 'no votes reported in this race');

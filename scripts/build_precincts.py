@@ -28,24 +28,34 @@ precinct-shapes.json.gz: { meta, counties: { fips: [polygons, ...] } }, in the s
 [[outer, hole, ...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degree steps, not closed. Neighbors share their
 simplified borders exactly, so columns meet without gaps.
 
-Run:  python scripts/build_precincts.py
+Oklahoma (python scripts/build_precincts.py ok) is county-only and writes one file, data/ok/blocks.json.gz, in the same
+format. Each county is one unit holding all its census blocks, with its 2026 U.S. Senate votes from data/ok/results-2026.json
+(run scripts/build_ok_results.py first). So its dots follow where adults live, with one party mix across the county. It uses
+no precinct shapes: see docs/PIPELINE.md, Part 7.
+
+Run:  python scripts/build_precincts.py [ok]
 """
 import csv
 import io
 import json
 import math
 import struct
+import sys
 import urllib.request
 import zipfile
 from collections import defaultdict
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
 DL = ROOT / "data" / "raw" / "census-dl"
 SEN_URL = "https://ted.capitol.texas.gov/api/Offices/510/2/vtd"
 VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837027b73e/resource/"
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
-PL_ZIP = DL / "pl" / "tx2020.pl.zip"
+PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip"}[ST]
+COUNTY_COUNT = {"tx": 254, "ok": 77}[ST]
+MID_LAT = {"tx": 31, "ok": 35.5}[ST]  # for how much shorter a step of longitude is than a step of latitude
+OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok"}[ST]
 TX_ADULTS = 21_866_700
 MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
@@ -59,90 +69,108 @@ def fetch(url, path):
     return path
 
 
-# ---------- 2024 U.S. Senate votes by VTD ----------
-sen = {}
-with open(fetch(SEN_URL, DL / "tlc" / "sen24_vtd.json"), encoding="utf-8") as f:
-    rows = csv.reader(f)
-    head = next(rows)
-    iD = next(i for i, h in enumerate(head) if h.startswith("AllredD"))
-    iR = next(i for i, h in enumerate(head) if h.startswith("CruzR"))
-    others = [i for i, h in enumerate(head) if "_24G_" in h and i not in (iD, iR)]
-    for r in rows:
-        key = int(r[1])
-        sen[key] = (r[0], int(r[iD]), int(r[iR]), sum(int(r[i]) for i in others))
-tot = [sum(v[k] for v in sen.values()) for k in (1, 2, 3)]
-print(f"{len(sen):,} VTDs; 2024 Senate: Allred {tot[0]:,}, Cruz {tot[1]:,}, others {tot[2]:,}")
+if ST == "ok":
+    results = json.loads((OUT_DIR / "results-2026.json").read_text(encoding="utf-8"))
+    senate = next(r for r in results["races"] if r["id"] == "u-s-senate")
+    vtds = [{"fips": c["fips"], "name": c["name"], "votes": row[:3], "blocks": []} for c, row in zip(results["counties"], senate["counties"])]
+    tot = [sum(v["votes"][k] for v in vtds) for k in range(3)]
+    assert all(sum(v["votes"]) >= MIN_VOTES for v in vtds)
+    print(f"{len(vtds)} counties; 2026 U.S. Senate: D {tot[0]:,}, R {tot[1]:,}, others {tot[2]:,}")
+if ST == "tx":
+    # ---------- 2024 U.S. Senate votes by VTD ----------
+    sen = {}
+    with open(fetch(SEN_URL, DL / "tlc" / "sen24_vtd.json"), encoding="utf-8") as f:
+        rows = csv.reader(f)
+        head = next(rows)
+        iD = next(i for i, h in enumerate(head) if h.startswith("AllredD"))
+        iR = next(i for i, h in enumerate(head) if h.startswith("CruzR"))
+        others = [i for i, h in enumerate(head) if "_24G_" in h and i not in (iD, iR)]
+        for r in rows:
+            key = int(r[1])
+            sen[key] = (r[0], int(r[iD]), int(r[iR]), sum(int(r[i]) for i in others))
+    tot = [sum(v[k] for v in sen.values()) for k in (1, 2, 3)]
+    print(f"{len(sen):,} VTDs; 2024 Senate: Allred {tot[0]:,}, Cruz {tot[1]:,}, others {tot[2]:,}")
 
-# ---------- VTD shapes (Lambert conformal conic, meters) -> lon/lat ----------
-A, F_ = 6378137.0, 1 / 298.257222101
-E = math.sqrt(2 * F_ - F_ * F_)
-L0, P1, P2, PO, FE, FN = map(math.radians, (-100.0, 27.41666666666667, 34.91666666666666, 31.16666666666667, 0, 0))
-FE, FN = 1_000_000.0, 1_000_000.0
-m = lambda p: math.cos(p) / math.sqrt(1 - (E * math.sin(p)) ** 2)
-t = lambda p: math.tan(math.pi / 4 - p / 2) / ((1 - E * math.sin(p)) / (1 + E * math.sin(p))) ** (E / 2)
-N = (math.log(m(P1)) - math.log(m(P2))) / (math.log(t(P1)) - math.log(t(P2)))
-FF = m(P1) / (N * t(P1) ** N)
-RHO0 = A * FF * t(PO) ** N
-
-
-def inv(x, y):
-    x, y = x - FE, RHO0 - (y - FN)
-    rho = math.copysign(math.hypot(x, y), N)
-    tt = (rho / (A * FF)) ** (1 / N)
-    lam = math.atan2(x, y) / N + L0
-    phi = math.pi / 2 - 2 * math.atan(tt)
-    for _ in range(6):
-        phi = math.pi / 2 - 2 * math.atan(tt * ((1 - E * math.sin(phi)) / (1 + E * math.sin(phi))) ** (E / 2))
-    return math.degrees(lam), math.degrees(phi)
+    # ---------- VTD shapes (Lambert conformal conic, meters) -> lon/lat ----------
+    A, F_ = 6378137.0, 1 / 298.257222101
+    E = math.sqrt(2 * F_ - F_ * F_)
+    L0, P1, P2, PO, FE, FN = map(math.radians, (-100.0, 27.41666666666667, 34.91666666666666, 31.16666666666667, 0, 0))
+    FE, FN = 1_000_000.0, 1_000_000.0
+    m = lambda p: math.cos(p) / math.sqrt(1 - (E * math.sin(p)) ** 2)
+    t = lambda p: math.tan(math.pi / 4 - p / 2) / ((1 - E * math.sin(p)) / (1 + E * math.sin(p))) ** (E / 2)
+    N = (math.log(m(P1)) - math.log(m(P2))) / (math.log(t(P1)) - math.log(t(P2)))
+    FF = m(P1) / (N * t(P1) ** N)
+    RHO0 = A * FF * t(PO) ** N
 
 
-z = zipfile.ZipFile(fetch(VTD_URL, DL / "tlc" / "vtds_24pg.zip"))
-dbf = z.read("VTDs_24PG.dbf")
-n, hlen, rlen = struct.unpack("<IHH", dbf[4:12])
-fields, off, s = {}, 32, 1
-while dbf[off] != 0x0D:
-    name, ln = dbf[off:off + 11].split(b"\0")[0].decode(), dbf[off + 16]
-    fields[name] = (s, ln); s += ln; off += 32
-fld = lambda i, name: dbf[hlen + i * rlen + fields[name][0]: hlen + i * rlen + fields[name][0] + fields[name][1]].decode().strip()
-shp = z.read("VTDs_24PG.shp")
-vtds, pos, i = [], 100, 0
-while pos < len(shp):
-    _, clen = struct.unpack(">II", shp[pos:pos + 8])
-    rec = shp[pos + 8: pos + 8 + clen * 2]; pos += 8 + clen * 2
-    rings = []
-    if struct.unpack("<i", rec[:4])[0] == 5:
-        nparts, npts = struct.unpack("<ii", rec[36:44])
-        parts = struct.unpack(f"<{nparts}i", rec[44:44 + 4 * nparts])
-        pts = struct.unpack(f"<{2 * npts}d", rec[44 + 4 * nparts: 44 + 4 * nparts + 16 * npts])
-        for p in range(nparts):
-            a, b = parts[p], parts[p + 1] if p + 1 < nparts else npts
-            rings.append([inv(pts[2 * k], pts[2 * k + 1]) for k in range(a, b)])
-    key = int(float(fld(i, "VTDKEY")))
-    cnty = int(fld(i, "CNTY"))
-    vtds.append({"key": key, "fips": f"48{cnty:03d}", "rings": rings, "name": fld(i, "VTD"),
-                 "areaM2": float(fld(i, "Shape_area"))})
-    i += 1
-print(f"{len(vtds):,} VTD shapes")
-missing = set(sen) - {v["key"] for v in vtds}
-assert not missing, f"VTDs with votes but no shape: {sorted(missing)[:10]}"
+    def inv(x, y):
+        x, y = x - FE, RHO0 - (y - FN)
+        rho = math.copysign(math.hypot(x, y), N)
+        tt = (rho / (A * FF)) ** (1 / N)
+        lam = math.atan2(x, y) / N + L0
+        phi = math.pi / 2 - 2 * math.atan(tt)
+        for _ in range(6):
+            phi = math.pi / 2 - 2 * math.atan(tt * ((1 - E * math.sin(phi)) / (1 + E * math.sin(phi))) ** (E / 2))
+        return math.degrees(lam), math.degrees(phi)
+
+
+    z = zipfile.ZipFile(fetch(VTD_URL, DL / "tlc" / "vtds_24pg.zip"))
+    dbf = z.read("VTDs_24PG.dbf")
+    n, hlen, rlen = struct.unpack("<IHH", dbf[4:12])
+    fields, off, s = {}, 32, 1
+    while dbf[off] != 0x0D:
+        name, ln = dbf[off:off + 11].split(b"\0")[0].decode(), dbf[off + 16]
+        fields[name] = (s, ln); s += ln; off += 32
+    fld = lambda i, name: dbf[hlen + i * rlen + fields[name][0]: hlen + i * rlen + fields[name][0] + fields[name][1]].decode().strip()
+    shp = z.read("VTDs_24PG.shp")
+    vtds, pos, i = [], 100, 0
+    while pos < len(shp):
+        _, clen = struct.unpack(">II", shp[pos:pos + 8])
+        rec = shp[pos + 8: pos + 8 + clen * 2]; pos += 8 + clen * 2
+        rings = []
+        if struct.unpack("<i", rec[:4])[0] == 5:
+            nparts, npts = struct.unpack("<ii", rec[36:44])
+            parts = struct.unpack(f"<{nparts}i", rec[44:44 + 4 * nparts])
+            pts = struct.unpack(f"<{2 * npts}d", rec[44 + 4 * nparts: 44 + 4 * nparts + 16 * npts])
+            for p in range(nparts):
+                a, b = parts[p], parts[p + 1] if p + 1 < nparts else npts
+                rings.append([inv(pts[2 * k], pts[2 * k + 1]) for k in range(a, b)])
+        key = int(float(fld(i, "VTDKEY")))
+        cnty = int(fld(i, "CNTY"))
+        vtds.append({"key": key, "fips": f"48{cnty:03d}", "rings": rings, "name": fld(i, "VTD"),
+                     "areaM2": float(fld(i, "Shape_area"))})
+        i += 1
+    print(f"{len(vtds):,} VTD shapes")
+    missing = set(sen) - {v["key"] for v in vtds}
+    assert not missing, f"VTDs with votes but no shape: {sorted(missing)[:10]}"
 
 # ---------- census blocks: internal point, land area, adults ----------
 pl = zipfile.ZipFile(PL_ZIP)
 blk = {}
-with pl.open("txgeo2020.pl") as f:
+state_rec, state_adults = None, None
+with pl.open(f"{ST}geo2020.pl") as f:
     for line in io.TextIOWrapper(f, encoding="latin-1"):
         r = line.rstrip("\n").split("|")
         if r[2] == "750":
             # from the end: AREALAND, AREAWATR, BASENAME, NAME, FUNCSTAT, GCUNI, POP100, HU100, INTPTLAT, INTPTLON, LSADC, PARTFLAG, UGA
             blk[r[7]] = [r[8].split("US")[1][:5], float(r[-4]), float(r[-5]), float(r[-13]), 0]
-with pl.open("tx000022020.pl") as f:
+        elif r[2] == "040" and r[3] == "00" and r[4] == "00":
+            state_rec = r[7]
+with pl.open(f"{ST}000022020.pl") as f:
     for line in io.TextIOWrapper(f, encoding="latin-1"):
         r = line.split("|", 6)
         b = blk.get(r[4])
         if b: b[4] = int(r[5])
+        elif r[4] == state_rec: state_adults = int(r[5])
 blocks = [b for b in blk.values() if b[4] > 0]
-assert sum(b[4] for b in blk.values()) == TX_ADULTS
-print(f"{len(blk):,} blocks, {len(blocks):,} with adults")
+# the file's own count for the whole state; Texas's was also written down when it was first built
+assert sum(b[4] for b in blk.values()) == state_adults, (sum(b[4] for b in blk.values()), state_adults)
+assert ST != "tx" or state_adults == TX_ADULTS
+print(f"{len(blk):,} blocks, {len(blocks):,} with adults; {state_adults:,} adults in the state")
+if ST == "ok":  # each block to its county, from its own code
+    of_county = {v["fips"]: v for v in vtds}
+    for b in blocks: of_county[b[0]]["blocks"].append(b)
+    assert all(v["blocks"] for v in vtds), "a county with no adults"
 
 
 # ---------- each block to the VTD that contains its internal point ----------
@@ -158,54 +186,55 @@ def inside(x, y, rings):
     return c
 
 
-CELL = 0.05
-by_cnty = defaultdict(list)
-for v in vtds:
-    xs = [p[0] for r in v["rings"] for p in r]; ys = [p[1] for r in v["rings"] for p in r]
-    if not xs: continue
-    v["box"] = (min(xs), min(ys), max(xs), max(ys))
-    v["c"] = ((v["box"][0] + v["box"][2]) / 2, (v["box"][1] + v["box"][3]) / 2)
-    v["blocks"] = []
-    by_cnty[v["fips"]].append(v)
-grid = {}
-for fips, vs in by_cnty.items():
-    g = defaultdict(list)
-    for v in vs:
-        x0, y0, x1, y1 = v["box"]
-        for gx in range(int(x0 // CELL), int(x1 // CELL) + 1):
-            for gy in range(int(y0 // CELL), int(y1 // CELL) + 1):
-                g[(gx, gy)].append(v)
-    grid[fips] = g
-unplaced = 0
-for b in blocks:
-    fips, x, y = b[0], b[1], b[2]
-    cand = grid.get(fips, {}).get((int(x // CELL), int(y // CELL)), [])
-    hit = next((v for v in cand if v["box"][0] <= x <= v["box"][2] and v["box"][1] <= y <= v["box"][3] and inside(x, y, v["rings"])), None)
-    if hit is None:  # on an edge or a sliver gap: the VTD in the same county with the nearest center
-        unplaced += 1
-        hit = min(by_cnty[fips], key=lambda v: (v["c"][0] - x) ** 2 + (v["c"][1] - y) ** 2)
-    hit["blocks"].append(b)
-print(f"blocks matched by nearest VTD instead of containment: {unplaced:,}")
+if ST == "tx":
+    CELL = 0.05
+    by_cnty = defaultdict(list)
+    for v in vtds:
+        xs = [p[0] for r in v["rings"] for p in r]; ys = [p[1] for r in v["rings"] for p in r]
+        if not xs: continue
+        v["box"] = (min(xs), min(ys), max(xs), max(ys))
+        v["c"] = ((v["box"][0] + v["box"][2]) / 2, (v["box"][1] + v["box"][3]) / 2)
+        v["blocks"] = []
+        by_cnty[v["fips"]].append(v)
+    grid = {}
+    for fips, vs in by_cnty.items():
+        g = defaultdict(list)
+        for v in vs:
+            x0, y0, x1, y1 = v["box"]
+            for gx in range(int(x0 // CELL), int(x1 // CELL) + 1):
+                for gy in range(int(y0 // CELL), int(y1 // CELL) + 1):
+                    g[(gx, gy)].append(v)
+        grid[fips] = g
+    unplaced = 0
+    for b in blocks:
+        fips, x, y = b[0], b[1], b[2]
+        cand = grid.get(fips, {}).get((int(x // CELL), int(y // CELL)), [])
+        hit = next((v for v in cand if v["box"][0] <= x <= v["box"][2] and v["box"][1] <= y <= v["box"][3] and inside(x, y, v["rings"])), None)
+        if hit is None:  # on an edge or a sliver gap: the VTD in the same county with the nearest center
+            unplaced += 1
+            hit = min(by_cnty[fips], key=lambda v: (v["c"][0] - x) ** 2 + (v["c"][1] - y) ** 2)
+        hit["blocks"].append(b)
+    print(f"blocks matched by nearest VTD instead of containment: {unplaced:,}")
 
-# ---------- merge VTDs with very few votes into the nearest VTD in the county, smallest first ----------
-for v in vtds:
-    v["votes"] = list(sen[v["key"]][1:]) if v["key"] in sen and "blocks" in v else [0, 0, 0]
-merged = merged_votes = moved_adults = 0
-for fips, vs in by_cnty.items():
-    live = [v for v in vs if sum(v["votes"]) > 0]
-    assert sum(sum(v["votes"]) for v in live) >= MIN_VOTES, fips
-    while True:
-        small = min(live, key=lambda v: sum(v["votes"]))
-        if sum(small["votes"]) >= MIN_VOTES: break
-        to = min((v for v in live if v is not small), key=lambda v: (v["c"][0] - small["c"][0]) ** 2 + (v["c"][1] - small["c"][1]) ** 2)
-        merged += 1; merged_votes += sum(small["votes"]); moved_adults += sum(b[4] for b in small["blocks"])
-        to["votes"] = [a + b for a, b in zip(to["votes"], small["votes"])]
-        to["blocks"] += small["blocks"]
-        to["name"] += ", " + small["name"]
-        to["rings"] = to["rings"] + small["rings"]
-        live.remove(small); small["votes"] = [0, 0, 0]
-print(f"merged {merged} VTDs under {MIN_VOTES} votes ({merged_votes:,} votes, {moved_adults:,} adults in their blocks)")
-assert [sum(v["votes"][k] for v in vtds) for k in range(3)] == tot, "merging must keep every vote"
+    # ---------- merge VTDs with very few votes into the nearest VTD in the county, smallest first ----------
+    for v in vtds:
+        v["votes"] = list(sen[v["key"]][1:]) if v["key"] in sen and "blocks" in v else [0, 0, 0]
+    merged = merged_votes = moved_adults = 0
+    for fips, vs in by_cnty.items():
+        live = [v for v in vs if sum(v["votes"]) > 0]
+        assert sum(sum(v["votes"]) for v in live) >= MIN_VOTES, fips
+        while True:
+            small = min(live, key=lambda v: sum(v["votes"]))
+            if sum(small["votes"]) >= MIN_VOTES: break
+            to = min((v for v in live if v is not small), key=lambda v: (v["c"][0] - small["c"][0]) ** 2 + (v["c"][1] - small["c"][1]) ** 2)
+            merged += 1; merged_votes += sum(small["votes"]); moved_adults += sum(b[4] for b in small["blocks"])
+            to["votes"] = [a + b for a, b in zip(to["votes"], small["votes"])]
+            to["blocks"] += small["blocks"]
+            to["name"] += ", " + small["name"]
+            to["rings"] = to["rings"] + small["rings"]
+            live.remove(small); small["votes"] = [0, 0, 0]
+    print(f"merged {merged} VTDs under {MIN_VOTES} votes ({merged_votes:,} votes, {moved_adults:,} adults in their blocks)")
+    assert [sum(v["votes"][k] for v in vtds) for k in range(3)] == tot, "merging must keep every vote"
 
 # ---------- write ----------
 counties, no_blocks = defaultdict(list), 0
@@ -224,7 +253,7 @@ for v in vtds:
         px, py = qx, qy
     counties[v["fips"]].append([d, r, o, flat, v["name"]])
     entries[v["fips"]].append(v)
-assert len(counties) == 254, len(counties)
+assert len(counties) == COUNTY_COUNT, len(counties)
 print(f"VTDs with votes but no adults on record (placed as one circle): {no_blocks}")
 
 # ---------- each county's most crowded spot: adults per square mile within HOT_R miles of a block ----------
@@ -245,6 +274,9 @@ for fips, bs in blocks_by_cnty.items():
                     if ((o[1] - x) * kx) ** 2 + ((o[2] - y) * 69.05) ** 2 <= HOT_R ** 2: s += o[4]
         if best is None or s > best[2]: best = (x, y, s)
     hot[fips] = [round(best[0], 4), round(best[1], 4), round(best[2] / (math.pi * HOT_R ** 2))]
+FORMAT = ("counties[fips] = [[dem24, rep24, other24, blocks, name]...], one per VTD (name: its VTD code or codes); blocks = [dlon, dlat, radius, adults, ...]: "
+          "lon/lat in 1e-4 degrees, delta-encoded within the VTD (the first is absolute); radius in 10 m units. "
+          "hot[fips] = [lon, lat, adults per square mile within half a mile]: the county's most crowded spot.")
 out = {
     "meta": {
         "race": "2024 general election, U.S. Senator (Allred D, Cruz R; others = all other candidates), by VTD",
@@ -254,24 +286,30 @@ out = {
         "shapesUrl": "https://data.capitol.texas.gov/dataset/vtds",
         "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
         "merged": f"VTDs with fewer than {MIN_VOTES} votes are merged into the nearest VTD in their county",
-        "format": "counties[fips] = [[dem24, rep24, other24, blocks, name]...], one per VTD (name: its VTD code or codes); blocks = [dlon, dlat, radius, adults, ...]: "
-                  "lon/lat in 1e-4 degrees, delta-encoded within the VTD (the first is absolute); radius in 10 m units. "
-                  "hot[fips] = [lon, lat, adults per square mile within half a mile]: the county's most crowded spot.",
+        "format": FORMAT,
         "totals2024": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
+    } if ST == "tx" else {
+        "race": "2026 general election, U.S. Senator (others = all other candidates), by county",
+        "resultsSource": "Oklahoma State Election Board, OK Election Results, county file",
+        "resultsUrl": "https://results.okelections.gov/OKER/?elecDate=20261103",
+        "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
+        "format": FORMAT.replace("dem24, rep24, other24", "dem, rep, other").replace("one per VTD (name: its VTD code or codes)", "one entry, the whole county (name: the county)").replace("within the VTD", "within the county"),
+        "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
     },
     "counties": counties,
     "hot": hot,
 }
 # gzipped (mtime 0, so a rebuild with the same data gives the same file); dots.js unzips it in the browser
 import gzip
-path = ROOT / "data" / "precincts.json.gz"
+path = OUT_DIR / ("precincts.json.gz" if ST == "tx" else "blocks.json.gz")
 path.write_bytes(gzip.compress(json.dumps(out, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
 print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
+if ST != "tx": sys.exit()  # no precinct outlines
 
 
 # ---------- precinct outlines: simplified along shared borders, so neighbors still meet ----------
 TOLERANCE = 5.0  # simplification, in 1e-4 degree steps (about 55 m)
-KX = math.cos(math.radians(31))  # a step of longitude is shorter than a step of latitude
+KX = math.cos(math.radians(MID_LAT))  # a step of longitude is shorter than a step of latitude
 
 
 def quantized(ring):
@@ -378,7 +416,7 @@ for fips, vs in entries.items():
         shapes[fips].append([[encode(r) for r in poly] for poly in to_polygons(small)])
 assert {f: len(s) for f, s in shapes.items()} == {f: len(c) for f, c in counties.items()}, "shapes must line up with precincts"
 print(f"{sum(map(len, shapes.values())):,} precinct outlines, {n_points:,} points, {len(arcs):,} border pieces; kept as drawn: {kept_whole}")
-path = ROOT / "data" / "precinct-shapes.json.gz"
+path = OUT_DIR / "precinct-shapes.json.gz"
 path.write_bytes(gzip.compress(json.dumps({
     "meta": {
         "source": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries), simplified along shared borders; merged precincts as in precincts.json.gz",

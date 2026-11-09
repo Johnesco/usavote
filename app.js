@@ -11,7 +11,7 @@ import { createBusy } from './busy.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
-// The results page (texas.html): any race in any general election since 2008, county by county. ?race= names one.
+// The results page (texas.html, oklahoma.html): any race in any general election the state has here, county by county. ?race= names one.
 
 // ---------- data ----------
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
@@ -20,7 +20,7 @@ try {
   [res, us, hist] = await Promise.all([
     getJSON(STATE.data.results),
     getJSON(GEO_URL),
-    getJSON(STATE.data.history),
+    STATE.data.history ? getJSON(STATE.data.history) : { races: [], meta: {} },
   ]);
 } catch (e) {
   document.getElementById('loading').textContent = 'Could not load the map data. Please reload the page.';
@@ -77,16 +77,16 @@ for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
 let place = null;
 let byPrecinct = false, columns = null; // bar view by precinct: columns draws them once they have loaded
 let precinctRows = [], precinctOf = new Map(); // one row per precinct on the map, for the race on screen; which row a precinct from the menus is
-const ACTUAL_PRECINCTS = '2024-u-s-senate'; // the one race with results by precinct here; the rest are estimated from it
+const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRECINCTS = BASE?.raceId; // the one race with results by precinct here; the rest are estimated from it
 const renderPlace = () => {
   let line = describePlace(place, race, c => [c.dem, c.rep, c.total]);
   if (byPrecinct && columns) {
     if (place?.kind === 'precinct') {
       const row = precinctRows[precinctOf.get(place.v)], v = place.v;
       line = `<b>Precinct ${v.name}, ${place.c.name} County</b>: ${race.year} ${race.label}, ${votesLine(row)}` +
-        (race.id === ACTUAL_PRECINCTS ? '' : `. 2024 U.S. Senate: Allred ${fmt(v.d)}, Cruz ${fmt(v.r)}, others ${fmt(v.o)}`);
+        (race.id === ACTUAL_PRECINCTS ? '' : `. ${BASE.label}: ${BASE.dem} ${fmt(v.d)}, ${BASE.rep} ${fmt(v.r)}, others ${fmt(v.o)}`);
     }
-    line += `<span class="place-note">${race.id === ACTUAL_PRECINCTS ? '2024 U.S. Senate votes as counted in each precinct.' : 'Precinct votes are estimated from the 2024 U.S. Senate pattern.'}</span>`;
+    line += `<span class="place-note">${race.id === ACTUAL_PRECINCTS ? BASE.asCounted : `Precinct votes are estimated from the ${BASE.label} pattern.`}</span>`;
   }
   $('placeInfo').innerHTML = line;
 };
@@ -148,7 +148,7 @@ function setRace(id) {
     bar('Land area, split by which candidate won each county', [['d', lD, lD.toFixed(0) + '% D'], ['r', 100 - lD, (100 - lD).toFixed(0) + '% R']]) +
     bar('Votes cast, split by which candidate won each county', [['d', vD, vD.toFixed(0) + '% D'], ['r', 100 - vD, (100 - vD).toFixed(0) + '% R']]) +
     bar('Actual statewide vote', [['d', sD, sD.toFixed(1) + '% D'], ['o', sO, ''], ['r', sR, sR.toFixed(1) + '% R']],
-      otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : `Two-candidate race: the Secretary of State reports no third-party or write-in votes.`);
+      otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : `Two-candidate race: ${STATE.authority} reports no third-party or write-in votes.`);
 
   const asc = [...desc].reverse(), big = desc[0], small = asc[0];
   $('scale').textContent =
@@ -168,8 +168,8 @@ function setRace(id) {
   $('legDTitle').textContent = `${nm(D)} (D) won the county`;
   $('method').innerHTML = `
     <p><b>Votes:</b> the total votes cast in the selected race in each county, counting every candidate including write-ins.
-    These are the Secretary of State's election-night returns as of ${meta.resultsUpdated}, with all precincts reporting in all ${counties.length} counties.
-    They are unofficial until the state canvass. For every candidate, the county figures add up exactly to the statewide totals the Secretary of State publishes.</p>
+    These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, with all precincts reporting in all ${counties.length} counties.
+    They are unofficial until ${STATE.unofficialUntil}. For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows the county winner's share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
@@ -179,8 +179,8 @@ function setRace(id) {
 function finishRace() {
   renderTable();
   try { history.replaceState(null, '', `?race=${race.id}${byPrecinct ? '&by=precinct' : ''}`); } catch {}
-  $('dotLink').href = `voters.html?race=${race.id}`;
-  $('method').insertAdjacentHTML('beforeend', `<p><b>By precinct:</b> one column for each voting precinct, on 2024 precinct lines, stacked and colored like the county columns. Precinct votes are on this site for one race, the 2024 U.S. Senate (Texas Legislative Council), and that race shows them as counted. Every other race is an estimate: each party's county total is shared among the county's precincts by that party's share of its 2024 U.S. Senate vote there, so each county still adds up to its result, but a precinct's own number is not a real count. Precincts with fewer than 10 votes are merged into the nearest one in their county. All columns share one height scale, which stays the same at every zoom.</p>`);
+  $('dotLink').href = `${STATE.dots}?race=${race.id}`;
+  if (BASE) $('method').insertAdjacentHTML('beforeend', BASE.method);
   if (meshes.length) { if (byPrecinct && columns) setPrecinctRows(); restyle(); }
   renderPlace();
 }
@@ -365,10 +365,10 @@ document.querySelector('aside').addEventListener('click', e => {
 });
 // back to the U.S. homepage, and the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
-$('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
+if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
 
-$('sources').innerHTML = `<ol>
+$('sources').innerHTML = meta.sources ? `<ol>${meta.sources.map(s => `<li>${s}</li>`).join('')}</ol>` : `<ol>
   <li>Texas Secretary of State, <a href="https://elections.sos.state.tx.us/index.htm" target="_blank" rel="noopener">Election History</a>,
     official canvassed county results for the 2008, 2010, 2012, 2014, 2016 and 2018 general elections, retrieved ${hist.meta.retrieved}.</li>
   <li>Texas Secretary of State, <a href="https://results.texas-election.com/races" target="_blank" rel="noopener">election results site</a>,
@@ -379,7 +379,7 @@ $('sources').innerHTML = `<ol>
     same sources' party primary results. Texas Senate terms are staggered: the districts up each year are the ones in that year's primaries.</li>
   <li>Texas Secretary of State, <a href="${meta.resultsUrl}" target="_blank" rel="noopener">Election Night Returns, 2026 November General Election</a>, county results for statewide races
     (<a href="${meta.resultsApi}" target="_blank" rel="noopener">data feed</a>), as of ${meta.resultsUpdated}, retrieved ${meta.retrieved}.</li>
-  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/vtds" target="_blank" rel="noopener">VTDs_24PG</a> (2024 precinct boundaries, simplified) and
+  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/vtds" target="_blank" rel="noopener">VTDs_24PG</a> (2024 precinct boundaries, listed by the Council under a <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license; simplified here, with precincts under 10 votes merged) and
     <a href="https://ted.capitol.texas.gov/api/Offices/510/2/vtd" target="_blank" rel="noopener">2024 U.S. Senate results by precinct</a>, for the by-precinct columns.</li>
   <li>Texas Secretary of State, <a href="https://electionresults.sos.state.tx.us/results.html" target="_blank" rel="noopener">Election Results, Tuesday, November 3, 2026</a> (statewide totals, used as a cross-check).</li>
   <li>U.S. Census Bureau, <a href="${meta.landUrl}" target="_blank" rel="noopener">2024 Gazetteer Files</a>, counties: land area (ALAND_SQMI) and FIPS codes.</li>
@@ -641,7 +641,7 @@ document.getElementById('reset').onclick = () => { clearPlace(); startAnim(progr
 // ---------- go to a city, county or precinct ----------
 // The camera keeps its angle: flat stays flat, and raised keeps its tilt, looking at the top of whatever is there. The
 // precinct list is only needed once someone picks a county, so that's when it loads.
-const UPM = P([-99.5, 31]).distanceTo(P([-99.5, 31.1])) / 6.905; // map units per mile
+const UPM = P(STATE.middle).distanceTo(P([STATE.middle[0], STATE.middle[1] + 0.1])) / 6.905; // map units per mile
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const placeLine = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false }));
 placeLine.renderOrder = 5; mapGroup.add(placeLine);
@@ -682,7 +682,7 @@ function outlinePlace(p) {
 }
 let precincts = null;
 const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: UPM, cityUrl: STATE.data.cities,
-  getVtds: async c => {
+  getVtds: !HAS_PRECINCTS ? null : async c => {
     precincts ??= loadPrecincts(P, STATE.data.precincts, null).catch(e => { console.error('Precincts did not load', e); return null; });
     busy.show('precincts', 'Loading precincts…');
     const list = await precincts;
@@ -700,7 +700,7 @@ const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: 
 function clearPlace() { going = null; focus = null; menus.clear(); place = null; showChosen(); renderPlace(); outlinePlace(null); }
 
 // ---------- bar view, by county or by precinct ----------
-// Every precinct stands at once, on one height scale that never changes: the tallest in the 2024 U.S. Senate race is PRECINCT_H
+// Every precinct stands at once, on one height scale that never changes: the tallest in the state's precinct-level race is PRECINCT_H
 // map units. Precincts are small, so this is short enough to walk among them close up, unlike the county columns' scale.
 const PRECINCT_H = 70;
 const PALETTE = [...REP_C, ...DEM_C, LOSER_C.rep, LOSER_C.dem, NO_RACE_C].map(h => new THREE.Color(h));
@@ -778,8 +778,10 @@ async function setBy(on) {
   if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
   busy.hide('columns');
 }
-$('byCounty').onclick = () => setBy(false);
-$('byPrecinct').onclick = () => setBy(true);
+if (HAS_PRECINCTS) {
+  $('byCounty').onclick = () => setBy(false);
+  $('byPrecinct').onclick = () => setBy(true);
+}
 
 // ---------- hover ----------
 const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -810,7 +812,7 @@ function onPointer(e) {
         ${otherLabel ? `<div class="row m"><span>${otherLabel}</span><span>${rnd(other)} · ${pct(other, total)}</span></div>` : ''}
         <div class="row m"><span>${actual ? 'Total votes' : 'Estimated total'}</span><span>${rnd(total)}</span></div>
         <div class="row m"><span>Margin</span><span style="color:${dWon ? '#8fa8ff' : '#ff8b8b'}">${dWon ? 'D' : 'R'}+${(100 * Math.abs(dem - rep) / total).toFixed(1)}</span></div>
-        ${actual ? '' : `<div class="row m"><span>Estimated from 2024 U.S. Senate votes</span><span></span></div>`}`);
+        ${actual ? '' : `<div class="row m"><span>Estimated from ${BASE.label} votes</span><span></span></div>`}`);
       placeTip(e, r);
       return;
     }
@@ -924,5 +926,5 @@ fit.observe(stage);
 resize();
 updateMode();
 ready = true;
-if (params.get('by') === 'precinct') setBy(true);
+if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 requestAnimationFrame(frame);

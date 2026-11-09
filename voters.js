@@ -45,7 +45,7 @@ const projection = geoConicEqualArea().parallels(STATE.parallels).rotate(STATE.r
 const P = ([lon, lat]) => { const [x, y] = projection([lon, lat]); return new THREE.Vector2(x, -y); };
 const ringPts = ring => { const pts = ring.map(P); pts.pop(); return pts; };
 // map units per mile, from 0.1 degree of latitude (about 6.9 miles) in the middle of the state
-const UPM = P([-99.5, 31]).distanceTo(P([-99.5, 31.1])) / 6.905;
+const UPM = P(STATE.middle).distanceTo(P([STATE.middle[0], STATE.middle[1] + 0.1])) / 6.905;
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -99,7 +99,7 @@ mapGroup.add(dots.group);
 // the way that party's voters were spread in the 2024 Senate race, then on census blocks by adults (dots.js). If that file
 // fails to load, the dots are spread evenly over each county instead.
 const HOT_R = 0.5; // miles: a county's "most crowded spot" is the most voters within this distance
-$('loading').textContent = 'Loading precincts…';
+$('loading').textContent = STATE.data.precinctShapes ? 'Loading precincts…' : 'Loading…';
 let PC = null;
 try { PC = await loadPrecincts(P, STATE.data.precincts, STATE.data.land); } catch (e) { console.error('Precincts did not load; dots spread evenly', e); }
 if (PC) for (const c of ordered) {
@@ -198,7 +198,8 @@ const close = (c, kicker) => ({ fly: 3, hold: 8, focus: c, dot: gapMiles(c) / 3,
       <p class="note">Spots and colors are estimated.</p>` });
 const lineup = cs => cs.map(c => `${c.name}: ${short(c.total)}, ${split(c)}`).join('; ');
 
-const scenes = [
+// Only a state with a written tour gets one; the others stay on the whole state, for exploring (STATE.tour).
+const scenes = !STATE.tour ? [{ fly: 0, hold: Infinity, view: () => stateView(), html: () => '' }] : [
   { fly: 0, hold: 10, reveal: 7, view: () => stateView(), html: () => `
       <div class="kicker">Texas · U.S. Senate · Nov. 3, 2026</div>
       <h1>${TOUR}</h1>
@@ -369,7 +370,7 @@ function scaleBar(v) {
 // ---------- county labels (metro scenes), on the ground at each county's center ----------
 const labelsEl = $('labels'), labelEls = new Map(), lv = new THREE.Vector3();
 // town names for reference, more as the camera comes down; clear of the county labels and everything over the map
-const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('topnav'), $('scalebar'), $('caption'), $('player')] });
+const cityLabels = await createCityLabels(labelsEl, P, { url: STATE.data.cities, avoid: () => [$('topnav'), $('scalebar'), $('caption'), $('player')] });
 function labelFor(c) {
   if (!labelEls.has(c)) {
     const el = document.createElement('div'); el.className = 'label';
@@ -530,7 +531,7 @@ function fillRaces() {
   $('race').value = chosen.id;
 }
 let historyLoad = null;
-const loadHistory = () => historyLoad ??= getJSON(STATE.data.history)
+const loadHistory = () => historyLoad ??= !STATE.data.history ? Promise.resolve() : getJSON(STATE.data.history)
   .then(h => { RACES.push(...h.races); fillRaces(); })
   .catch(e => console.error('Earlier years did not load', e));
 const raceWithId = id => RACES.find(r => r.id === id) || RACES.find(r => r.year === 2026 && `2026-${r.id}` === id);
@@ -559,7 +560,7 @@ async function showRace(r) {
   $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
-  $('back').href = `texas.html?race=${r.id}`;
+  $('back').href = `${STATE.results.href}?race=${r.id}`;
   $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
   if (explore) try { history.replaceState(null, '', `?race=${r.id}`); } catch {} // (a link's own address stays as it opened)
@@ -602,7 +603,7 @@ function outline(edges) {
   needsDraw = true;
 }
 const menus = createPlaceMenus({ counties: ordered, P, upm: UPM, cityUrl: STATE.data.cities,
-  getVtds: c => PC?.byFips.get(c.fips)?.vtds || [],
+  getVtds: !STATE.data.precinctShapes ? null : c => PC?.byFips.get(c.fips)?.vtds || [],
   onChoose: p => {
     place = p; renderPlace();
     outline(p?.c ? [...p.c.edges, ...(p.boxEdges || [])] : null);
@@ -695,7 +696,7 @@ timeline();
 dots.setLand(PC?.land);
 const query = new URLSearchParams(location.search), asked = query.get('race') || '';
 // ?scene=N (1-based) starts the tour at that scene, already arrived; ?tour=1 starts it from the beginning
-const startAt = +query.get('scene'), onTour = (startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1';
+const startAt = +query.get('scene'), onTour = STATE.tour && ((startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1');
 // a race from an earlier year needs that file first; otherwise it comes in behind the map, for the race menu
 if (!onTour && /^\d{4}-/.test(asked) && !asked.startsWith('2026-')) await loadHistory();
 fillRaces();

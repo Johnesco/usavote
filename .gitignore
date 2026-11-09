@@ -10,3 +10,8 @@ data/raw/*
 !data/raw/sos-enr-*-extract.json
 !data/raw/sos-house-*.json
 !data/raw/sos-senate-*.json
+
+# Oklahoma's precinct layer has unclear terms of use (docs/PIPELINE.md, Part 7): it and anything built from it stay local
+data/raw/ok/shapes/
+data/ok/precincts.json.gz
+data/ok/precinct-shapes.json.gz

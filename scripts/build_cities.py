@@ -7,23 +7,27 @@ people, and census-designated places (unincorporated communities such as The Woo
 MIN_CDP, since those are big enough that readers know them by name.
 
 Output: { meta, cities: [[name, lon, lat, population], ...] } sorted by population, largest first.
-Run:  python scripts/build_cities.py
+Run:  python scripts/build_cities.py [ok]    (ok: Oklahoma's file, into data/ok/)
 """
 import io
 import json
+import sys
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PL_ZIP = ROOT / "data/raw/census-dl/pl/tx2020.pl.zip"
-PL_URL = "https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/Texas/tx2020.pl.zip"
+ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
+PL_ZIP = ROOT / {"tx": "data/raw/census-dl/pl/tx2020.pl.zip", "ok": "data/raw/ok/census/ok2020.pl.zip"}[ST]
+PL_URL = "https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/" + {"tx": "Texas/tx2020.pl.zip", "ok": "Oklahoma/ok2020.pl.zip"}[ST]
+LARGEST = {"tx": "Houston", "ok": "Oklahoma City"}[ST]
+OUT = ROOT / {"tx": "data/cities.json", "ok": "data/ok/cities.json"}[ST]
 MIN_CITY, MIN_CDP = 500, 10000
 
 if not PL_ZIP.exists():
     raise SystemExit(f"{PL_ZIP} is missing: run scripts/build_blockgroups.py first (it downloads {PL_URL})")
 
 cities = []
-with zipfile.ZipFile(PL_ZIP).open("txgeo2020.pl") as f:
+with zipfile.ZipFile(PL_ZIP).open(f"{ST}geo2020.pl") as f:
     for line in io.TextIOWrapper(f, encoding="latin-1"):
         r = line.rstrip("\n").split("|")
         # place totals only (summary level 160, no geographic component or variant)
@@ -35,7 +39,7 @@ with zipfile.ZipFile(PL_ZIP).open("txgeo2020.pl") as f:
             cities.append([name, round(lon, 4), round(lat, 4), pop])
 cities.sort(key=lambda c: -c[3])
 print(f"{len(cities)} places; largest: {cities[:3]}")
-assert cities[0][0] == "Houston"
+assert cities[0][0] == LARGEST
 
 out = {
     "meta": {
@@ -46,6 +50,7 @@ out = {
     },
     "cities": cities,
 }
-path = ROOT / "data" / "cities.json"
+path = OUT
+path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps(out, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
 print(f"wrote {path} ({path.stat().st_size / 1e3:.0f} KB)")

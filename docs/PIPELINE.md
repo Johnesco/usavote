@@ -2,7 +2,7 @@
 
 This is how the Texas 2026 site goes from public source files to what appears on screen, written so someone can repeat it for
 Texas or adapt it for another state. It covers only what the site does now. Parts 1 to 5 are the record for Texas. Part 6 is the
-template for other states; it has not been tried on another state yet.
+template for other states, and Part 7 is the record of its first use, on Oklahoma.
 
 **How this was checked (2026-11-08):**
 
@@ -23,7 +23,7 @@ template for other states; it has not been tried on another state yet.
 
 Save every file at the path shown, because the scripts read from those paths. Record the date and a hash when you do: election feeds can change after you download them.
 
-### 2.1 Files you can download by script
+### 2.1 Files you can download directly
 
 | What | Local path under `data/raw/` | SHA-256 (first 16) |
 |---|---|---|
@@ -35,6 +35,8 @@ Save every file at the path shown, because the scripts read from those paths. Re
 | County shapes, us-atlas 3.0.1 ([json](https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json)); only the infographic reads this copy, the pages load it from the CDN | `us-atlas/counties-10m.json` | `145aaf5d1433352a` |
 
 The county results feed is one JSON object whose `upload` field is base64-encoded JSON. It's labeled unofficial until the state canvass, and it still matched the saved copy on 2026-11-08.
+
+**Scripted access may fail for the feed:** later on 2026-11-08 it returned a 403 to a plain script, and its results site runs a browser security check. Don't work around the block: save the feed from a browser or use the state's official files, and record the date and hash as usual.
 
 ```bash
 mkdir -p data/raw/census-dl/pl data/raw/census-dl/tlc data/raw/census-dl/tiger data/raw/us-atlas
@@ -153,9 +155,23 @@ These came out of decisions made along the way. Keep them in any state.
 - **Every total must match the source.** County totals have to match exactly, and the scripts should stop if they don't.
 - **Say when results are unofficial,** and rebuild after the canvass.
 
+### Texas terms of use, read 2026-11-08
+
+This is a reading of the published pages, not legal advice. Nobody at these agencies has been asked about the site.
+
+| Source | What it says | What it asks of us |
+|---|---|---|
+| `VTDs_24PG` shapes (Texas Legislative Council) | The [dataset](https://data.capitol.texas.gov/dataset/vtds) is listed as Creative Commons Attribution, linking to a general [license page](http://www.opendefinition.org/licenses/cc-by) with no version named. | Credit, a license link and a note of changes, all in the page's Sources |
+| 2024 U.S. Senate votes by precinct (Texas Legislative Council) | The API used shows no license. The portal's [2024 General](https://data.capitol.texas.gov/dataset/2024_general) dataset, which has a U.S. Senator file, is listed as Creative Commons Attribution. | The same credit |
+| Results, 2008 to 2026 (Secretary of State) | No license found. The [records policy](https://www.sos.state.tx.us/records.shtml) presumes government information is available to the public, and the [disclaimer](https://www.sos.state.tx.us/disclaimer.shtml) provides the site "as is". The [link policy](https://www.sos.state.tx.us/linkpolicy.shtml) bars framing its pages, presenting its content as your own, or misrepresenting that content or its origin. | Name the source, link rather than frame, and keep estimates labeled |
+| Census files | No license found. The [Census API terms](https://www.census.gov/data/developers/about/terms-of-service.html) cover the API, which wasn't used. | Nothing found |
+| us-atlas | ISC license, per npm. It redistributes Census boundaries. | Nothing while the site loads it from a CDN |
+
+**Gap in the record:** not read were the state's website linking policy (a search summary says public information may be copied if it doesn't suggest state endorsement, but the full conditions weren't seen), any terms from Civix, the vendor behind the results feed (both results sites' footers point to the Secretary of State's policies), and the rest of the link policy. The two copies of the 2024 U.S. Senate votes weren't compared.
+
 ## 6. Template for another state
 
-**Status:** a plan. Nothing here has been run for another state. The scripts are written for Texas and need the changes below first.
+**Status:** used once, for Oklahoma (Part 7), which ended up county-only, with no precinct adapter. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`; no argument means Texas), so the table below shows where a third state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -198,7 +214,7 @@ Every precinct with votes must have a shape. The Texas script stops if one is mi
 
 ### Steps for a new state
 
-1. **Check what exists.** Find county results, precinct results with matching shapes, and the terms of use for each. Save the URLs. If there are no precinct votes, stop and decide on a fallback, because the party mix inside counties depends on them.
+1. **Check what exists.** Find county results, precinct results with matching shapes, and the terms of use for each. Save the URLs. If there are no precinct votes or usable shapes, stop and decide on a fallback, because the party mix inside counties depends on them. Oklahoma's fallback, in Part 7, is county-only.
 2. **Save the raw files** with dates and hashes, as in Part 2. Save any browser extraction code too, to avoid the gaps noted in Part 2.
 3. **Write the results adapter.** Make it stop unless candidates add up in each county and counties add up to the state's published totals.
 4. **Write the precinct adapter** and run the precinct build. Check that the state's adult total matches, that nearly all blocks fall inside a precinct, and that no votes are lost in merging.
@@ -214,7 +230,7 @@ These are from general knowledge and haven't been checked state by state.
 
 - **Results not reported by county:** Alaska has no ordinary counties, and New England states often report by town. Connecticut's Census geography also changed to planning regions in 2022, which won't match the 2017 county shapes in us-atlas.
 - **County look-alikes:** Louisiana parishes, Virginia's independent cities and similar units affect name matching, and Texas's "County" suffix handling won't cover them.
-- **Precinct data:** other states may have no equivalent of the Texas Legislative Council's portal. The Voting and Election Science Team (Harvard Dataverse) and the Redistricting Data Hub are places to look, and the Census file includes 2020 voting districts for shapes. Check each one's license.
+- **Precinct data:** other states may have no equivalent of the Texas Legislative Council's portal. The Voting and Election Science Team (Harvard Dataverse) and the Redistricting Data Hub are places to look, and the Census file includes 2020 voting districts for shapes, though they can be out of date (Part 7). Check each one's license.
 - **Vote-by-mail and countywide votes** may be reported apart from home precincts, which would weaken the placement. Check this first in each state.
 - **Other race shapes:** runoffs, ranked-choice voting, top-two primaries and races without exactly one Democrat and one Republican. `build_data.py` skips those races.
 - **Scale limits:**
@@ -222,3 +238,67 @@ These are from general knowledge and haven't been checked state by state.
   - Each dot takes 8 bytes, so a state with 15 million voters needs about 120 MB for dots alone.
   - The precinct files and land grid grow with the state. Texas's are 2.1 MB, 0.94 MB and 1.03 MB, and larger files make the site slower to load.
 - **Census age:** the 2020 counts get less accurate where growth is fast. A new census means new block files and new hashes.
+
+## 7. Oklahoma: the record
+
+Built 2026-11-08, for the 2026 general election only, and **county-only**: bar view by county and dot view, with no By precinct view or precinct menu. **Results are unofficial:** the state certifies them on Nov. 10, 2026, so save the exports again after that, rebuild, and compare.
+
+### Raw files, under `data/raw/ok/` (not committed)
+
+| What | Path | SHA-256 (first 16) |
+|---|---|---|
+| State results: **Export → Race Level Results - CSV** on [OK Election Results](https://results.okelections.gov/OKER/?elecDate=20261103) | `results/20261103_StateResults.csv` | `9e5251e74513d208` |
+| County results: **County Level Results - CSV (Zipped)**, unzipped | `results/20261103_CountyResults.csv` | `e905301876340ad7` |
+| Precinct results, used only to check the county file: **Precinct Level Results - CSV (Zipped)**, unzipped | `results/20261103_PrecinctResults.csv` | `50728dafc181a2d8` |
+| 2020 Census redistricting file ([zip](https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/Oklahoma/ok2020.pl.zip)) | `census/ok2020.pl.zip` | `e95c99e6385f4ed3` |
+| 2020 census block shapes ([zip](https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_40_tabblock20.zip)) | `census/tl_2020_40_tabblock20.zip` | `7b0445a7d613eab0` |
+
+The exports were saved with the buttons on the results site, whose stamp read "Server TLU: 11/06/2026 06:26:09 PM". The site's own data calls need a login, and the Election Data Warehouse needs a registered account; neither was used.
+
+### Why county-only
+
+The first build used a statewide precinct layer from OU's Center for Spatial Analysis and the State Election Board, [hosted by INCOG](https://map11.incog.org/arcgis11wa/rest/services/PCT_OK_State/FeatureServer/0). Its terms, like those of the Center's [own 2020 item](https://www.arcgis.com/home/item.html?id=8c2c841e2eb54007bd1872c4274d6e07), say only "This Data is for Public use to be used as a spatial location tool." That may not cover republishing simplified outlines or using them to place votes, so the layer was dropped rather than the question left open. The Center wasn't asked.
+
+Census 2020 voting districts didn't work as a replacement. Their codes match 1,345 of the 1,986 precinct codes in the 2026 results, covering 59% of U.S. Senate votes (663,650 of 1,118,730), and only 43% of adults fell in a district with the same code as their precinct on the layer. Using 2020 results on 2020 districts wasn't tried: no 2020 precinct file was found on the Election Board's results page.
+
+What this costs: dots use one mix of parties across a county, so they don't show which neighborhoods lean which way, and the 2026 precinct results aren't on the map.
+
+### Terms of use, read 2026-11-08
+
+This is a reading of the published pages, not legal advice.
+
+| Source | What it says | What it asks of us |
+|---|---|---|
+| Results | No license for the results. The [Election Board](https://oklahoma.gov/elections/about-us/information-and-records-requests.html) says historical results are on its website and need no records request, and the results page offers exports. | Nothing stated. The site credits the Board and says results are unofficial. |
+| Census files | No license found for these files. The [Census API terms](https://www.census.gov/data/developers/about/terms-of-service.html) and their notice cover the API, which wasn't used. | Nothing found |
+| us-atlas | ISC license, per npm. It redistributes Census boundaries. | Nothing while the site loads it from a CDN |
+
+**Gap in the record:** not read were any results-site terms (none found), the Open Records Act itself, the Tyler Technologies terms and most of the Census open data page.
+
+### Build, from the repo root
+
+| # | Command | Writes to `data/ok/` | SHA-256 (first 16) |
+|---|---|---|---|
+| 1 | `python scripts/build_ok_results.py` | `results-2026.json` | `23414a8bb3514866` |
+| 2 | `python scripts/build_cities.py ok` | `cities.json` | `03e595d5154fc24e` |
+| 3 | `python scripts/build_precincts.py ok` (reads #1) | `blocks.json.gz` | `cc635054c09e4a3b` |
+| 4 | `python scripts/build_landmask.py ok` | `landmask.bin.gz` | `3c08d559b02e7cb8` |
+
+Numbers to expect: 8 races on 77 counties; 297 places; 180,154 blocks, 118,191 with adults, 3,010,698 adults; a 7,947 × 3,859 land grid.
+
+Checks that stop the build: all precincts reporting; counties add up to the state file and precincts to the county file, candidate by candidate, in every mapped race; adults match the Census file's state record; and every county has adults and at least 10 U.S. Senate votes.
+
+### What differs from Texas
+
+- **Projection:** parallels 34.2° and 36.4°, centered on 98.7° W.
+- **Dots:** `blocks.json.gz` has Texas's format, with one entry per county holding all its census blocks and its 2026 U.S. Senate votes. With one entry, a county's votes in any race are shared among its blocks by adults alone. A block goes to its county by its own Census code.
+- **Pages:** `oklahoma.html` and `oklahoma-voters.html` are the Texas pages' markup with `<html data-state="oklahoma">` and their own wording, and without the By precinct buttons and precinct menu. `STATE.data.precinctShapes: null` and `STATE.base: null` turn those features off, and `?by=precinct` is ignored. Hand-written tours and history are left out through `STATE.tour`, `STATE.flights` and `STATE.data.history`.
+- **Land area:** the 2020 Census file's `AREALAND`, not the 2024 Gazetteer.
+- **County numbers:** precinct codes start with the state's county number, which is alphabetical except that Mc sorts before Ma. `build_ok_results.py` works this out from the Census names; it matched the layer's numbering for all 77 counties when the layer was dropped.
+- **Candidates:** the file doesn't say who is an incumbent, so none are marked.
+
+### How this was checked (2026-11-08)
+
+- `data/precincts.json.gz` and `data/precinct-shapes.json.gz` were rebuilt after the script change and match the hashes in Part 3. Texas's by-precinct view, precinct menu and dot view were opened again.
+- Oklahoma's pages were opened in a browser: bar view by county in 3D with `?by=precinct` ignored, no precinct controls, the go-to menus, and dot view with 1,118,730 Senate dots (the state's total), down to Tulsa County.
+- Not checked: other screen sizes, or every race by eye.

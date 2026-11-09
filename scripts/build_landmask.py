@@ -16,13 +16,17 @@ Output, gzipped: uint32 (little-endian) header length, JSON header { w, h, cellM
 [lon, lat, grid x, grid y], then for each row a list of LEB128 run lengths, in cells, adding up to w: first empty, then lived
 on, taking turns. Runs compress far better than one bit per cell.
 
-Run:  python scripts/build_landmask.py
+Oklahoma (python scripts/build_landmask.py ok) gets the same grid in its own projection, written to data/ok/. The values
+here must match state.js.
+
+Run:  python scripts/build_landmask.py [ok]
 """
 import gzip
 import io
 import json
 import math
 import struct
+import sys
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -33,21 +37,26 @@ from PIL import Image, ImageDraw
 Image.MAX_IMAGE_PIXELS = None
 
 ROOT = Path(__file__).resolve().parent.parent
-ZIP = ROOT / "data" / "raw" / "census-dl" / "tiger" / "tl_2020_48_tabblock20.zip"
-URL = "https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_48_tabblock20.zip"
+ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
+NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
+    "tx": ("Texas", "48", "census-dl/tiger", "data/landmask.bin.gz", 27.5, 35, 99.5),
+    "ok": ("Oklahoma", "40", "ok/census", "data/ok/landmask.bin.gz", 34.2, 36.4, 98.7),
+}[ST]
+ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
+URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
 CELL_M = 100          # meters per cell
 R = 6371008.8         # sphere radius behind "meters" here; only the cell size depends on it
 CELL = CELL_M / R     # cell size in the unscaled projection's units
 
 # d3.geoConicEqualArea, unscaled, y up
-s0 = math.sin(math.radians(27.5))
-N = (s0 + math.sin(math.radians(35))) / 2
+s0 = math.sin(math.radians(P1))
+N = (s0 + math.sin(math.radians(P2))) / 2
 C = 1 + s0 * (2 * N - s0)
 R0 = math.sqrt(C) / N
 
 
 def project(lon, lat):
-    lam, phi = np.radians(np.asarray(lon) + 99.5), np.radians(np.asarray(lat))
+    lam, phi = np.radians(np.asarray(lon) + ROT), np.radians(np.asarray(lat))
     r = np.sqrt(C - 2 * N * np.sin(phi)) / N
     return r * np.sin(lam * N), R0 - r * np.cos(lam * N)
 
@@ -153,13 +162,14 @@ def header():
     def inv(x, y):
         rho = math.hypot(x, R0 - y)
         lam = math.atan2(x, R0 - y) / N
-        return math.degrees(lam) - 99.5, math.degrees(math.asin((C - (rho * N) ** 2) / (2 * N)))
+        return math.degrees(lam) - ROT, math.degrees(math.asin((C - (rho * N) ** 2) / (2 * N)))
     anchor = lambda gx, gy: [*inv(X0 + gx * CELL, Y1 - gy * CELL), gx, gy]
     return {"w": W, "h": H, "cellMeters": CELL_M, "a": anchor(W * 0.1, H * 0.1), "b": anchor(W * 0.9, H * 0.9),
-            "source": "U.S. Census Bureau, 2020 TIGER/Line tabulation blocks, Texas (POP20, HOUSING20)"}
+            "source": f"U.S. Census Bureau, 2020 TIGER/Line tabulation blocks, {NAME} (POP20, HOUSING20)"}
 
 
-path = ROOT / "data" / "landmask.bin.gz"
+path = ROOT / OUT
+path.parent.mkdir(parents=True, exist_ok=True)
 head = json.dumps(header(), separators=(",", ":")).encode()
 path.write_bytes(gzip.compress(struct.pack("<I", len(head)) + head + encode(grid), 9, mtime=0))
 print(f"wrote {path}: {W:,} x {H:,}, {path.stat().st_size / 1e6:.2f} MB")
