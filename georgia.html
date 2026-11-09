@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" data-state="georgia">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Georgia Election Results</title>
+<meta name="description" content="Georgia's Nov. 3, 2026 general election by county, from unofficial, partial results: watch the flat map rise into 3D columns sized by how many votes were cast." />
+<link rel="canonical" href="https://johnesco.github.io/usavote/georgia.html" />
+<!-- Share previews (Open Graph / X). Crawlers don't run JavaScript, so every ?race= link shares this same preview. -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="How America Votes" />
+<meta property="og:url" content="https://johnesco.github.io/usavote/georgia.html" />
+<meta property="og:title" content="How Georgia Votes" />
+<meta property="og:description" content="Georgia's 2026 general election by county, from unofficial, partial results. See the counties rise by votes cast." />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="How Georgia Votes" />
+<meta name="twitter:description" content="Georgia's 2026 general election by county, from unofficial, partial results. See the counties rise by votes cast." />
+<link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div id="views"></div>
+    <div class="kicker" id="kicker"></div>
+    <h1 id="title">Georgia election results</h1>
+    <p class="sub" id="raceLine">Loading…</p>
+    <p class="sources"><b>Results are unofficial and partial</b> until the state certifies them: some ballots aren't reported yet, and the totals can change.</p>
+
+    <p id="headline"></p>
+
+    <h2>Land vs. people</h2>
+    <div class="bars" id="bars"></div>
+
+    <div class="flights" id="flights"></div>
+
+    <h2 id="yearTitle"></h2>
+    <div class="table-wrap"><table class="races-table" id="yearTable"></table></div>
+    <div id="officeBlock">
+      <h2 id="officeTitle"></h2>
+      <div class="table-wrap"><table class="races-table" id="officeTable"></table></div>
+    </div>
+    <p class="sources">Winner's share of all votes cast, margin over the runner-up in percentage points, counties the winner carried, and total votes cast. Pick a race to map it.</p>
+
+    <h2>What you're seeing</h2>
+    <p id="scale"></p>
+    <p id="raiseText"></p>
+    <p id="harris"></p>
+
+    <h2>Winner's share of the county vote</h2>
+    <div class="legend-title" id="legRTitle"></div>
+    <div class="legend" id="legR"></div>
+    <div class="legend-title" id="legDTitle"></div>
+    <div class="legend" id="legD"></div>
+
+    <h2>Method</h2>
+    <div class="sources" id="method"></div>
+
+    <h2>Sources</h2>
+    <div class="sources" id="sources"></div>
+    <p class="sources">This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>
+  </aside>
+  <main>
+    <div class="races" id="races">
+      <div class="bar-groups">
+      <div class="group" id="viewRow">
+        <div class="seg" role="group" aria-label="View">
+          <button type="button" aria-pressed="true" title="Columns and colors, by county">Bar view</button>
+          <a id="dotLink" href="georgia-voters.html" title="Open a map with one dot for each voter in this race">Dot view</a>
+        </div>
+      </div>
+      <div class="group" id="picker" role="group" aria-label="Choose a year and race">
+        <select id="yearSelect" aria-label="Year"></select>
+        <select id="raceSelect" aria-label="Race"></select>
+      </div>
+      <div class="group" id="goRow" role="group" aria-label="Go to a place">
+        <span class="pick-label">Go to</span>
+        <select id="goCity" aria-label="Go to a city"><option value="">City…</option></select>
+        <select id="goCounty" aria-label="Go to a county"><option value="">County…</option></select>
+      </div>
+      </div>
+      <div class="info-row">
+        <div class="place-info" id="placeInfo" aria-live="polite"></div>
+        <div class="hint" id="hint">Drag to pan · scroll to zoom · hover over a county</div>
+      </div>
+    </div>
+    <div class="map-area">
+      <div id="stage"></div>
+      <div id="loading">Loading map…</div>
+      <div id="labels"></div>
+      <div id="tip"></div>
+      <div class="controls">
+        <button id="play">See in 3D</button>
+        <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Flat map to 3D columns" />
+        <div class="seg" id="dragMode" role="group" aria-label="What dragging does" hidden>
+          <button type="button" id="dragMove" aria-pressed="true" title="Dragging moves the map">Move</button>
+          <button type="button" id="dragRotate" aria-pressed="false" title="Dragging rotates and tilts the map">Rotate</button>
+        </div>
+        <button class="ghost" id="reset" title="Reset camera">Reset</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="app.js"></script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

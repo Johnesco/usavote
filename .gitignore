@@ -15,3 +15,13 @@ data/raw/*
 data/raw/ok/shapes/
 data/ok/precincts.json.gz
 data/ok/precinct-shapes.json.gz
+
+# Oregon's terms are unclear for this use (docs/PIPELINE.md, Part 8): its results, everything built from them, and its pages stay local
+data/or/
+oregon.html
+oregon-voters.html
+docs/records/oregon.md
+scripts/build_or_results.py
+scripts/or_counties_save.py
+scripts/or_results_save.js
+scripts/or_results_unpack.py

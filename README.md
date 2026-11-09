@@ -1,11 +1,11 @@
 # How America Votes
 
-A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio and Iowa so far.
+A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio, Iowa, New Mexico, Idaho, Georgia and South Dakota so far.
 Other states show as not available yet; [`state.js`](state.js) holds what the pages need to know about a state.
 
 **Check publishing rights before publishing anything.** This repository is public, so pushing any branch publishes it. Before data or anything built from it goes into a commit, read the source's terms and confirm they cover this use; if they're unclear, keep it local and git-ignored. See [`docs/PIPELINE.md`](docs/PIPELINE.md), Part 5.
 
-## Kansas, South Carolina, Ohio and Iowa
+## States added after Texas and Oklahoma
 
 These show the Nov. 3, 2026 general election, on the same code as Texas, with each state's data in `data/<code>/`. All are **unofficial** until the state certifies them, and each needs a rebuild after that.
 
@@ -15,8 +15,12 @@ These show the Nov. 3, 2026 general election, on the same code as Texas, with ea
 | South Carolina | [`south-carolina.html`](https://johnesco.github.io/usavote/south-carolina.html), [`south-carolina-voters.html`](https://johnesco.github.io/usavote/south-carolina-voters.html) | By county and by precinct | 2026 U.S. Senate votes placed on Census 2020 voting districts. About 3.6% of votes are shared out by rule, and those precincts are marked. |
 | Ohio | [`ohio.html`](https://johnesco.github.io/usavote/ohio.html), [`ohio-voters.html`](https://johnesco.github.io/usavote/ohio-voters.html) | By county | Partial: 102,148 ballots outstanding when the state's file was written, so pages say "led". |
 | Iowa | [`iowa.html`](https://johnesco.github.io/usavote/iowa.html), [`iowa-voters.html`](https://johnesco.github.io/usavote/iowa-voters.html) | By county | All counties reporting. |
+| New Mexico | [`new-mexico.html`](https://johnesco.github.io/usavote/new-mexico.html), [`new-mexico-voters.html`](https://johnesco.github.io/usavote/new-mexico-voters.html) | By county | All counties reporting. |
+| Idaho | [`idaho.html`](https://johnesco.github.io/usavote/idaho.html), [`idaho-voters.html`](https://johnesco.github.io/usavote/idaho-voters.html) | By county | Opens on Governor, because no Democrat ran for U.S. Senate. |
+| Georgia | [`georgia.html`](https://johnesco.github.io/usavote/georgia.html), [`georgia-voters.html`](https://johnesco.github.io/usavote/georgia-voters.html) | By county | Partial, so pages say "led". 2026 votes matched Census districts too poorly for a precinct view. |
+| South Dakota | [`south-dakota.html`](https://johnesco.github.io/usavote/south-dakota.html), [`south-dakota-voters.html`](https://johnesco.github.io/usavote/south-dakota-voters.html) | By county | Opens on Governor, because no Democrat ran for U.S. Senate. State terms allow "personal or informational use". |
 
-Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked.
+Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked. Oregon was built but kept local, because its terms aren't clear for this use.
 
 ## Oklahoma
 

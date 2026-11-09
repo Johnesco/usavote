@@ -25,7 +25,7 @@ try { [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_UR
 catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; $('loading').classList.add('failed'); throw e; }
 
 // ---------- data: the 2026 U.S. Senate race, by county (the tour is written around it) ----------
-const race = res.races.find(r => r.id === 'u-s-senate');
+const race = res.races.find(r => r.id === (STATE.defaultRace ?? 'u-s-senate'));
 const counties = res.counties.map((c, i) => {
   const [dem, rep, other, total] = race.counties[i];
   return { ...c, dem, rep, other, total, density: total / c.landSqMi };
