@@ -66,5 +66,32 @@ const OKLAHOMA = {
   base: null,            // no precinct results or shapes here (docs/PIPELINE.md, Part 7)
 };
 
-export const STATES = [TEXAS, OKLAHOMA];
+const IOWA = {
+  slug: 'iowa',
+  name: 'Iowa',
+  fips: '19',
+  countyCount: 99,
+  parallels: [40.9, 43], // scripts/build_landmask.py must use the same values
+  rotate: [93.4, 0],
+  middle: [-93.4, 42],
+  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
+  data: {
+    results: 'data/ia/results-2026.json',
+    history: null,
+    precincts: 'data/ia/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/ia/landmask.bin.gz',
+    cities: 'data/ia/cities.json',
+  },
+  results: { href: 'iowa.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'iowa-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Iowa Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the state canvass',
+  base: null,            // no precinct results or shapes here (docs/records/iowa.md)
+};
+
+export const STATES = [TEXAS, OKLAHOMA, IOWA];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;
