@@ -36,7 +36,11 @@ no precinct shapes: see docs/PIPELINE.md, Part 7.
 Kansas (python scripts/build_precincts.py ks) writes both files into data/ks/, Texas's way, from IKE Lab's 2024 precinct file: its
 2024 President votes and shapes. Run scripts/build_ks_results.py first. See docs/records/kansas.md.
 
-Run:  python scripts/build_precincts.py [ok|ks]
+South Carolina (python scripts/build_precincts.py sc) has precincts, like Texas, but 2026 votes on 2020 lines: Census 2020 voting
+districts, with each district's 2026 U.S. Senate votes from data/raw/sc/derived/precinct-votes.json (run scripts/build_sc_results.py
+first; docs/records/south-carolina.md). Writes data/sc/precincts.json.gz and data/sc/precinct-shapes.json.gz.
+
+Run:  python scripts/build_precincts.py [ok|ks|sc]
 """
 import csv
 import io
@@ -55,10 +59,10 @@ DL = ROOT / "data" / "raw" / "census-dl"
 SEN_URL = "https://ted.capitol.texas.gov/api/Offices/510/2/vtd"
 VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837027b73e/resource/"
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
-PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip"}[ST]
-COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105}[ST]
-MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5}[ST]  # for how much shorter a step of longitude is than a step of latitude
-OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks"}[ST]
+PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip", "sc": ROOT / "data" / "raw" / "sc" / "census" / "sc2020.pl.zip"}[ST]
+COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105, "sc": 46}[ST]
+MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5, "sc": 33.6}[ST]  # for how much shorter a step of longitude is than a step of latitude
+OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks", "sc": ROOT / "data" / "sc"}[ST]
 TX_ADULTS = 21_866_700
 MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
@@ -79,6 +83,37 @@ if ST == "ok":
     tot = [sum(v["votes"][k] for v in vtds) for k in range(3)]
     assert all(sum(v["votes"]) >= MIN_VOTES for v in vtds)
     print(f"{len(vtds)} counties; 2026 U.S. Senate: D {tot[0]:,}, R {tot[1]:,}, others {tot[2]:,}")
+if ST == "sc":
+    # ---------- 2026 U.S. Senate votes placed on 2020 VTDs (build_sc_results.py) and the VTDs' shapes (already lon/lat) ----------
+    placed = json.loads((ROOT / "data" / "raw" / "sc" / "derived" / "precinct-votes.json").read_text(encoding="utf-8"))
+    sen = {u["key"]: (u["name"], *u["votes"]) for u in placed["units"]}
+    tot = [sum(v[k] for v in sen.values()) for k in (1, 2, 3)]
+    print(f"{len(sen):,} units; 2026 Senate: D {tot[0]:,}, R {tot[1]:,}, others {tot[2]:,}")
+    z = zipfile.ZipFile(ROOT / "data" / "raw" / "sc" / "census" / "tl_2020_45_vtd20.zip")
+    dbf = z.read("tl_2020_45_vtd20.dbf")
+    n, hlen, rlen = struct.unpack("<IHH", dbf[4:12])
+    fields, off, s = {}, 32, 1
+    while dbf[off] != 0x0D:
+        name, ln = dbf[off:off + 11].split(b"\0")[0].decode(), dbf[off + 16]
+        fields[name] = (s, ln); s += ln; off += 32
+    fld = lambda i, name: dbf[hlen + i * rlen + fields[name][0]: hlen + i * rlen + fields[name][0] + fields[name][1]].decode("utf-8").strip()
+    shp = z.read("tl_2020_45_vtd20.shp")
+    shape_of, pos, i = {}, 100, 0
+    while pos < len(shp):
+        _, clen = struct.unpack(">II", shp[pos:pos + 8])
+        rec = shp[pos + 8: pos + 8 + clen * 2]; pos += 8 + clen * 2
+        assert struct.unpack("<i", rec[:4])[0] == 5
+        nparts, npts = struct.unpack("<ii", rec[36:44])
+        parts = struct.unpack(f"<{nparts}i", rec[44:44 + 4 * nparts])
+        pts = struct.unpack(f"<{2 * npts}d", rec[44 + 4 * nparts: 44 + 4 * nparts + 16 * npts])
+        rings = [[(pts[2 * k], pts[2 * k + 1]) for k in range(a, b)] for a, b in zip(parts, list(parts[1:]) + [npts])]
+        shape_of[fld(i, "GEOID20")] = (rings, float(fld(i, "ALAND20")) + float(fld(i, "AWATER20")))
+        i += 1
+    # one entry per precinct, with all its districts; districts left off the map (under 10 adults, no 2026 row) keep their own, with no votes
+    groups = [(u["key"], u["fips"], u["name"], u["vtds"]) for u in placed["units"]] + [(int(g), g[:5], "", [g]) for g in placed["empty"]]
+    vtds = [{"key": k, "fips": f, "name": nm, "rings": [r for g in gs for r in shape_of[g][0]], "areaM2": sum(shape_of[g][1] for g in gs)} for k, f, nm, gs in groups]
+    assert sum(len(g[3]) for g in groups) == len(shape_of), "every voting district goes on the map or is listed as left off"
+    print(f"{len(vtds):,} VTD groups from {len(shape_of):,} VTD shapes")
 if ST == "tx":
     # ---------- 2024 U.S. Senate votes by VTD ----------
     sen = {}
@@ -246,7 +281,7 @@ def inside(x, y, rings):
     return c
 
 
-if ST in ("tx", "ks"):
+if ST in ("tx", "ks", "sc"):
     CELL = 0.05
     by_cnty = defaultdict(list)
     for v in vtds:
@@ -349,6 +384,16 @@ out = {
         "format": FORMAT,
         "totals2024": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
     } if ST == "tx" else {
+        "race": "2026 general election, U.S. Senator (others = all other candidates), on 2020 voting districts; some precincts combined and some votes shared out by rule (docs/records/south-carolina.md)",
+        "resultsSource": "South Carolina State Election Commission, Election Night Reporting, county precinct files",
+        "resultsUrl": "https://www.enr-scvotes.org/SC/127300/web.345435/#/summary",
+        "shapesSource": "U.S. Census Bureau, 2020 TIGER/Line Shapefiles, voting districts. TIGER/Line is a registered trademark of the Census Bureau; this file is not a Census Bureau product.",
+        "shapesUrl": "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/45_SOUTH_CAROLINA/45/tl_2020_45_vtd20.zip",
+        "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
+        "merged": f"Districts with fewer than {MIN_VOTES} votes are merged into the nearest district in their county",
+        "format": FORMAT.replace("dem24, rep24, other24", "dem, rep, other").replace("its VTD code or codes", "its 2026 precinct name or names"),
+        "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
+    } if ST == "sc" else {
         "race": "2026 general election, U.S. Senator (others = all other candidates), by county",
         "resultsSource": "Oklahoma State Election Board, OK Election Results, county file",
         "resultsUrl": "https://results.okelections.gov/OKER/?elecDate=20261103",
@@ -491,6 +536,10 @@ print(f"{sum(map(len, shapes.values())):,} precinct outlines, {n_points:,} point
 path = OUT_DIR / "precinct-shapes.json.gz"
 path.write_bytes(gzip.compress(json.dumps({
     "meta": {
+        "source": "U.S. Census Bureau, 2020 TIGER/Line Shapefiles, voting districts, simplified along shared borders; combined and merged precincts as in precincts.json.gz. TIGER/Line is a registered trademark of the Census Bureau; this file is not a Census Bureau product.",
+        "url": "https://www2.census.gov/geo/tiger/TIGER2020PL/STATE/45_SOUTH_CAROLINA/45/tl_2020_45_vtd20.zip",
+        "format": "counties[fips] = one entry per precinct, in the order of precincts.json.gz: [[outer, hole...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degrees, not closed.",
+    } if ST == "sc" else {
         "source": "Texas Legislative Council, VTDs_24PG (2024 VTD boundaries), simplified along shared borders; merged precincts as in precincts.json.gz" if ST == "tx" else "IKE Lab, ks_2024g (2024 precincts, CC-BY), simplified along shared borders; merged precincts as in precincts.json.gz",
         "url": "https://data.capitol.texas.gov/dataset/vtds" if ST == "tx" else "https://ike-lab.com/electionresults.html",
         "format": "counties[fips] = one entry per precinct, in the order of precincts.json.gz: [[outer, hole...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degrees, not closed.",
