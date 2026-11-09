@@ -16,10 +16,10 @@ Output, gzipped: uint32 (little-endian) header length, JSON header { w, h, cellM
 [lon, lat, grid x, grid y], then for each row a list of LEB128 run lengths, in cells, adding up to w: first empty, then lived
 on, taking turns. Runs compress far better than one bit per cell.
 
-Oklahoma (python scripts/build_landmask.py ok) gets the same grid in its own projection, written to data/ok/. The values
-here must match state.js.
+Oklahoma (python scripts/build_landmask.py ok) gets the same grid in its own projection, written to data/ok/, and South Carolina
+(sc) to data/sc/. The values here must match state.js.
 
-Run:  python scripts/build_landmask.py [ok]
+Run:  python scripts/build_landmask.py [ok|sc]
 """
 import gzip
 import io
@@ -41,6 +41,7 @@ ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
 NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "tx": ("Texas", "48", "census-dl/tiger", "data/landmask.bin.gz", 27.5, 35, 99.5),
     "ok": ("Oklahoma", "40", "ok/census", "data/ok/landmask.bin.gz", 34.2, 36.4, 98.7),
+    "sc": ("South Carolina", "45", "sc/census", "data/sc/landmask.bin.gz", 32.5, 34.7, 80.9),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"

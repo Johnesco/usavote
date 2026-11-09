@@ -66,5 +66,37 @@ const OKLAHOMA = {
   base: null,            // no precinct results or shapes here (docs/PIPELINE.md, Part 7)
 };
 
-export const STATES = [TEXAS, OKLAHOMA];
+const SOUTH_CAROLINA = {
+  slug: 'south-carolina',
+  name: 'South Carolina',
+  fips: '45',
+  countyCount: 46,
+  parallels: [32.5, 34.7], // scripts/build_landmask.py must use the same values
+  rotate: [80.9, 0],
+  middle: [-80.9, 33.6],
+  summary: 'The Nov. 3, 2026 general election, by county and by precinct.',
+  data: {
+    results: 'data/sc/results-2026.json',
+    history: null,
+    precincts: 'data/sc/precincts.json.gz',
+    precinctShapes: 'data/sc/precinct-shapes.json.gz',
+    land: 'data/sc/landmask.bin.gz',
+    cities: 'data/sc/cities.json',
+  },
+  results: { href: 'south-carolina.html', title: 'See the results', text: 'U.S. Senate and the statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
+  dots: 'south-carolina-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the South Carolina State Election Commission',
+  returns: 'returns',
+  unofficialUntil: 'the state certifies them',
+  // 2026 votes on 2020 lines, on the Census Bureau's 2020 voting districts (docs/records/south-carolina.md)
+  base: {
+    raceId: 'u-s-senate', label: '2026 U.S. Senate', dem: 'Andrews', rep: 'Graham',
+    asCounted: '2026 U.S. Senate votes, placed on 2020 voting districts. Most are as counted in that precinct; some precincts are combined, and precincts marked (est.) include votes shared out by rule.',
+    method: `<p><b>By precinct:</b> one column for each voting precinct, stacked and colored like the county columns. These are 2026 votes on 2020 lines: the Census Bureau's 2020 voting districts, matched to each 2026 precinct by name, because precinct lines have changed since 2020. Where one 2026 precinct covers several 2020 districts, they are combined into one. Where a 2026 precinct is new since 2020, or the row names no precinct (countywide failsafe and provisional votes), its votes are shared among districts by a written rule, so those districts' numbers are not exact counts, and a precinct where this is a noticeable part of its votes says (est.). The Sources below give the numbers. In the U.S. Senate race, early and mail votes are in their home precincts, as the State Election Commission reports them. Every other race is an estimate: each party's county total is shared among the county's precincts by that party's share of its 2026 U.S. Senate vote there, so each county still adds up to its result, but a precinct's own number is not a real count. Precincts with fewer than 10 votes are merged into the nearest one in their county. All columns share one height scale, which stays the same at every zoom.</p>`,
+  },
+};
+
+export const STATES = [TEXAS, OKLAHOMA, SOUTH_CAROLINA];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;
