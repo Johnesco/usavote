@@ -23,7 +23,10 @@ Kansas: python scripts/build_landmask.py ks, into data/ks/.
 
 Ohio (oh) likewise, written to data/oh/.
 
-Run:  python scripts/build_landmask.py [ok|ks|sc|oh]
+Oklahoma (python scripts/build_landmask.py ok) and Iowa (ia) get the same grid in their own projections, written to data/ok/
+and data/ia/. The values here must match state.js.
+
+Run:  python scripts/build_landmask.py [ok|ks|sc|oh|ia]
 """
 import gzip
 import io
@@ -48,6 +51,7 @@ NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "ks": ("Kansas", "20", "ks/census", "data/ks/landmask.bin.gz", 37.5, 39.5, 98.3),
     "sc": ("South Carolina", "45", "sc/census", "data/sc/landmask.bin.gz", 32.5, 34.7, 80.9),
     "oh": ("Ohio", "39", "oh/census", "data/oh/landmask.bin.gz", 39, 41.4, 82.7),
+    "ia": ("Iowa", "19", "ia/census", "data/ia/landmask.bin.gz", 40.9, 43, 93.4),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
