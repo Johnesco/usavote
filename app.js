@@ -36,6 +36,8 @@ if (stateGeo.features.length !== STATE.countyCount || !stateGeo.features.every(f
   console.error('County geometry and results do not line up', stateGeo.features.length);
 
 // Every race of every year. MAJOR: the offices that get a button of their own, in this order.
+// A state whose results are still open says so through these (state.js); the defaults are the wording every other state gets.
+const WON = STATE.won ?? 'won', WINNER = STATE.winner ?? 'winner', OTHER_VOTES = STATE.otherVotes ?? 'third-party and write-in votes';
 const MAJOR = ['president', 'u-s-senate', 'governor', 'lieutenant-governor', 'attorney-general', 'u-s-house', 'texas-house', 'texas-senate'];
 const races = [
   ...res.races.map(r => ({ ...r, year: 2026, date: 'Nov. 3, 2026', unofficial: true })),
@@ -98,8 +100,8 @@ const votesLine = row => { // a precinct's votes in the race on screen, in words
 
 // ---------- race selection: every number and name on the page comes from the selected race ----------
 // SOS party codes
-const PARTY_SHORT = { DEM: 'D', REP: 'R', L: 'L', GRE: 'G' };
-const PARTY_LONG = { DEM: 'D', REP: 'R', L: 'Libertarian', GRE: 'Green' };
+const PARTY_SHORT = { DEM: 'D', REP: 'R', L: 'L', LIB: 'L', GRE: 'G', CON: 'C', IND: 'I', UNC: 'U' };
+const PARTY_LONG = { DEM: 'D', REP: 'R', L: 'Libertarian', LIB: 'Libertarian', GRE: 'Green', CON: 'Constitution', IND: 'Independent', UNC: 'Unaffiliated' };
 let race, S, D, R, otherLabel, desc;
 function setRace(id) {
   id = String(id).replace(/^2026-/, ''); // older links wrote 2026 races this way
@@ -139,20 +141,20 @@ function setRace(id) {
   const [mapName, mapCnt, mapLand] = rMoreLand ? [nm(R), S.cntR, S.landR] : [nm(D), S.cntD, S.landD];
   const [winName, a, b] = dWonState ? [nm(D), S.dem, S.rep] : [nm(R), S.rep, S.dem];
   $('headline').innerHTML =
-    `${mapName} won <b class="hl">${mapCnt} of ${counties.length}</b> counties, which cover <b class="hl">${pct(mapLand, land, 0)}</b> of ${STATE.name}'s land area. ` +
-    `${(dWonState === rMoreLand) ? 'But' : 'And'} ${winName} won the state <b class="hl">${pct(a, S.tot)} to ${pct(b, S.tot)}</b>, a lead of ${fmt(a - b)} votes.`;
+    `${mapName} ${WON} <b class="hl">${mapCnt} of ${counties.length}</b> counties, which cover <b class="hl">${pct(mapLand, land, 0)}</b> of ${STATE.name}'s land area. ` +
+    `${(dWonState === rMoreLand) ? 'But' : 'And'} ${winName} ${STATE.wonState ?? `${WON} the state`} <b class="hl">${pct(a, S.tot)} to ${pct(b, S.tot)}</b>, a lead of ${fmt(a - b)} votes.`;
 
   const lD = 100 * S.landD / land, vD = 100 * S.votesInD / S.tot;
   const sD = 100 * S.dem / S.tot, sR = 100 * S.rep / S.tot, sO = 100 - sD - sR;
   $('bars').innerHTML =
-    bar('Land area, split by which candidate won each county', [['d', lD, lD.toFixed(0) + '% D'], ['r', 100 - lD, (100 - lD).toFixed(0) + '% R']]) +
-    bar('Votes cast, split by which candidate won each county', [['d', vD, vD.toFixed(0) + '% D'], ['r', 100 - vD, (100 - vD).toFixed(0) + '% R']]) +
+    bar(`Land area, split by which candidate ${WON} each county`, [['d', lD, lD.toFixed(0) + '% D'], ['r', 100 - lD, (100 - lD).toFixed(0) + '% R']]) +
+    bar(`Votes cast, split by which candidate ${WON} each county`, [['d', vD, vD.toFixed(0) + '% D'], ['r', 100 - vD, (100 - vD).toFixed(0) + '% R']]) +
     bar('Actual statewide vote', [['d', sD, sD.toFixed(1) + '% D'], ['o', sO, ''], ['r', sR, sR.toFixed(1) + '% R']],
-      otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : `Two-candidate race: ${STATE.authority} reports no third-party or write-in votes.`);
+      otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : (STATE.twoCandidates ?? `Two-candidate race: ${STATE.authority} reports no third-party or write-in votes.`));
 
   const asc = [...desc].reverse(), big = desc[0], small = asc[0];
   $('scale').textContent =
-    `The flat map colors each county by who won it, no matter how many people voted there. A county where ${fmt(small.total)} votes were cast ` +
+    `The flat map colors each county by who ${WON} it, no matter how many people voted there. A county where ${fmt(small.total)} votes were cast ` +
     `(${small.name}) is painted just as boldly as one where ${(big.total / 1e6).toFixed(2)} million were cast (${big.name}).`;
   $('raiseText').innerHTML =
     `Press <b>See in 3D</b> and each county becomes a column whose height is the number of votes cast there in the ${race.label} race. ` +
@@ -164,14 +166,14 @@ function setRace(id) {
     `${big.name} County alone cast <b class="hl">${fmt(big.total)}</b> votes, more than the <b class="hl">${n} smallest counties combined</b> ` +
     `(${fmt(acc)}), which together cover ${pct(accLand, land, 0)} of ${STATE.name}'s land area. ` +
     `The five largest counties by votes cast (${big5.map(c => c.name).join(', ')}) cast ${pct(big5v, S.tot, 0)} of all votes.`;
-  $('legRTitle').textContent = `${nm(R)} (R) won the county`;
-  $('legDTitle').textContent = `${nm(D)} (D) won the county`;
+  $('legRTitle').textContent = `${nm(R)} (R) ${WON} the county`;
+  $('legDTitle').textContent = `${nm(D)} (D) ${WON} the county`;
   $('method').innerHTML = `
-    <p><b>Votes:</b> the total votes cast in the selected race in each county, counting every candidate including write-ins.
-    These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, with all precincts reporting in all ${counties.length} counties.
+    <p><b>Votes:</b> ${STATE.votesCounted ?? 'the total votes cast in the selected race in each county, counting every candidate including write-ins.'}
+    These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, ${STATE.reporting?.(meta, fmt) ?? `with all precincts reporting in all ${counties.length} counties`}.
     They are unofficial until ${STATE.unofficialUntil}. For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
-    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
-    <p><b>Color</b> shows the county winner's share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
+    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, ${OTHER_VOTES} in gray, and the ${WINNER}'s votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
+    <p><b>Color</b> shows the county ${WINNER}'s share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including ${OTHER_VOTES}.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
     <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
   finishRace();
@@ -308,7 +310,7 @@ const tableRows = YEARS.flatMap(y => races.filter(r => r.year === y)).map(r => {
   const dW = dem > rep, W = r.candidates.find(c => c.party === (dW ? 'DEM' : 'REP'));
   return { r, W, share: 100 * Math.max(dem, rep) / tot, margin: 100 * Math.abs(dem - rep) / tot, cnt: dW ? cntD : r.counties.length - cntD, tot };
 });
-const tableHTML = rows => `<tr><th>Race</th><th>Winner</th><th class="n">Share</th><th class="n">Margin</th><th class="n">Counties</th><th class="n">Votes</th></tr>` +
+const tableHTML = rows => `<tr><th>Race</th><th>${WINNER[0].toUpperCase() + WINNER.slice(1)}</th><th class="n">Share</th><th class="n">Margin</th><th class="n">Counties</th><th class="n">Votes</th></tr>` +
   rows.map(({ r, W, seats, share, margin, cnt, tot }) =>
     `<tr class="${r.id === race.id ? 'cur' : ''}">` +
     `<td><a href="?race=${r.id}" data-go="${r.id}">${r.year} ${SHORT_LABEL[r.label] || r.label}</a></td>` +

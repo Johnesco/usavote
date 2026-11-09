@@ -48,7 +48,7 @@ try {
     // ready states last, so their outlines sit on top
     all.filter(f => READY.has(String(f.id))).map(f => { const s = READY.get(String(f.id)); return `
       <a href="${opens(s)}" aria-label="${s.name}: see the results"><path class="st on" data-f="${f.id}" d="${path(f)}"><title>${s.name}</title></path>` +
-      `<text class="st-name" x="${path.centroid(f)[0]}" y="${path.centroid(f)[1]}">${s.name}</text></a>`; }).join('') +
+      `<text class="st-name" x="${path.centroid(f)[0]}" y="${path.centroid(f)[1]}">${s.mapLabel ?? s.name}</text></a>`; }).join('') +
     `</svg>`;
   const say = e => {
     const f = e.target.closest?.('[data-f]')?.dataset.f;

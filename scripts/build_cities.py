@@ -7,7 +7,7 @@ people, and census-designated places (unincorporated communities such as The Woo
 MIN_CDP, since those are big enough that readers know them by name.
 
 Output: { meta, cities: [[name, lon, lat, population], ...] } sorted by population, largest first.
-Run:  python scripts/build_cities.py [ok]    (ok: Oklahoma's file, into data/ok/)
+Run:  python scripts/build_cities.py [ok|ks|sc|oh|ia]    (each state's file goes into its own folder, such as data/ok/)
 """
 import io
 import json
@@ -17,10 +17,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ST = sys.argv[1] if len(sys.argv) > 1 else "tx"
-PL_ZIP = ROOT / {"tx": "data/raw/census-dl/pl/tx2020.pl.zip", "ok": "data/raw/ok/census/ok2020.pl.zip"}[ST]
-PL_URL = "https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/" + {"tx": "Texas/tx2020.pl.zip", "ok": "Oklahoma/ok2020.pl.zip"}[ST]
-LARGEST = {"tx": "Houston", "ok": "Oklahoma City"}[ST]
-OUT = ROOT / {"tx": "data/cities.json", "ok": "data/ok/cities.json"}[ST]
+PL_ZIP = ROOT / {"tx": "data/raw/census-dl/pl/tx2020.pl.zip", "ok": "data/raw/ok/census/ok2020.pl.zip", "ks": "data/raw/ks/census/ks2020.pl.zip", "sc": "data/raw/sc/census/sc2020.pl.zip", "oh": "data/raw/oh/census/oh2020.pl.zip", "ia": "data/raw/ia/census/ia2020.pl.zip"}[ST]
+PL_URL = "https://www2.census.gov/programs-surveys/decennial/2020/data/01-Redistricting_File--PL_94-171/" + {"tx": "Texas/tx2020.pl.zip", "ok": "Oklahoma/ok2020.pl.zip", "ks": "Kansas/ks2020.pl.zip", "sc": "South_Carolina/sc2020.pl.zip", "oh": "Ohio/oh2020.pl.zip", "ia": "Iowa/ia2020.pl.zip"}[ST]
+LARGEST = {"tx": "Houston", "ok": "Oklahoma City", "ks": "Wichita", "sc": "Charleston", "oh": "Columbus", "ia": "Des Moines"}[ST]
+OUT = ROOT / {"tx": "data/cities.json", "ok": "data/ok/cities.json", "ks": "data/ks/cities.json", "sc": "data/sc/cities.json", "oh": "data/oh/cities.json", "ia": "data/ia/cities.json"}[ST]
 MIN_CITY, MIN_CDP = 500, 10000
 
 if not PL_ZIP.exists():

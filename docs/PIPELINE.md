@@ -171,7 +171,7 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 ## 6. Template for another state
 
-**Status:** used once, for Oklahoma (Part 7), which ended up county-only, with no precinct adapter. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`; no argument means Texas), so the table below shows where a third state plugs in. Results and precinct readers are still written per state.
+**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -302,3 +302,22 @@ Checks that stop the build: all precincts reporting; counties add up to the stat
 - `data/precincts.json.gz` and `data/precinct-shapes.json.gz` were rebuilt after the script change and match the hashes in Part 3. Texas's by-precinct view, precinct menu and dot view were opened again.
 - Oklahoma's pages were opened in a browser: bar view by county in 3D with `?by=precinct` ignored, no precinct controls, the go-to menus, and dot view with 1,118,730 Senate dots (the state's total), down to Tulsa County.
 - Not checked: other screen sizes, or every race by eye.
+
+## 8. Kansas, South Carolina, Ohio and Iowa: where the records are
+
+Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state's record has the shape of Part 7: sources and hashes, terms, build commands, expected numbers, differences from Texas, and gaps. Raw files are under `data/raw/<code>/`, not committed.
+
+| State | Record | View | Precinct source | Rebuild after |
+|---|---|---|---|---|
+| Kansas | [`records/kansas.md`](records/kansas.md) | County and precinct | IKE Lab 2024 votes and shapes (CC-BY) | Nov. 16 county canvass and Dec. 1 certification deadline |
+| South Carolina | [`records/south-carolina.md`](records/south-carolina.md) | County and precinct | 2026 U.S. Senate votes on Census 2020 voting districts | Nov. 10 certification |
+| Ohio | [`records/ohio.md`](records/ohio.md) | County | None | The official canvass, about Nov. 24 |
+| Iowa | [`records/iowa.md`](records/iowa.md) | County | None | The state canvass, about Nov. 30 |
+
+**Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
+
+**Results terms:** Kansas, South Carolina, Ohio and Iowa grant no license for their results, and Ohio's and South Carolina's sites carry an "All Rights Reserved" footer. The owner chose on 2026-11-08 to treat them as Texas and Oklahoma were treated: use the published results and credit the source.
+
+**North Carolina is on hold.** The [state's terms](https://www.nc.gov/disclaimer-terms-use) say "for non-commercial use" and "without alteration", which doesn't clearly cover county totals, simplified outlines or dots. Its election board hasn't been asked.
+
+**Build method:** the states were built in parallel on separate branches and merged, then all six were rebuilt from the merged scripts and compared with the committed files.
