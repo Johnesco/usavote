@@ -108,6 +108,7 @@ const KANSAS = {
 const SOUTH_CAROLINA = {
   slug: 'south-carolina',
   name: 'South Carolina',
+  mapLabel: 'S.C.',      // the full name doesn't fit inside the state on the homepage map
   fips: '45',
   countyCount: 46,
   parallels: [32.5, 34.7], // scripts/build_landmask.py must use the same values

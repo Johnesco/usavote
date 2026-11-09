@@ -100,8 +100,8 @@ const votesLine = row => { // a precinct's votes in the race on screen, in words
 
 // ---------- race selection: every number and name on the page comes from the selected race ----------
 // SOS party codes
-const PARTY_SHORT = { DEM: 'D', REP: 'R', L: 'L', GRE: 'G' };
-const PARTY_LONG = { DEM: 'D', REP: 'R', L: 'Libertarian', GRE: 'Green' };
+const PARTY_SHORT = { DEM: 'D', REP: 'R', L: 'L', LIB: 'L', GRE: 'G', CON: 'C', IND: 'I', UNC: 'U' };
+const PARTY_LONG = { DEM: 'D', REP: 'R', L: 'Libertarian', LIB: 'Libertarian', GRE: 'Green', CON: 'Constitution', IND: 'Independent', UNC: 'Unaffiliated' };
 let race, S, D, R, otherLabel, desc;
 function setRace(id) {
   id = String(id).replace(/^2026-/, ''); // older links wrote 2026 races this way

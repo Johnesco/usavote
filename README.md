@@ -1,7 +1,20 @@
 # How America Votes
 
-A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas and Oklahoma so far.
+A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio and Iowa so far.
 Other states show as not available yet; [`state.js`](state.js) holds what the pages need to know about a state.
+
+## Kansas, South Carolina, Ohio and Iowa
+
+These show the Nov. 3, 2026 general election, on the same code as Texas, with each state's data in `data/<code>/`. All are **unofficial** until the state certifies them, and each needs a rebuild after that.
+
+| State | Pages | View | What to know |
+|---|---|---|---|
+| Kansas | [`kansas.html`](https://johnesco.github.io/usavote/kansas.html), [`kansas-voters.html`](https://johnesco.github.io/usavote/kansas-voters.html) | By county and by precinct | Precinct columns are estimates from the 2024 presidential vote on 2024 lines ([IKE Lab](https://ike-lab.com/electionresults.html), CC-BY). Provisional ballots aren't counted yet, so pages say "led". |
+| South Carolina | [`south-carolina.html`](https://johnesco.github.io/usavote/south-carolina.html), [`south-carolina-voters.html`](https://johnesco.github.io/usavote/south-carolina-voters.html) | By county and by precinct | 2026 U.S. Senate votes placed on Census 2020 voting districts. About 3.6% of votes are shared out by rule, and those precincts are marked. |
+| Ohio | [`ohio.html`](https://johnesco.github.io/usavote/ohio.html), [`ohio-voters.html`](https://johnesco.github.io/usavote/ohio-voters.html) | By county | Partial: 102,148 ballots outstanding when the state's file was written, so pages say "led". |
+| Iowa | [`iowa.html`](https://johnesco.github.io/usavote/iowa.html), [`iowa-voters.html`](https://johnesco.github.io/usavote/iowa-voters.html) | By county | All counties reporting. |
+
+Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked.
 
 ## Oklahoma
 

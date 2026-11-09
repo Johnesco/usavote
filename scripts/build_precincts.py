@@ -395,7 +395,7 @@ out = {
         "merged": f"Districts with fewer than {MIN_VOTES} votes are merged into the nearest district in their county",
         "format": FORMAT.replace("dem24, rep24, other24", "dem, rep, other").replace("its VTD code or codes", "its 2026 precinct name or names"),
         "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
-    } if ST == "sc" else {
+    } if ST == "sc" else {} if ST == "ks" else {  # Kansas's is set just below
         "race": "2026 general election, U.S. Senator (others = all other candidates), by county",
         "resultsSource": {"ok": "Oklahoma State Election Board, OK Election Results, county file", "oh": "Ohio Secretary of State, Ohio Decides results file (unofficial and partial)", "ia": "Iowa Secretary of State, Election Results, Detail TXT report (unofficial)"}[ST],
         "resultsUrl": {"ok": "https://results.okelections.gov/OKER/?elecDate=20261103", "oh": "https://liveresults.ohiosos.gov/", "ia": "https://electionresults.iowa.gov/IA/127077/web.345435/#/reporting"}[ST],
