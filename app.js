@@ -140,7 +140,7 @@ function setRace(id) {
   const [winName, a, b] = dWonState ? [nm(D), S.dem, S.rep] : [nm(R), S.rep, S.dem];
   $('headline').innerHTML =
     `${mapName} won <b class="hl">${mapCnt} of ${counties.length}</b> counties, which cover <b class="hl">${pct(mapLand, land, 0)}</b> of ${STATE.name}'s land area. ` +
-    `${(dWonState === rMoreLand) ? 'But' : 'And'} ${winName} won the state <b class="hl">${pct(a, S.tot)} to ${pct(b, S.tot)}</b>, a lead of ${fmt(a - b)} votes.`;
+    `${(dWonState === rMoreLand) ? 'But' : 'And'} ${winName} ${STATE.wonState ?? 'won the state'} <b class="hl">${pct(a, S.tot)} to ${pct(b, S.tot)}</b>, a lead of ${fmt(a - b)} votes.`;
 
   const lD = 100 * S.landD / land, vD = 100 * S.votesInD / S.tot;
   const sD = 100 * S.dem / S.tot, sR = 100 * S.rep / S.tot, sO = 100 - sD - sR;
@@ -168,7 +168,7 @@ function setRace(id) {
   $('legDTitle').textContent = `${nm(D)} (D) won the county`;
   $('method').innerHTML = `
     <p><b>Votes:</b> the total votes cast in the selected race in each county, counting every candidate including write-ins.
-    These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, with all precincts reporting in all ${counties.length} counties.
+    These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, ${STATE.reporting?.(meta, fmt) ?? `with all precincts reporting in all ${counties.length} counties`}.
     They are unofficial until ${STATE.unofficialUntil}. For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows the county winner's share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
