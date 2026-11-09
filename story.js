@@ -1,5 +1,5 @@
-// Flythrough of the 2026 U.S. Senate race: as the reader scrolls through the story cards, the camera flies between
-// groups of counties, the columns rise and fall, and the colors switch between "who won" and "how far it moved".
+// Flythrough of the 2026 U.S. Senate race: it plays on its own, scene by scene (?scene=N opens on a scene). The camera flies
+// between groups of counties, the columns rise and fall, and the colors switch between "who won" and "how far it moved".
 // Every number in the cards is computed here from the data files; only the choice of which counties to visit is written by hand.
 import * as THREE from 'three';
 import { createCityLabels } from './cities.js';
@@ -105,6 +105,7 @@ const vs = c => `${short(c.total)} votes`;
 const STEPS = [
   { view: 'state', raise: 0, phi: 0.0001, theta: 0, color: 'winner', hi: null, labels: [], card: () => `
     <div class="kicker">Nov. 3, 2026 · U.S. Senate</div>
+    <h1>Texas, county by county</h1>
     <h2>A red map</h2>
     <p>${R.name} carried <b class="hl">${S.cntR} of ${counties.length}</b> counties, which cover <b class="hl">${pct(S.landR, land)}</b> of Texas's land.</p>
     <p>${D.name} won the state anyway, <b class="hl">${pct(S.dem, S.tot, 1)} to ${pct(S.rep, S.tot, 1)}</b>. This is how.</p>` },
@@ -180,20 +181,16 @@ const STEPS = [
       U.S. Census Bureau land area and county boundaries. Column height is proportional to votes cast in the Senate race; each column is split by candidate.</p>` },
 ];
 
-// cards
-const stepsEl = $('steps');
+// The timeline: a flight to each scene, then long enough to read its card. The last scene stays until the reader moves on.
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FLY = REDUCED ? 0.6 : 4, WORDS_PER_SECOND = 3.2, MIN_HOLD = 5;
+let END = 0;
 STEPS.forEach((s, i) => {
-  const sec = document.createElement('section');
-  sec.className = 'step'; sec.dataset.i = i;
-  sec.innerHTML = `<div class="card">${s.card()}</div>`;
-  stepsEl.appendChild(sec);
-});
-const stepEls = [...stepsEl.querySelectorAll('section.step')];
-$('dots').innerHTML = STEPS.map((s, i) => `<button type="button" data-i="${i}" aria-label="Step ${i + 1}"></button>`).join('');
-$('dots').addEventListener('click', e => {
-  const b = e.target.closest('button'); if (!b) return;
-  const el = stepEls[+b.dataset.i], y = el.getBoundingClientRect().top + scrollY + el.offsetHeight / 2 - innerHeight * trigger();
-  scrollTo({ top: y, behavior: 'smooth' });
+  const words = s.card().replace(/<[^>]+>/g, ' ').trim().split(/\s+/).length;
+  s.fly = i ? FLY : 0;
+  s.hold = Math.max(MIN_HOLD, words / WORDS_PER_SECOND);
+  s.start = END;
+  END += s.fly + (i < STEPS.length - 1 ? s.hold : 0);
 });
 
 // ---------- scene ----------
@@ -220,6 +217,7 @@ $('loading').remove();
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+let W = 1, H = 1, area = { w: 1, h: 1, ox: 0, oy: 0 }; // the screen, and the part of it left free for the map
 let spin = 0;
 // the camera for step s: a spherical offset (r, phi, theta) around a target point
 function poseFor(s) {
@@ -229,10 +227,11 @@ function poseFor(s) {
     x1 = Math.max(x1, c.box.max.x); y1 = Math.max(y1, c.box.max.y);
     hMax = Math.max(hMax, c.target * s.raise);
   }
-  const aspect = camera.aspect, ext = Math.max((x1 - x0) / 2 / Math.min(aspect, 1.6), (y1 - y0) / 2, hMax * 0.8, 60);
+  // fit the counties in the part of the screen the caption and the bars leave free
+  const ext = Math.max((x1 - x0) / 2 / Math.min(area.w / H, 1.6), (y1 - y0) / 2 * H / area.h, hMax * 0.8, 60);
   const r = (ext * (s.zoom || 1.05)) / Math.tan(halfFov) + 40;
   return { r, phi: s.phi, theta: s.theta + (s.spin ? spin : 0),
-    target: new THREE.Vector3((x0 + x1) / 2, Math.min(hMax * 0.4, 180), -(y0 + y1) / 2 + (narrow() ? r * 0.12 : 0)) };
+    target: new THREE.Vector3((x0 + x1) / 2, Math.min(hMax * 0.4, 180), -(y0 + y1) / 2) };
 }
 function setPose(o) {
   camera.position.setFromSpherical(new THREE.Spherical(o.r, Math.max(o.phi, 1e-4), o.theta)).add(o.target);
@@ -248,25 +247,40 @@ function fly(a, b, w) {
     theta: a.theta + dt * w, target: a.target.clone().lerp(b.target, w) };
 }
 
-// ---------- scroll → story position ----------
-const narrow = () => matchMedia('(max-width: 820px)').matches;
-const trigger = () => narrow() ? 0.62 : 0.5; // the line on screen where a card counts as "current"
-function storyPos() { // a fractional step index: 2.5 = halfway from step 2 to step 3
-  const line = innerHeight * trigger();
-  const mids = stepEls.map(el => { const r = el.getBoundingClientRect(); return r.top + r.height * (narrow() ? 0.75 : 0.6); });
-  if (line <= mids[0]) return 0;
-  for (let i = 0; i < mids.length - 1; i++)
-    if (line < mids[i + 1]) return i + (line - mids[i]) / (mids[i + 1] - mids[i]);
-  return mids.length - 1;
+// ---------- the clock ----------
+let t = 0, playing = true;
+const sceneAt = time => { let i = 0; while (i + 1 < STEPS.length && STEPS[i + 1].start <= time) i++; return i; };
+function jump(time) { t = Math.max(0, Math.min(time, END)); spin = 0; playing = true; updateButton(); }
+function updateButton() {
+  const label = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
+  $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
 }
+$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
+$('prev').onclick = () => { const i = sceneAt(t); jump(STEPS[t - STEPS[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
+$('next').onclick = () => { const i = sceneAt(t); if (i + 1 < STEPS.length) jump(STEPS[i + 1].start); };
+addEventListener('keydown', e => {
+  if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('pause').click(); }
+  if (e.key === 'ArrowRight') $('next').click();
+  if (e.key === 'ArrowLeft') $('prev').click();
+});
 
-// ---------- labels, key, tooltip ----------
+// ---------- caption, labels, key, tooltip ----------
+const cap = $('caption');
+function showCaption(i, first) {
+  cap.classList.add('fade');
+  setTimeout(() => {
+    cap.innerHTML = STEPS[i].card();
+    cap.scrollTop = 0;
+    cap.classList.remove('fade');
+  }, first ? 0 : 350);
+}
 const labelsEl = $('labels');
-// town names for reference on the flat map, clear of the key, the step dots and the story cards
-const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('key'), $('dots'), ...document.querySelectorAll('.step .card, .intro-card > *')] });
+// town names for reference on the flat map, clear of everything over the map
+const cityLabels = await createCityLabels(labelsEl, P, { avoid: () => [$('key'), $('topnav'), cap, $('player')] });
 let labelSet = [], curStep = -1;
 function setStep(i) {
   if (i === curStep) return;
+  showCaption(i, curStep === -1);
   curStep = i;
   const s = STEPS[i];
   const hi = s.hi ? new Set(s.hi) : null;
@@ -292,8 +306,6 @@ function setStep(i) {
        <div class="legend-title">${D.last} (D) won</div>${row(DEM_C)}` +
       (s.raise ? `<div class="legend-title">Columns are split by vote</div><div class="split-key">
         <span><i style="background:${LOSER_C.dem}"></i>${D.last}</span><span><i style="background:${LOSER_C.rep}"></i>${R.last}</span><span><i style="background:${OTHER_C}"></i>Others</span></div>` : '');
-  for (const b of $('dots').children) b.setAttribute('aria-current', +b.dataset.i === i ? 'step' : 'false');
-  for (const el of stepEls) el.classList.toggle('active', +el.dataset.i === i);
 }
 
 const tip = $('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -325,30 +337,37 @@ renderer.domElement.addEventListener('pointerleave', () => { tip.style.display =
 
 // ---------- loop ----------
 function resize() {
-  const w = stage.clientWidth, h = stage.clientHeight;
-  renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+  W = stage.clientWidth; H = stage.clientHeight;
+  renderer.setSize(W, H); camera.aspect = W / H;
+  const wide = W > 760, bar = $('topnav').offsetHeight;
+  stage.parentElement.style.setProperty('--bar', `${bar}px`);
+  // wide screens: the caption sits on the left, so the map is centered in what's to its right; narrow: above the caption
+  area = wide ? { w: W - 440, h: H - 90 - bar, ox: -220, oy: -bar / 2 } : { w: W, h: H * 0.55, ox: 0, oy: H * 0.15 };
+  camera.setViewOffset(W, H, area.ox, area.oy, W, H);
 }
-new ResizeObserver(resize).observe(stage);
+const fit = new ResizeObserver(resize);
+fit.observe(stage); fit.observe($('topnav'));
 resize();
 
 const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
 const DIM = new THREE.Color('#1f2631'), HOVER = new THREE.Color('#ffffff'), tmp = new THREE.Color(), v = new THREE.Vector3();
 let last = performance.now();
 function frame(now) {
-  const dt = Math.min(0.1, (now - last) / 1000); last = now;
-  const pos = storyPos(), i = Math.min(STEPS.length - 2, Math.floor(pos)), f = pos - i;
-  // hold the camera still while a card is near the trigger line; fly in between
-  const w = ease(clamp01((f - 0.2) / 0.6));
-  setStep(Math.round(pos));
-  if (STEPS[curStep].spin) spin += dt * 0.08;
-  const a = STEPS[i], b = STEPS[i + 1] || a;
+  const dt = Math.min(0.25, (now - last) / 1000); last = now;
+  if (playing && t < END) { t = Math.min(END, t + dt); if (t >= END) updateButton(); }
+  const i = sceneAt(t), b = STEPS[i], a = STEPS[Math.max(0, i - 1)];
+  // fly in, then hold the camera still while the card is read
+  const k = b.fly ? clamp01((t - b.start) / b.fly) : 1, w = ease(k);
+  setStep(i);
+  if (b.spin && !REDUCED && (playing || t >= END)) spin += dt * 0.08;
   setPose(fly(poseFor(a), poseFor(b), w));
   const raise = a.raise + (b.raise - a.raise) * w;
-  const k = 1 - Math.exp(-dt * 5); // colors and highlights ease toward the current step's
+  $('fill').style.width = `${100 * t / END}%`;
+  const fade = 1 - Math.exp(-dt * 5); // colors and highlights ease toward the current step's
   for (const c of counties) {
     layout(c, H_FLAT + (c.target - H_FLAT) * ease(clamp01((raise * 1.3 - c.delay))));
-    c.lit += (c.litGoal - c.lit) * k;
-    c.color.lerp(c.colorGoal, k);
+    c.lit += (c.litGoal - c.lit) * fade;
+    c.color.lerp(c.colorGoal, fade);
     const lit = 0.18 + 0.82 * c.lit;
     tmp.copy(DIM).lerp(c.color, lit);
     if (c === hovered) tmp.lerp(HOVER, 0.35);
@@ -360,7 +379,7 @@ function frame(now) {
   }
   renderer.render(scene, camera);
   // labels: show only once the camera has settled, and never two on top of each other
-  const W = stage.clientWidth, H = stage.clientHeight, show = Math.round(pos) === curStep && Math.abs(pos - Math.round(pos)) < 0.3;
+  const show = k > 0.8;
   const placed = [];
   for (const { c, el } of labelSet) {
     v.set(c.cx, c.cy, c.h).applyMatrix4(mapGroup.matrixWorld).project(camera);
@@ -375,4 +394,8 @@ function frame(now) {
   cityLabels.update(camera, mapGroup, W, H, 1 - clamp01(raise / 0.2), show ? placed : []);
   requestAnimationFrame(frame);
 }
+const startAt = +new URLSearchParams(location.search).get('scene'); // 1-based, already arrived
+if (startAt >= 1 && startAt <= STEPS.length) t = STEPS[startAt - 1].start + STEPS[startAt - 1].fly;
+updateButton();
+last = performance.now();
 requestAnimationFrame(frame);

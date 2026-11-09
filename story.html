@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Texas, County by County</title>
-<meta name="description" content="A scrolling flythrough of the 2026 U.S. Senate race in Texas: the empty red counties, the big-city columns, the suburbs and border counties that flipped, how every county moved, and the Texas House and U.S. House races down the ballot." />
+<meta name="description" content="A guided flythrough of the 2026 U.S. Senate race in Texas: the empty red counties, the big-city columns, the suburbs and border counties that flipped, how every county moved, and the Texas House and U.S. House races down the ballot." />
 <link rel="canonical" href="https://johnesco.github.io/usavote/story.html" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="Texas Votes, Raised" />
@@ -15,6 +15,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image" content="https://johnesco.github.io/usavote/share.png" />
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="voters.css" />
 <link rel="stylesheet" href="story.css" />
 <script type="importmap">
 { "imports": {
@@ -24,25 +25,27 @@
 } }
 </script>
 </head>
-<body class="story-page">
-<div class="story">
-  <div class="viz">
-    <div id="stage"></div>
-    <div id="loading">Loading map…</div>
-    <div id="labels"></div>
-    <div id="tip"></div>
-    <div class="key" id="key" aria-hidden="true"></div>
-    <nav class="dots" id="dots" aria-label="Story steps"></nav>
-  </div>
-  <div class="steps" id="steps">
-    <header class="step intro-card">
+<body class="voters-page">
+<main class="voters">
+  <div id="stage"></div>
+  <div id="labels"></div>
+  <div id="tip"></div>
+  <div id="loading">Loading map…</div>
+  <section class="caption" id="caption" aria-live="polite"></section>
+  <header class="topnav" id="topnav">
+    <nav class="nav-row" aria-label="County Flythrough">
       <a class="back" href="texas.html?race=u-s-senate">← Bar view</a>
-      <div class="kicker">Guided flight · County Flythrough</div>
-      <h1>Texas, county by county</h1>
-      <p class="sub">A flythrough of the 2026 U.S. Senate race. Scroll to fly.</p>
-    </header>
+      <span class="flight-badge">County Flythrough · 2026 U.S. Senate</span>
+    </nav>
+  </header>
+  <div class="key" id="key" aria-hidden="true"></div>
+  <div class="player" id="player">
+    <button class="ghost" id="prev" aria-label="Previous scene">‹</button>
+    <button id="pause" aria-label="Pause">Pause</button>
+    <button class="ghost" id="next" aria-label="Next scene">›</button>
+    <div class="track" id="track" aria-hidden="true"><i id="fill"></i></div>
   </div>
-</div>
+</main>
 <script type="module" src="story.js"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>

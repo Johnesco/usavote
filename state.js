@@ -21,7 +21,7 @@ export const STATE = {
   results: { href: 'texas.html', title: 'See the results', text: 'Any race in any year, 2008 to 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
   // the guided flights over the county map, offered on the results page (the voter dot tour is offered on its own page, voters.html)
   flights: [
-    { href: 'story.html', title: 'County Flythrough', about: '2026 U.S. Senate', how: 'Scroll at your own pace' },
+    { href: 'story.html', title: 'County Flythrough', about: '2026 U.S. Senate', how: 'Plays on its own, about 4 minutes' },
   ],
 };
 

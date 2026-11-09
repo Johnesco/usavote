@@ -90,8 +90,8 @@ The results page is **bar view**: columns and colors, flat or in 3D. A **By coun
 
 ## County Flythrough (story page, a guided flight)
 
-[`story.html`](https://johnesco.github.io/usavote/story.html) is a scrolling infographic of the 2026 U.S. Senate race. The map
-stays on screen while story cards scroll past; each card flies the camera to a group of counties (the reddest Panhandle
+[`story.html`](https://johnesco.github.io/usavote/story.html) is a guided tour of the 2026 U.S. Senate race that plays on its own, with pause and skip controls (`?scene=N` opens on a scene). Each
+scene's card stays up long enough to read, and each scene flies the camera to a group of counties (the reddest Panhandle
 counties, Harris and the smallest counties, the five biggest counties, the flipped Dallas–Fort Worth suburbs, the Rio Grande
 Valley), raises or flattens the columns, and lights up the counties it talks about. Raised columns are stacked by vote, as on
 the main map. One step recolors every county by how far its margin moved from the 2024 presidential race to the 2026 Senate
