@@ -137,5 +137,35 @@ const SOUTH_CAROLINA = {
   },
 };
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA];
+const OHIO = {
+  slug: 'ohio',
+  name: 'Ohio',
+  fips: '39',
+  countyCount: 88,
+  parallels: [39, 41.4], // scripts/build_landmask.py must use the same values
+  rotate: [82.7, 0],
+  middle: [-82.7, 40.2],
+  summary: 'The Nov. 3, 2026 general election, by county. Unofficial and partial, with ballots still outstanding.',
+  data: {
+    results: 'data/oh/results-2026.json',
+    history: null,
+    precincts: 'data/oh/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/oh/landmask.bin.gz',
+    cities: 'data/oh/cities.json',
+  },
+  results: { href: 'ohio.html', title: 'See the results', text: 'U.S. Senate, governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'ohio-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Ohio Secretary of State',
+  returns: 'unofficial, partial returns',
+  unofficialUntil: 'the Secretary of State certifies them',
+  // Ballots are outstanding, so a lead isn't yet a win, and "all precincts reporting" alone would mislead (app.js has the wording for other states)
+  wonState: 'led the count so far',
+  reporting: (meta, fmt) => `with all precincts reporting but ${fmt(meta.ballotsOutstanding)} ballots outstanding (${fmt(meta.uocavaOutstanding)} UOCAVA absentee, ${fmt(meta.provisionalOutstanding)} provisional). County boards count those during the official canvass if they arrive in time and qualify, so these totals will change`,
+  base: null,            // no precinct results or shapes here (docs/records/ohio.md)
+};
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

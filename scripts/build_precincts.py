@@ -40,7 +40,9 @@ South Carolina (python scripts/build_precincts.py sc) has precincts, like Texas,
 districts, with each district's 2026 U.S. Senate votes from data/raw/sc/derived/precinct-votes.json (run scripts/build_sc_results.py
 first; docs/records/south-carolina.md). Writes data/sc/precincts.json.gz and data/sc/precinct-shapes.json.gz.
 
-Run:  python scripts/build_precincts.py [ok|ks|sc]
+Ohio (oh) is county-only the same way, into data/oh/ (docs/records/ohio.md).
+
+Run:  python scripts/build_precincts.py [ok|ks|sc|oh]
 """
 import csv
 import io
@@ -59,10 +61,10 @@ DL = ROOT / "data" / "raw" / "census-dl"
 SEN_URL = "https://ted.capitol.texas.gov/api/Offices/510/2/vtd"
 VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837027b73e/resource/"
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
-PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip", "sc": ROOT / "data" / "raw" / "sc" / "census" / "sc2020.pl.zip"}[ST]
-COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105, "sc": 46}[ST]
-MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5, "sc": 33.6}[ST]  # for how much shorter a step of longitude is than a step of latitude
-OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks", "sc": ROOT / "data" / "sc"}[ST]
+PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip", "sc": ROOT / "data" / "raw" / "sc" / "census" / "sc2020.pl.zip", "oh": ROOT / "data" / "raw" / "oh" / "census" / "oh2020.pl.zip"}[ST]
+COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105, "sc": 46, "oh": 88}[ST]
+MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5, "sc": 33.6, "oh": 40.2}[ST]  # for how much shorter a step of longitude is than a step of latitude
+OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks", "sc": ROOT / "data" / "sc", "oh": ROOT / "data" / "oh"}[ST]
 TX_ADULTS = 21_866_700
 MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
@@ -76,7 +78,7 @@ def fetch(url, path):
     return path
 
 
-if ST == "ok":
+if ST in ("ok", "oh"):
     results = json.loads((OUT_DIR / "results-2026.json").read_text(encoding="utf-8"))
     senate = next(r for r in results["races"] if r["id"] == "u-s-senate")
     vtds = [{"fips": c["fips"], "name": c["name"], "votes": row[:3], "blocks": []} for c, row in zip(results["counties"], senate["counties"])]
@@ -262,7 +264,7 @@ blocks = [b for b in blk.values() if b[4] > 0]
 assert sum(b[4] for b in blk.values()) == state_adults, (sum(b[4] for b in blk.values()), state_adults)
 assert ST != "tx" or state_adults == TX_ADULTS
 print(f"{len(blk):,} blocks, {len(blocks):,} with adults; {state_adults:,} adults in the state")
-if ST == "ok":  # each block to its county, from its own code
+if ST in ("ok", "oh"):  # each block to its county, from its own code
     of_county = {v["fips"]: v for v in vtds}
     for b in blocks: of_county[b[0]]["blocks"].append(b)
     assert all(v["blocks"] for v in vtds), "a county with no adults"
@@ -395,8 +397,8 @@ out = {
         "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
     } if ST == "sc" else {
         "race": "2026 general election, U.S. Senator (others = all other candidates), by county",
-        "resultsSource": "Oklahoma State Election Board, OK Election Results, county file",
-        "resultsUrl": "https://results.okelections.gov/OKER/?elecDate=20261103",
+        "resultsSource": {"ok": "Oklahoma State Election Board, OK Election Results, county file", "oh": "Ohio Secretary of State, Ohio Decides results file (unofficial and partial)"}[ST],
+        "resultsUrl": {"ok": "https://results.okelections.gov/OKER/?elecDate=20261103", "oh": "https://liveresults.ohiosos.gov/"}[ST],
         "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
         "format": FORMAT.replace("dem24, rep24, other24", "dem, rep, other").replace("one per VTD (name: its VTD code or codes)", "one entry, the whole county (name: the county)").replace("within the VTD", "within the county"),
         "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},

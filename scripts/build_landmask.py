@@ -21,7 +21,9 @@ Oklahoma (python scripts/build_landmask.py ok) gets the same grid in its own pro
 
 Kansas: python scripts/build_landmask.py ks, into data/ks/.
 
-Run:  python scripts/build_landmask.py [ok|ks|sc]
+Ohio (oh) likewise, written to data/oh/.
+
+Run:  python scripts/build_landmask.py [ok|ks|sc|oh]
 """
 import gzip
 import io
@@ -45,6 +47,7 @@ NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "ok": ("Oklahoma", "40", "ok/census", "data/ok/landmask.bin.gz", 34.2, 36.4, 98.7),
     "ks": ("Kansas", "20", "ks/census", "data/ks/landmask.bin.gz", 37.5, 39.5, 98.3),
     "sc": ("South Carolina", "45", "sc/census", "data/sc/landmask.bin.gz", 32.5, 34.7, 80.9),
+    "oh": ("Ohio", "39", "oh/census", "data/oh/landmask.bin.gz", 39, 41.4, 82.7),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
@@ -169,7 +172,8 @@ def header():
         return math.degrees(lam) - ROT, math.degrees(math.asin((C - (rho * N) ** 2) / (2 * N)))
     anchor = lambda gx, gy: [*inv(X0 + gx * CELL, Y1 - gy * CELL), gx, gy]
     return {"w": W, "h": H, "cellMeters": CELL_M, "a": anchor(W * 0.1, H * 0.1), "b": anchor(W * 0.9, H * 0.9),
-            "source": f"U.S. Census Bureau, 2020 TIGER/Line tabulation blocks, {NAME} (POP20, HOUSING20)"}
+            "source": f"U.S. Census Bureau, 2020 TIGER/Line tabulation blocks, {NAME} (POP20, HOUSING20)"
+            + ("; reworked into this grid, which isn't a Census Bureau product. TIGER/Line is a registered trademark of the Census Bureau." if ST == "oh" else "")}
 
 
 path = ROOT / OUT
