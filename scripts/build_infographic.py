@@ -182,7 +182,7 @@ for fips, vtds in pc["counties"].items():
     c = by_fips[fips]
     bx, by, brad, bad, vid = [], [], [], [], []
     vd, vr, vo, vad = [], [], [], []
-    for j, (d, r, o, flat) in enumerate(vtds):
+    for j, (d, r, o, flat, *_) in enumerate(vtds):
         f = np.array(flat, float).reshape(-1, 4)
         lon, lat = np.cumsum(f[:, 0]) / 1e4, np.cumsum(f[:, 1]) / 1e4
         bx.append(lon); by.append(lat); brad.append(f[:, 2] * 10); bad.append(f[:, 3]); vid.append(np.full(len(f), j))
@@ -255,6 +255,13 @@ if SS > 1:
     lines = lines.resize((PW, PH), Image.LANCZOS)
 lines = lines.point(lambda v: int(v * 0.16))
 right.paste(Image.new("RGB", right.size, (255, 255, 255)), (0, 0), lines)
+
+# optional second argument: a folder to save just the two map panels into (for scripts/series.html), instead of the poster
+if len(sys.argv) > 2:
+    out_dir = Path(sys.argv[2]); out_dir.mkdir(parents=True, exist_ok=True)
+    left.save(out_dir / "map-counties.png"); right.save(out_dir / "map-dots.png")
+    print(f"wrote map-counties.png and map-dots.png ({PW} x {PH}) to {out_dir}")
+    sys.exit()
 
 # ---------- the poster ----------
 FONTS = Path("C:/Windows/Fonts")

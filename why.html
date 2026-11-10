@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Why These Maps · How America Votes</title>
+<meta name="description" content="The same election drawn three ways, and why this site maps votes by people instead of by land." />
+<link rel="canonical" href="https://johnesco.github.io/usavote/why.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="How America Votes" />
+<meta property="og:url" content="https://johnesco.github.io/usavote/why.html" />
+<meta property="og:title" content="Same election, three maps" />
+<meta property="og:description" content="The same election drawn three ways, and why this site maps votes by people instead of by land." />
+<meta property="og:image" content="https://johnesco.github.io/usavote/texas-series/texas-three-maps.png" />
+<meta property="og:image:width" content="3840" />
+<meta property="og:image:height" content="2160" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="why.css" />
+</head>
+<body>
+<!-- The numbers in the text are filled in from data/results-2026.json by the script at the bottom. The pictures come from
+     scripts/build_infographic.py (see scripts/three-maps.html for how the share image is made). -->
+<div class="why">
+  <a class="back" href="index.html">← How America Votes</a>
+  <header>
+    <div class="kicker">Why these maps</div>
+    <h1>Same election, three maps</h1>
+    <p class="lead">On Nov. 3, 2026, Texas elected a U.S. senator. <span class="d" id="winner">The Democrat</span> won, <b id="score">by a clear margin</b>. Yet the map most people saw that night was almost entirely red.</p>
+    <p class="lead">Nothing on that map was wrong. It just answers a different question: who won each piece of land, not how many people voted. This site was made to draw the same results in ways that count people.</p>
+  </header>
+
+  <section class="step">
+    <div>
+      <span class="n">1</span>
+      <h2>County view</h2>
+      <p class="say">The typical county-by-county color coding. Whether a county has 100 votes or 1 million doesn't affect its color.</p>
+      <p id="t1">Most of the map is red because most of the land is in counties the Republican won.</p>
+    </div>
+    <figure><img src="texas-series/map-counties.png" width="1760" height="1500" alt="Flat map of Texas with each county colored by its winner: most of the state is red, with blue along the border and in a few cities." /></figure>
+  </section>
+
+  <section class="step">
+    <div>
+      <span class="n">2</span>
+      <h2>3D view</h2>
+      <p class="say">Let's add a dimension to see how many votes each county cast, and how they were split.</p>
+      <p id="t2">Each county rises into a column as tall as its vote count, stacked by candidate. The red plains stay flat and the cities tower.</p>
+      <a class="go" href="texas.html?race=u-s-senate">Open the 3D view →</a>
+    </div>
+    <figure><img src="texas-2d-to-3d.gif" loading="lazy" alt="The flat county map of Texas tilting and rising into columns, with the tallest over Houston, Dallas, Fort Worth, San Antonio and Austin." /></figure>
+  </section>
+
+  <section class="step">
+    <div>
+      <span class="n">3</span>
+      <h2>One dot per voter</h2>
+      <p class="say">Taken down to the resolution of one dot per person, the density is so vast you can't see it clearly from afar.</p>
+      <p id="t3">So the dot view is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.</p>
+      <p>Dot positions are an estimate, not a record of anyone's vote: ballots are secret.</p>
+      <a class="go" href="voters.html">Open the dot view and zoom in →</a>
+    </div>
+    <figure class="pair">
+      <img src="texas-series/map-dots.png" width="1760" height="1500" loading="lazy" alt="Map of Texas with one dot per voter: most of the state is dark, with bright clusters at the cities." />
+      <img src="texas-series/zoom-dfw.png" width="1800" height="1125" loading="lazy" alt="Close-up of the dots around Dallas and Fort Worth: blue in the city centers, red in the outer suburbs and small towns." />
+      <figcaption>Above, all of Texas. Below, the same dots around Dallas and Fort Worth.</figcaption>
+    </figure>
+  </section>
+
+  <section class="next">
+    <h2>See it for yourself</h2>
+    <div class="cards">
+      <a class="card" href="texas.html"><b>Texas, 3D view →</b><span>Any race in any year, 2008 to 2026, by county or by precinct.</span></a>
+      <a class="card" href="voters.html"><b>Texas, dot view →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
+      <a class="card" href="index.html"><b>Every state so far →</b><span>The same two views for each state on the site.</span></a>
+    </div>
+  </section>
+
+  <footer>
+    <p id="src">Results: Texas Secretary of State, election night returns, unofficial until the state canvass.</p>
+    <p>Dots are placed by sharing each party's county total among 2024 voting districts by that party's 2024 U.S. Senate votes there (Texas Legislative Council), then among 2020 census blocks by adults (U.S. Census Bureau). County boundaries: U.S. Census Bureau, via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a>. This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>
+  </footer>
+</div>
+<script type="module">
+// Fill in the numbers from the results file, so the text can't drift from the data. The page reads fine without them.
+const res = await fetch('data/results-2026.json').then(r => r.json());
+const race = res.races.find(r => r.id === 'u-s-senate');
+const D = race.candidates.find(c => c.party === 'DEM'), R = race.candidates.find(c => c.party === 'REP');
+const counties = res.counties.map((c, i) => { const [dem, rep, , total] = race.counties[i]; return { ...c, dem, rep, total }; });
+const sum = (list, f) => list.reduce((s, c) => s + f(c), 0);
+const TOT = sum(counties, c => c.total), LAND = sum(counties, c => c.landSqMi);
+const pct = (a, b, d = 1) => (100 * a / b).toFixed(d) + '%';
+const num = n => n.toLocaleString('en-US');
+const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + ' million' : num(n);
+const $ = id => document.getElementById(id);
+if (D.votes > R.votes) {
+  const rWon = counties.filter(c => c.rep >= c.dem);
+  const big = [...counties].sort((a, b) => b.total - a.total), small = [...big].reverse();
+  let half = 0, acc = 0; while (acc < TOT / 2) acc += big[half++].total; // biggest counties casting half the votes
+  $('winner').textContent = `${D.name}, the Democrat,`;
+  $('score').textContent = `${pct(D.votes, TOT)} to ${pct(R.votes, TOT)}`;
+  $('t1').innerHTML = `<span class="r">${R.name}</span> won <b>${rWon.length} of ${counties.length} counties</b>, covering <b>${pct(sum(rWon, c => c.landSqMi), LAND, 0)} of the land</b>, so the map is red. But ${small[0].name} County, where ${num(small[0].total)} people voted, gets the same coat of paint as ${big[0].name} County, where ${short(big[0].total)} did.`;
+  $('t2').innerHTML = `Each county rises into a column as tall as its vote count, stacked by candidate. The red plains stay flat and the cities tower: <b>${half} counties cast half of all the votes</b>, on ${pct(sum(big.slice(0, half), c => c.landSqMi), LAND, 0)} of the land.`;
+  $('t3').innerHTML = `There are <b>${num(TOT)} dots</b> here, so the dot view is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.`;
+}
+$('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}. Percentages are of all votes cast.`;
+</script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

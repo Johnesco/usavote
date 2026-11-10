@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Three Maps Series</title>
+<!-- Renders a three-slide series on the 2026 Texas U.S. Senate race: the flat county map, the 3D column map, and the
+     one-dot-per-voter map, each with its explanation. First make the two flat map panels:
+       python scripts/build_infographic.py 1 texas-series
+     then serve the repo root over HTTP and screenshot ?slide=1, 2 and 3 at 1920x1080, e.g. with headless Edge or Chrome:
+       msedge --headless --hide-scrollbars --force-device-scale-factor=2 --window-size=1920,1080 --virtual-time-budget=20000
+              --screenshot=texas-series/1-flat-county-map.png "http://localhost:8765/scripts/series.html?slide=1"
+     The map panels are 1760x1500, shown at 880x750, so at scale factor 2 every dot lands on its own pixel. -->
+<style>
+  :root { --bg: #0e1116; --text: #eef1f6; --muted: #a8b1c0; --dim: #788191; --accent: #f2c14e; --line: #282e3a;
+    --dem: #8794ff; --rep: #ff5757; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+  .page { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  .copy { position: absolute; left: 80px; top: 64px; width: 600px; z-index: 3; }
+  .kicker { font-size: 17px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent); }
+  .steps { display: flex; gap: 8px; margin: 22px 0 34px; }
+  .steps span { font-size: 15px; font-weight: 600; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+  .steps span.on { background: var(--text); border-color: var(--text); color: var(--bg); }
+  h1 { font: 700 58px/1.06 "Segoe UI", sans-serif; margin: 0 0 30px; letter-spacing: -0.01em; text-wrap: balance; }
+  .copy p { font-size: 23px; line-height: 1.5; color: var(--muted); margin: 0 0 20px; }
+  .copy p b { color: var(--text); font-weight: 600; }
+  .dem { color: var(--dem); font-weight: 600; } .rep { color: var(--rep); font-weight: 600; }
+  .stat { margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--line); }
+  .stat .n { font-size: 64px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 21px; line-height: 1.4; color: var(--text); margin-top: 12px; }
+  .key { position: absolute; left: 80px; bottom: 92px; z-index: 3; font-size: 16px; color: var(--muted); }
+  .key .t { color: var(--text); font-weight: 600; margin-bottom: 10px; }
+  .key .row { display: flex; align-items: center; gap: 18px; margin-top: 8px; }
+  .key i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; margin-right: 8px; vertical-align: -2px; }
+  .key i.dot { border-radius: 50%; }
+  .ramp { display: flex; gap: 2px; } .ramp b { width: 40px; height: 20px; display: block; }
+  .ramp-labels { display: flex; gap: 2px; margin: 6px 0 0 86px; font-size: 12px; color: var(--dim); }
+  .ramp-labels span { width: 40px; text-align: center; }
+  .who { width: 68px; }
+  .stage { position: absolute; left: 700px; top: 0; width: 1220px; height: 1030px; }
+  .stage img { position: absolute; left: 190px; top: 150px; width: 880px; height: 750px; }
+  .stage canvas { position: absolute; inset: 0; }
+  .label { position: absolute; z-index: 1; transform: translate(-50%, -115%); text-align: center; white-space: nowrap;
+    font-size: 16px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px #000, 0 0 2px #000; }
+  .label small { display: block; font-size: 13px; font-weight: 500; color: #d7dde6; }
+  footer { position: absolute; left: 80px; right: 80px; bottom: 26px; font-size: 14px; line-height: 1.45; color: var(--dim); z-index: 3; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body>
+<div class="page">
+  <div class="copy" id="copy"></div>
+  <div class="key" id="key"></div>
+  <div class="stage" id="stage"></div>
+  <footer id="foot"></footer>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { GEO_URL, buildMap, layout, LOSER_C, OTHER_C, REP_C, DEM_C } from '../map3d.js';
+
+const slide = +(new URLSearchParams(location.search).get('slide') || 1);
+const getJSON = url => fetch(url).then(r => r.json());
+const res = await getJSON('../data/results-2026.json');
+const race = res.races.find(r => r.id === 'u-s-senate');
+const D = race.candidates.find(c => c.party === 'DEM'), R = race.candidates.find(c => c.party === 'REP');
+const counties = res.counties.map((c, i) => { const [dem, rep, other, total] = race.counties[i]; return { ...c, dem, rep, other, total }; });
+const num = n => n.toLocaleString('en-US');
+const pct = (a, b, d = 1) => (100 * a / b).toFixed(d) + '%';
+const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : Math.round(n / 1e3) + 'K';
+
+// every number in the text is computed here from the results file
+const sum = (list, f) => list.reduce((s, c) => s + f(c), 0);
+const TOT = sum(counties, c => c.total), LAND = sum(counties, c => c.landSqMi);
+const rWon = counties.filter(c => c.rep >= c.dem);
+const big = [...counties].sort((a, b) => b.total - a.total), small = [...big].reverse();
+let half = 0, acc = 0; while (acc < TOT / 2) acc += big[half++].total;        // biggest counties casting half the votes
+let few = 0; acc = 0; while (acc + small[few].total <= big[0].total) acc += small[few++].total; // smallest counties that together stay under the biggest
+const [W, L] = D.votes > R.votes ? [D, R] : [R, D];
+const cls = c => c.party === 'DEM' ? 'dem' : 'rep';
+
+const SLIDES = {
+  1: {
+    step: 'Flat county map',
+    title: 'The usual map: color each county by who won it',
+    body: [
+      `This is how election results are usually drawn. <span class="rep">${R.last}</span> carried <b>${rWon.length} of ${counties.length} counties</b>, covering <b>${pct(sum(rWon, c => c.landSqMi), LAND, 0)} of the land</b>. Texas looks red.`,
+      `But the map shows land, not people. A county gets one flat coat of paint whether ${num(small[0].total)} people voted there (${small[0].name}) or ${short(big[0].total)} did (${big[0].name}).`,
+    ],
+    stat: [`${few} counties`, `The ${few} smallest counties fill ${pct(sum(small.slice(0, few), c => c.landSqMi), LAND, 0)} of this map, and together cast fewer votes than ${big[0].name} County alone.`],
+    key: `<div class="t">Winner's share of the county vote</div>
+      <div class="row"><span class="who">${D.last}</span><span class="ramp">${DEM_C.map(c => `<b style="background:${c}"></b>`).join('')}</span></div>
+      <div class="row"><span class="who">${R.last}</span><span class="ramp">${REP_C.map(c => `<b style="background:${c}"></b>`).join('')}</span></div>
+      <div class="ramp-labels">${['<50', '50s', '60s', '70s', '80s', '90+'].map(t => `<span>${t}</span>`).join('')}</div>`,
+  },
+  2: {
+    step: '3D columns',
+    title: 'Better: raise each county by how many people voted',
+    body: [
+      `The same map, tilted. Each county becomes a column whose <b>height is the votes cast there</b>, split by color into each candidate's share.`,
+      `Now the red plains lie flat and the cities tower. <span class="${cls(W)}">${W.last} won</span>, ${pct(W.votes, TOT)} to ${pct(L.votes, TOT)}.`,
+      `It still has limits. A county is one solid block, so you can't see where inside it people live, and tall columns hide what's behind them.`,
+    ],
+    stat: [`${half} counties`, `cast half of all the votes in Texas, on ${pct(sum(big.slice(0, half), c => c.landSqMi), LAND, 0)} of its land.`],
+    key: `<div class="t">Column height = votes cast in the county</div>
+      <div class="row"><span><i style="background:${LOSER_C.dem}"></i>${D.last} votes</span><span><i style="background:${LOSER_C.rep}"></i>${R.last} votes</span><span><i style="background:${OTHER_C}"></i>Others</span></div>`,
+  },
+  3: {
+    step: 'One dot per voter',
+    title: 'Closest to the truth: one dot for every voter',
+    body: [
+      `<b>${num(TOT)} dots</b>, one per vote, placed where voters live. Empty land stays dark, so color appears only where there are people.`,
+      `County lines stop mattering. Cities show blue cores inside red rings, small towns glow red along the highways, and close neighborhoods blend to purple.`,
+    ],
+    stat: [num(W.votes - L.votes), `more dots for <span class="${cls(W)}">${W.last}</span> than for <span class="${cls(L)}">${L.last}</span>, out of ${num(TOT)}.`],
+    key: `<div class="t">Each dot is one voter</div>
+      <div class="row"><span><i class="dot" style="background:#6c7dff"></i>${D.name} (D)</span><span><i class="dot" style="background:#ff3b3b"></i>${R.name} (R)</span><span><i class="dot" style="background:#9aa6b8"></i>Everyone else</span></div>`,
+    note: ` Dot placement is an estimate, not a record of anyone's vote: each party's county total is shared among 2024 voting districts by that party's 2024 U.S. Senate votes (Texas Legislative Council), then among 2020 census blocks by adults (U.S. Census Bureau), off land where no one lives.`,
+  },
+};
+const s = SLIDES[slide];
+document.getElementById('copy').innerHTML = `<div class="kicker">TEXAS · U.S. SENATE · NOVEMBER 3, 2026</div>
+  <div class="steps">${[1, 2, 3].map(i => `<span class="${i === slide ? 'on' : ''}">${i}  ${SLIDES[i].step}</span>`).join('')}</div>
+  <h1>${s.title}</h1>${s.body.map(p => `<p>${p}</p>`).join('')}
+  <div class="stat"><div class="n">${s.stat[0]}</div><div class="l">${s.stat[1]}</div></div>`;
+document.getElementById('key').innerHTML = s.key;
+document.getElementById('foot').textContent = `Results: Texas Secretary of State, election night returns (unofficial; official canvass pending), as of ${res.meta.resultsUpdated}. ` +
+  `Percentages are of all votes cast. County boundaries and land area: U.S. Census Bureau.${s.note || ''}   johnesco.github.io/usavote`;
+
+const stage = document.getElementById('stage');
+if (slide === 2) {
+  const us = await getJSON(GEO_URL);
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(devicePixelRatio); renderer.setSize(w, h);
+  stage.prepend(renderer.domElement);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#0e1116');
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-600, 900, 700); scene.add(sun);
+  const maxTotal = Math.max(...res.races.flatMap(r => r.counties.map(row => row[3]))); // one height scale for all races, as on the site
+  const { mapGroup, pickables } = buildMap(scene, us, counties, { maxTotal });
+  for (const c of counties) layout(c, c.target);
+  const target = new THREE.Vector3(0, 120, 20);
+  const camera = new THREE.PerspectiveCamera(30, w / h, 10, 20000);
+  camera.position.setFromSpherical(new THREE.Spherical(2180, 0.86, -0.22)).add(target);
+  camera.lookAt(target);
+  scene.updateMatrixWorld(true);
+  renderer.render(scene, camera);
+  // label the biggest columns whose tops are visible and don't collide
+  const ray = new THREE.Raycaster(), v = new THREE.Vector3(), placed = [];
+  for (const c of big.slice(0, 8)) {
+    const top = new THREE.Vector3(c.cx, c.cy, c.h).applyMatrix4(mapGroup.matrixWorld);
+    ray.set(camera.position, top.clone().sub(camera.position).normalize());
+    const hit = ray.intersectObjects(pickables, false)[0];
+    if (!hit || hit.object.userData !== c) continue;
+    v.copy(top).project(camera);
+    const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h, box = [x - 52, y - 44, x + 52, y - 2];
+    if (placed.some(b => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+    placed.push(box);
+    const lab = document.createElement('div'); lab.className = 'label';
+    lab.innerHTML = `${c.name}<small>${short(c.total)} votes</small>`;
+    lab.style.left = x + 'px'; lab.style.top = y + 'px'; stage.appendChild(lab);
+  }
+} else {
+  const img = new Image();
+  img.src = `../texas-series/${slide === 1 ? 'map-counties' : 'map-dots'}.png`;
+  await img.decode();
+  stage.appendChild(img);
+}
+document.body.classList.add('ready');
+</script>
+</body>
+</html>

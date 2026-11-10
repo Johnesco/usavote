@@ -1,6 +1,6 @@
 # How America Votes
 
-A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio, Iowa, New Mexico, Idaho, Georgia and South Dakota so far.
+A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio, Iowa, New Mexico, Idaho, Georgia, South Dakota, California, Rhode Island, Vermont and West Virginia so far.
 Other states show as not available yet; [`state.js`](state.js) holds what the pages need to know about a state.
 
 **Check publishing rights before publishing anything.** This repository is public, so pushing any branch publishes it. Before data or anything built from it goes into a commit, read the source's terms and confirm they cover this use; if they're unclear, keep it local and git-ignored. See [`docs/PIPELINE.md`](docs/PIPELINE.md), Part 5.
@@ -19,8 +19,12 @@ These show the Nov. 3, 2026 general election, on the same code as Texas, with ea
 | Idaho | [`idaho.html`](https://johnesco.github.io/usavote/idaho.html), [`idaho-voters.html`](https://johnesco.github.io/usavote/idaho-voters.html) | By county | Opens on Governor, because no Democrat ran for U.S. Senate. |
 | Georgia | [`georgia.html`](https://johnesco.github.io/usavote/georgia.html), [`georgia-voters.html`](https://johnesco.github.io/usavote/georgia-voters.html) | By county | Partial, so pages say "led". 2026 votes matched Census districts too poorly for a precinct view. |
 | South Dakota | [`south-dakota.html`](https://johnesco.github.io/usavote/south-dakota.html), [`south-dakota-voters.html`](https://johnesco.github.io/usavote/south-dakota-voters.html) | By county | Opens on Governor, because no Democrat ran for U.S. Senate. State terms allow "personal or informational use". |
+| California | [`california.html`](https://johnesco.github.io/usavote/california.html), [`california-voters.html`](https://johnesco.github.io/usavote/california-voters.html) | By county | Partial: about 3 million ballots were still to count, so pages say "led". Opens on Governor; no U.S. Senate race this year. State terms call site information public domain "unless otherwise indicated". |
+| Rhode Island | [`rhode-island.html`](https://johnesco.github.io/usavote/rhode-island.html), [`rhode-island-voters.html`](https://johnesco.github.io/usavote/rhode-island-voters.html) | By county, from towns | Partial, so pages say "led". Governor is left out: an independent finished second. State terms say compiled information "may be distributed or copied". |
+| Vermont | [`vermont.html`](https://johnesco.github.io/usavote/vermont.html), [`vermont-voters.html`](https://johnesco.github.io/usavote/vermont-voters.html) | By county, from towns | Opens on Governor; no U.S. Senate race this year. Terms are silent on reuse. |
+| West Virginia | [`west-virginia.html`](https://johnesco.github.io/usavote/west-virginia.html), [`west-virginia-voters.html`](https://johnesco.github.io/usavote/west-virginia-voters.html) | By county | U.S. Senate only, the one statewide race between candidates. Terms are silent on reuse. |
 
-Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked. Oregon was built but kept local, because its terms aren't clear for this use.
+Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked. Oregon was built but kept local, because its terms aren't clear for this use. Maine was chosen next but had posted no November results yet.
 
 ## Oklahoma
 

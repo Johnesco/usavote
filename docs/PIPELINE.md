@@ -172,7 +172,7 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 ## 6. Template for another state
 
-**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
+**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`, `ca`, `ri`, `vt`, `wv`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -318,6 +318,10 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Idaho | [`records/idaho.md`](records/idaho.md) | County | None | Nov. 24 canvass deadline |
 | Georgia | [`records/georgia.md`](records/georgia.md) | County | None: 85.8% of Senate votes matched Census 2020 districts, under the 90% required | State certification, about Nov. 20 (from the survey, not read at a state source) |
 | South Dakota | [`records/south-dakota.md`](records/south-dakota.md) | County | None | The state canvass; date not confirmed, so check from about Nov. 17 |
+| California | [`records/california.md`](records/california.md) | County | None | Dec. 11 certification; about 3 million ballots were still to count |
+| Rhode Island | [`records/rhode-island.md`](records/rhode-island.md) | County, from towns | None | Board of Elections certification; date not looked up |
+| Vermont | [`records/vermont.md`](records/vermont.md) | County, from towns | None | State canvassing committee; date not looked up |
+| West Virginia | [`records/west-virginia.md`](records/west-virginia.md) | County | None | County canvasses and state certification; dates not looked up |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -337,6 +341,17 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Site blocked | Nevada, Tennessee | Results and most terms couldn't be read. Nevada's state site also says "All Rights Reserved" |
 
 **Oregon is kept local.** It has no license, and its terms say anyone using its sites agrees "to hold harmless and indemnify" the Secretary of State. The owner decided on 2026-11-09 that this isn't clear enough to publish. Its results, what's built from them, its pages, its scripts and its record are git-ignored, and it isn't in `STATES`. Its settings are in `data/raw/or/state-block.js`.
+
+**A third survey, 2026-11-09.** The 25 states not yet surveyed were read the same way and ranked from the least restrictive terms to the most. The owner then chose five. These are readings of published pages, not legal advice, and no agency was asked.
+
+| Outcome | States | Why |
+|---|---|---|
+| Built: terms say information may be copied | California, Rhode Island | California's [Conditions of Use](https://www.ca.gov/use/) call site information public domain "unless otherwise indicated"; its results site's footer says "© California Secretary of State". Rhode Island's [copyright policy](https://www.ri.gov/policies/copyright/) says compiled information "may be distributed or copied" and asks for credit. In both, applying portal terms to the results site is inferred |
+| Built: silent, by the owner's choice | Vermont, West Virginia | No license and no limit found. The owner chose them knowing this. Their results sites carry bare copyright footers |
+| Chosen, not built | Maine | No November 2026 results were posted on the Secretary of State's results page when checked on 2026-11-09, only June primary files. Its Census files are saved under `data/raw/me/` |
+| Silent, not chosen | Alaska, Louisiana, North Dakota, New York | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
+| Copyright notice only, or not fully read | Kentucky, Mississippi, Virginia, Maryland, Alabama, New Jersey, Florida, Missouri, New Hampshire, Connecticut, Delaware, Illinois | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
+| Limiting wording | Utah, Hawaii, Indiana, Massachusetts | Utah allows copying only if "not modified in any respect"; Hawaii bars commercial use; Indiana allows personal use only, with no republishing or derivative works; Massachusetts allows only fair use without permission |
 
 **Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
 
