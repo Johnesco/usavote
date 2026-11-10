@@ -63,6 +63,10 @@ NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "or": ("Oregon", "41", "or/census", "data/or/landmask.bin.gz", 42.7, 45.5, 120.6),
     "ga": ("Georgia", "13", "ga/census", "data/ga/landmask.bin.gz", 31.1, 34.2, 83.2),
     "sd": ("South Dakota", "46", "sd/census", "data/sd/landmask.bin.gz", 43.1, 45.4, 100.2),
+    "ca": ("California", "06", "ca/census", "data/ca/landmask.bin.gz", 34.1, 40.4, 119.3),
+    "ri": ("Rhode Island", "44", "ri/census", "data/ri/landmask.bin.gz", 41.3, 41.9, 71.5),
+    "vt": ("Vermont", "50", "vt/census", "data/vt/landmask.bin.gz", 43.1, 44.6, 72.5),
+    "wv": ("West Virginia", "54", "wv/census", "data/wv/landmask.bin.gz", 37.8, 40.1, 80.2),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"

@@ -327,5 +327,139 @@ const GEORGIA = {
   base: null,            // county only: too few 2026 precincts reach a 2020 voting district clearly (docs/records/georgia.md)
 };
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA];
+const CALIFORNIA = {
+  slug: 'california',
+  name: 'California',
+  fips: '06',
+  countyCount: 58,
+  parallels: [34.1, 40.4], // scripts/build_landmask.py must use the same values
+  rotate: [119.3, 0],
+  middle: [-119.3, 37.2],
+  radiusScaleAt: [-119.3, 37.2], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, by county. Unofficial and partial: about 3 million ballots were still to be counted.',
+  defaultRace: 'governor', // no U.S. Senate race in California in 2026 (docs/records/california.md)
+  data: {
+    results: 'data/ca/results-2026.json',
+    history: null,
+    precincts: 'data/ca/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/ca/landmask.bin.gz',
+    cities: 'data/ca/cities.json',
+  },
+  results: { href: 'california.html', title: 'See the results', text: 'Governor and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'california-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the California Secretary of State',
+  returns: 'unofficial, partial returns',
+  unofficialUntil: 'the Secretary of State certifies them, by Dec. 11, 2026',
+  // Counting goes on for weeks here, so a lead isn't yet a win (docs/records/california.md)
+  won: 'led',
+  winner: 'leader',
+  wonState: 'led the count so far',
+  reporting: (meta, fmt) => `with every precinct reporting, but counties estimated ${fmt(meta.reporting.ballotsRemaining)} ballots still to process as of ${meta.reporting.remainingAsOf} (beside ${fmt(meta.reporting.ballotsProcessed)} processed), so these totals will change`,
+  votesCounted: "the votes reported in the selected race in each county, for the two candidates on the ballot. The state's results list no write-in votes.",
+  twoCandidates: "Two candidates on the ballot. The state's results list no write-in votes.",
+  base: null,            // no precinct results or shapes here (docs/records/california.md)
+};
+
+const RHODE_ISLAND = {
+  slug: 'rhode-island',
+  name: 'Rhode Island',
+  mapLabel: 'RI',        // the full name doesn't fit inside the state on the homepage map
+  fips: '44',
+  countyCount: 5,
+  parallels: [41.3, 41.9], // scripts/build_landmask.py must use the same values
+  rotate: [71.5, 0],
+  middle: [-71.5, 41.6],
+  radiusScaleAt: [-71.5, 41.6], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, with cities and towns added up by county. Unofficial and partial.',
+  data: {
+    results: 'data/ri/results-2026.json',
+    history: null,
+    precincts: 'data/ri/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/ri/landmask.bin.gz',
+    cities: 'data/ri/cities.json',
+  },
+  results: { href: 'rhode-island.html', title: 'See the results', text: 'U.S. Senate and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'rhode-island-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Rhode Island elections board', // the pages add 's; the board's own name ends in "Elections"
+  returns: 'unofficial, partial returns',
+  unofficialUntil: 'the Board of Elections certifies them',
+  // Some precincts are marked partly reported, so a lead isn't yet a win (docs/records/rhode-island.md)
+  won: 'led',
+  winner: 'leader',
+  wonState: 'led the count so far',
+  reporting: (meta, fmt) => `with all ${meta.reporting.towns} cities and towns reporting, added up here by county, though the Board marks ${meta.reporting.precinctsPartlyReported} of ${meta.reporting.precincts} precincts as partly reported, so these totals can change. The Board's U.S. Senate totals also include ${fmt(meta.reporting.federalOnlySenateVotes)} votes on federal-only ballots, which belong to no town and aren't on this map`,
+  otherVotes: 'independent and write-in votes',
+  base: null,            // no precinct results or shapes here (docs/records/rhode-island.md)
+};
+
+const VERMONT = {
+  slug: 'vermont',
+  name: 'Vermont',
+  mapLabel: 'VT',        // the full name doesn't fit inside the state on the homepage map
+  fips: '50',
+  countyCount: 14,
+  parallels: [43.1, 44.6], // scripts/build_landmask.py must use the same values
+  rotate: [72.5, 0],
+  middle: [-72.5, 43.9],
+  radiusScaleAt: [-72.5, 43.9], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, with towns added up by county. Results are unofficial.',
+  defaultRace: 'governor', // no U.S. Senate race in Vermont in 2026 (docs/records/vermont.md)
+  data: {
+    results: 'data/vt/results-2026.json',
+    history: null,
+    precincts: 'data/vt/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/vt/landmask.bin.gz',
+    cities: 'data/vt/cities.json',
+  },
+  results: { href: 'vermont.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'vermont-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Vermont Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the state canvassing committee certifies them',
+  reporting: (meta, fmt) => `with all ${meta.reporting.towns} towns reporting, added up here by county`,
+  votesCounted: 'the votes reported in the selected race in each county, for every candidate on the ballot and write-ins. Blank votes and overvotes aren\'t counted.',
+  base: null,            // no precinct results or shapes here (docs/records/vermont.md)
+};
+
+const WEST_VIRGINIA = {
+  slug: 'west-virginia',
+  name: 'West Virginia',
+  mapLabel: 'WV',        // the full name doesn't fit inside the state on the homepage map
+  fips: '54',
+  countyCount: 55,
+  parallels: [37.8, 40.1], // scripts/build_landmask.py must use the same values
+  rotate: [80.2, 0],
+  middle: [-80.2, 38.9],
+  radiusScaleAt: [-80.2, 38.9], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 U.S. Senate race, by county. Results are unofficial.',
+  data: {
+    results: 'data/wv/results-2026.json',
+    history: null,
+    precincts: 'data/wv/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/wv/landmask.bin.gz',
+    cities: 'data/wv/cities.json',
+  },
+  results: { href: 'west-virginia.html', title: 'See the results', text: 'U.S. Senate in 2026, the one statewide race between candidates. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'west-virginia-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the West Virginia Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the counties canvass them and the state certifies them',
+  votesCounted: 'the votes reported in the selected race in each county, for every candidate on the ballot. These results list no write-in votes.',
+  otherVotes: 'third-party votes',
+  base: null,            // no precinct results or shapes here (docs/records/west-virginia.md)
+};
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

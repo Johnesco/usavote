@@ -68,14 +68,14 @@ DL = ROOT / "data" / "raw" / "census-dl"
 SEN_URL = "https://ted.capitol.texas.gov/api/Offices/510/2/vtd"
 VTD_URL = ("https://data.capitol.texas.gov/dataset/4d8298d0-d176-4c19-b174-42837027b73e/resource/"
            "906f47e4-4e39-4156-b1bd-4969be0b2780/download/vtds_24pg.zip")
-PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip", "sc": ROOT / "data" / "raw" / "sc" / "census" / "sc2020.pl.zip", "oh": ROOT / "data" / "raw" / "oh" / "census" / "oh2020.pl.zip", "ia": ROOT / "data" / "raw" / "ia" / "census" / "ia2020.pl.zip", "nm": ROOT / "data" / "raw" / "nm" / "census" / "nm2020.pl.zip", "id": ROOT / "data" / "raw" / "id" / "census" / "id2020.pl.zip", "or": ROOT / "data" / "raw" / "or" / "census" / "or2020.pl.zip", "ga": ROOT / "data" / "raw" / "ga" / "census" / "ga2020.pl.zip", "sd": ROOT / "data" / "raw" / "sd" / "census" / "sd2020.pl.zip"}[ST]
-COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105, "sc": 46, "oh": 88, "ia": 99, "nm": 33, "id": 44, "or": 36, "ga": 159, "sd": 66}[ST]
-MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5, "sc": 33.6, "oh": 40.2, "ia": 42, "nm": 34.2, "id": 45.5, "or": 44.1, "ga": 32.7, "sd": 44.2}[ST]  # for how much shorter a step of longitude is than a step of latitude
-OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks", "sc": ROOT / "data" / "sc", "oh": ROOT / "data" / "oh", "ia": ROOT / "data" / "ia", "nm": ROOT / "data" / "nm", "id": ROOT / "data" / "id", "or": ROOT / "data" / "or", "ga": ROOT / "data" / "ga", "sd": ROOT / "data" / "sd"}[ST]
+PL_ZIP = {"tx": DL / "pl" / "tx2020.pl.zip", "ok": ROOT / "data" / "raw" / "ok" / "census" / "ok2020.pl.zip", "ks": ROOT / "data" / "raw" / "ks" / "census" / "ks2020.pl.zip", "sc": ROOT / "data" / "raw" / "sc" / "census" / "sc2020.pl.zip", "oh": ROOT / "data" / "raw" / "oh" / "census" / "oh2020.pl.zip", "ia": ROOT / "data" / "raw" / "ia" / "census" / "ia2020.pl.zip", "nm": ROOT / "data" / "raw" / "nm" / "census" / "nm2020.pl.zip", "id": ROOT / "data" / "raw" / "id" / "census" / "id2020.pl.zip", "or": ROOT / "data" / "raw" / "or" / "census" / "or2020.pl.zip", "ga": ROOT / "data" / "raw" / "ga" / "census" / "ga2020.pl.zip", "sd": ROOT / "data" / "raw" / "sd" / "census" / "sd2020.pl.zip", "ca": ROOT / "data" / "raw" / "ca" / "census" / "ca2020.pl.zip", "ri": ROOT / "data" / "raw" / "ri" / "census" / "ri2020.pl.zip", "vt": ROOT / "data" / "raw" / "vt" / "census" / "vt2020.pl.zip", "wv": ROOT / "data" / "raw" / "wv" / "census" / "wv2020.pl.zip"}[ST]
+COUNTY_COUNT = {"tx": 254, "ok": 77, "ks": 105, "sc": 46, "oh": 88, "ia": 99, "nm": 33, "id": 44, "or": 36, "ga": 159, "sd": 66, "ca": 58, "ri": 5, "vt": 14, "wv": 55}[ST]
+MID_LAT = {"tx": 31, "ok": 35.5, "ks": 38.5, "sc": 33.6, "oh": 40.2, "ia": 42, "nm": 34.2, "id": 45.5, "or": 44.1, "ga": 32.7, "sd": 44.2, "ca": 37.2, "ri": 41.6, "vt": 43.9, "wv": 38.9}[ST]  # for how much shorter a step of longitude is than a step of latitude
+OUT_DIR = {"tx": ROOT / "data", "ok": ROOT / "data" / "ok", "ks": ROOT / "data" / "ks", "sc": ROOT / "data" / "sc", "oh": ROOT / "data" / "oh", "ia": ROOT / "data" / "ia", "nm": ROOT / "data" / "nm", "id": ROOT / "data" / "id", "or": ROOT / "data" / "or", "ga": ROOT / "data" / "ga", "sd": ROOT / "data" / "sd", "ca": ROOT / "data" / "ca", "ri": ROOT / "data" / "ri", "vt": ROOT / "data" / "vt", "wv": ROOT / "data" / "wv"}[ST]
 TX_ADULTS = 21_866_700
 MIN_VOTES = 10  # a VTD with fewer 2024 votes than this is merged into its nearest neighbor
 Q = 1e4
-BASE_ID, BASE_NAME, BASE_OFFICE = ("governor", "Governor", "Governor") if ST in ("id", "sd") else ("u-s-senate", "U.S. Senate", "U.S. Senator")  # the race whose votes go in the file
+BASE_ID, BASE_NAME, BASE_OFFICE = ("governor", "Governor", "Governor") if ST in ("id", "sd", "ca", "vt") else ("u-s-senate", "U.S. Senate", "U.S. Senator")  # the race whose votes go in the file
 
 
 def fetch(url, path):
@@ -86,7 +86,7 @@ def fetch(url, path):
     return path
 
 
-if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd"):
+if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd", "ca", "ri", "vt", "wv"):
     results = json.loads((OUT_DIR / "results-2026.json").read_text(encoding="utf-8"))
     senate = next(r for r in results["races"] if r["id"] == BASE_ID)
     vtds = [{"fips": c["fips"], "name": c["name"], "votes": row[:3], "blocks": []} for c, row in zip(results["counties"], senate["counties"])]
@@ -272,7 +272,7 @@ blocks = [b for b in blk.values() if b[4] > 0]
 assert sum(b[4] for b in blk.values()) == state_adults, (sum(b[4] for b in blk.values()), state_adults)
 assert ST != "tx" or state_adults == TX_ADULTS
 print(f"{len(blk):,} blocks, {len(blocks):,} with adults; {state_adults:,} adults in the state")
-if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd"):  # each block to its county, from its own code
+if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd", "ca", "ri", "vt", "wv"):  # each block to its county, from its own code
     of_county = {v["fips"]: v for v in vtds}
     for b in blocks: of_county[b[0]]["blocks"].append(b)
     assert all(v["blocks"] for v in vtds), "a county with no adults"
@@ -405,8 +405,8 @@ out = {
         "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
     } if ST == "sc" else {} if ST == "ks" else {  # Kansas's is set just below
         "race": f"2026 general election, {BASE_OFFICE} (others = all other candidates), by county",
-        "resultsSource": {"ok": "Oklahoma State Election Board, OK Election Results, county file", "oh": "Ohio Secretary of State, Ohio Decides results file (unofficial and partial)", "ia": "Iowa Secretary of State, Election Results, Detail TXT report (unofficial)", "nm": "New Mexico Secretary of State, Election Results, county results (unofficial)", "id": "Idaho Secretary of State, Election Results, Media Export (unofficial)", "or": "Oregon Secretary of State, Election Night Results county exports (unofficial and partial)", "ga": "Georgia Secretary of State, Election Results, Media Export (unofficial)", "sd": "South Dakota Secretary of State, Election Results (unofficial results; canvass pending)"}[ST],
-        "resultsUrl": {"ok": "https://results.okelections.gov/OKER/?elecDate=20261103", "oh": "https://liveresults.ohiosos.gov/", "ia": "https://electionresults.iowa.gov/IA/127077/web.345435/#/reporting", "nm": "https://electionresults.sos.nm.gov/resultsSW.aspx?type=SW&map=CTY", "id": "https://results.voteidaho.gov/results/public/id/elections/nov2026", "or": "https://results.oregonvotes.gov/ResultsExport.aspx", "ga": "https://results.sos.ga.gov/results/public/Georgia/elections/11032026GeneralAndSpecialElection", "sd": "https://electionresults.sd.gov/resultsSW.aspx?type=SWR&map=CTY"}[ST],
+        "resultsSource": {"ok": "Oklahoma State Election Board, OK Election Results, county file", "oh": "Ohio Secretary of State, Ohio Decides results file (unofficial and partial)", "ia": "Iowa Secretary of State, Election Results, Detail TXT report (unofficial)", "nm": "New Mexico Secretary of State, Election Results, county results (unofficial)", "id": "Idaho Secretary of State, Election Results, Media Export (unofficial)", "or": "Oregon Secretary of State, Election Night Results county exports (unofficial and partial)", "ga": "Georgia Secretary of State, Election Results, Media Export (unofficial)", "sd": "South Dakota Secretary of State, Election Results (unofficial results; canvass pending)", "ca": "California Secretary of State, Election Results (unofficial and partial; counting continues)", "ri": "Rhode Island Board of Elections, Election Results, Media Export, towns added up by county (unofficial)", "vt": "Vermont Secretary of State, Election Night Results, towns added up by county (unofficial)", "wv": "West Virginia Secretary of State, Election Night Reporting (unofficial)"}[ST],
+        "resultsUrl": {"ok": "https://results.okelections.gov/OKER/?elecDate=20261103", "oh": "https://liveresults.ohiosos.gov/", "ia": "https://electionresults.iowa.gov/IA/127077/web.345435/#/reporting", "nm": "https://electionresults.sos.nm.gov/resultsSW.aspx?type=SW&map=CTY", "id": "https://results.voteidaho.gov/results/public/id/elections/nov2026", "or": "https://results.oregonvotes.gov/ResultsExport.aspx", "ga": "https://results.sos.ga.gov/results/public/Georgia/elections/11032026GeneralAndSpecialElection", "sd": "https://electionresults.sd.gov/resultsSW.aspx?type=SWR&map=CTY", "ca": "https://electionresults.sos.ca.gov/", "ri": "https://electionresults.ri.gov/results/public/rhodeisland/elections/2026StatewideGeneralElection", "vt": "https://electionresults.vermont.gov/", "wv": "https://results.enr.clarityelections.com/WV/127496/web.345435/#/summary"}[ST],
         "blocksSource": "U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171): block internal points, land area, P3_001N",
         "format": FORMAT.replace("dem24, rep24, other24", "dem, rep, other").replace("one per VTD (name: its VTD code or codes)", "one entry, the whole county (name: the county)").replace("within the VTD", "within the county"),
         "totals": {"dem": tot[0], "rep": tot[1], "other": tot[2]},
@@ -428,10 +428,10 @@ if ST == "ks":
     }
 # gzipped (mtime 0, so a rebuild with the same data gives the same file); dots.js unzips it in the browser
 import gzip
-path = OUT_DIR / ("blocks.json.gz" if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd") else "precincts.json.gz")
+path = OUT_DIR / ("blocks.json.gz" if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd", "ca", "ri", "vt", "wv") else "precincts.json.gz")
 path.write_bytes(gzip.compress(json.dumps(out, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
 print(f"wrote {path} ({path.stat().st_size / 1e6:.1f} MB)")
-if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd"): sys.exit()  # no precinct outlines
+if ST in ("ok", "oh", "ia", "nm", "id", "or", "ga", "sd", "ca", "ri", "vt", "wv"): sys.exit()  # no precinct outlines
 
 
 # ---------- precinct outlines: simplified along shared borders, so neighbors still meet ----------
