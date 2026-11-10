@@ -43,7 +43,7 @@ const races = [
   ...res.races.map(r => ({ ...r, year: 2026, date: 'Nov. 3, 2026', unofficial: true })),
   ...hist.races,
 ];
-const DEFAULT_RACE = 'u-s-senate';
+const DEFAULT_RACE = STATE.defaultRace ?? 'u-s-senate';
 const YEARS = [...new Set(races.map(r => r.year))].sort((a, b) => b - a); // newest first
 // one height scale for all races, so switching races compares like with like
 const maxTotal = Math.max(...races.flatMap(r => r.counties.map(row => row[3])));

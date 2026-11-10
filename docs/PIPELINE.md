@@ -172,7 +172,7 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 ## 6. Template for another state
 
-**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
+**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -304,7 +304,7 @@ Checks that stop the build: all precincts reporting; counties add up to the stat
 - Oklahoma's pages were opened in a browser: bar view by county in 3D with `?by=precinct` ignored, no precinct controls, the go-to menus, and dot view with 1,118,730 Senate dots (the state's total), down to Tulsa County.
 - Not checked: other screen sizes, or every race by eye.
 
-## 8. Kansas, South Carolina, Ohio and Iowa: where the records are
+## 8. States after Oklahoma: where the records are
 
 Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state's record has the shape of Part 7: sources and hashes, terms, build commands, expected numbers, differences from Texas, and gaps. Raw files are under `data/raw/<code>/`, not committed.
 
@@ -314,6 +314,10 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | South Carolina | [`records/south-carolina.md`](records/south-carolina.md) | County and precinct | 2026 U.S. Senate votes on Census 2020 voting districts | Nov. 10 certification |
 | Ohio | [`records/ohio.md`](records/ohio.md) | County | None | The official canvass, about Nov. 24 |
 | Iowa | [`records/iowa.md`](records/iowa.md) | County | None | The state canvass, about Nov. 30 |
+| New Mexico | [`records/new-mexico.md`](records/new-mexico.md) | County | None | State canvassing board, Nov. 24 |
+| Idaho | [`records/idaho.md`](records/idaho.md) | County | None | Nov. 24 canvass deadline |
+| Georgia | [`records/georgia.md`](records/georgia.md) | County | None: 85.8% of Senate votes matched Census 2020 districts, under the 90% required | State certification, about Nov. 20 (from the survey, not read at a state source) |
+| South Dakota | [`records/south-dakota.md`](records/south-dakota.md) | County | None | The state canvass; date not confirmed, so check from about Nov. 17 |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -321,4 +325,19 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 
 **North Carolina is on hold.** The [state's terms](https://www.nc.gov/disclaimer-terms-use) say "for non-commercial use" and "without alteration", which doesn't clearly cover county totals, simplified outlines or dots. Its election board hasn't been asked.
 
-**Build method:** the states were built in parallel on separate branches and merged, then all six were rebuilt from the merged scripts and compared with the committed files.
+**A stricter bar for the second batch.** On 2026-11-08 the owner asked for more states that run into no publishing rules. Eighteen more states were surveyed, reading what each says about reuse. These are readings of published pages, not legal advice, and no agency was asked.
+
+| Outcome | States | Why |
+|---|---|---|
+| Built | New Mexico, Idaho, Georgia | No wording limiting reuse found. No license either, so this is silence, not permission, the same standing as Texas and Oklahoma |
+| Limiting wording | Minnesota, Michigan, Colorado, Wisconsin, Pennsylvania, Nebraska, Arizona, Arkansas, Wyoming | Such as bans on copying or publishing, "All Rights Reserved", or fees or permission for commercial use. Whether some state-level terms reach the results sites is inferred |
+| Asks you to check first | Washington | Its [policy](https://www.sos.wa.gov/web-sites-privacy-policy) lets people use most information, then recommends contacting the office for permission. Also has no statewide Democrat-against-Republican race. Could come back if the owner accepts the wording |
+| Purpose limit, built by the owner's choice | South Dakota | State terms allow copying "for personal or informational use", so it doesn't meet this bar. The owner was told and chose it on 2026-11-09 as the fifth state. Its record has the reading |
+| Poor fit | Montana | The only statewide race has the Democrat in third, and the Secretary of State's policy pages were unread |
+| Site blocked | Nevada, Tennessee | Results and most terms couldn't be read. Nevada's state site also says "All Rights Reserved" |
+
+**Oregon is kept local.** It has no license, and its terms say anyone using its sites agrees "to hold harmless and indemnify" the Secretary of State. The owner decided on 2026-11-09 that this isn't clear enough to publish. Its results, what's built from them, its pages, its scripts and its record are git-ignored, and it isn't in `STATES`. Its settings are in `data/raw/or/state-block.js`.
+
+**Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
+
+**Build method:** the states were built in parallel on separate branches and merged, then all states were rebuilt from the merged scripts and compared with the committed files.

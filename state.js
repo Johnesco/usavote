@@ -200,5 +200,132 @@ const IOWA = {
   base: null,            // no precinct results or shapes here (docs/records/iowa.md)
 };
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA];
+const NEW_MEXICO = {
+  slug: 'new-mexico',
+  name: 'New Mexico',
+  fips: '35',
+  countyCount: 33,
+  parallels: [32.3, 36.1], // scripts/build_landmask.py must use the same values
+  rotate: [106, 0],
+  middle: [-106, 34.2],
+  radiusScaleAt: [-106, 34.2], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
+  data: {
+    results: 'data/nm/results-2026.json',
+    history: null,
+    precincts: 'data/nm/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/nm/landmask.bin.gz',
+    cities: 'data/nm/cities.json',
+  },
+  results: { href: 'new-mexico.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'new-mexico-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the New Mexico Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the State Canvassing Board declares them, due Nov. 24, 2026',
+  votesCounted: 'the total votes cast in the selected race in each county, counting every candidate on the ballot. New Mexico counts write-ins only for declared write-in candidates, and these results list none in these races.',
+  base: null,            // no precinct results or shapes here (docs/records/new-mexico.md)
+};
+
+const IDAHO = {
+  slug: 'idaho',
+  name: 'Idaho',
+  mapLabel: 'ID',        // the full name doesn't fit inside the state on the homepage map
+  fips: '16',
+  countyCount: 44,
+  parallels: [43.2, 47.8], // scripts/build_landmask.py must use the same values
+  rotate: [114.1, 0],
+  middle: [-114.1, 45.5],
+  radiusScaleAt: [-114.1, 45.5], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
+  defaultRace: 'governor', // no Democrat ran for U.S. Senate here, so that race isn't on these pages (docs/records/idaho.md)
+  data: {
+    results: 'data/id/results-2026.json',
+    history: null,
+    precincts: 'data/id/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/id/landmask.bin.gz',
+    cities: 'data/id/cities.json',
+  },
+  results: { href: 'idaho.html', title: 'See the results', text: "Governor and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter." },
+  dots: 'idaho-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Idaho Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the State Board of Canvassers certifies them, due by Nov. 24, 2026',
+  otherVotes: 'independent, third-party and write-in votes',
+  base: null,            // no precinct results or shapes here (docs/records/idaho.md)
+};
+
+const SOUTH_DAKOTA = {
+  slug: 'south-dakota',
+  name: 'South Dakota',
+  fips: '46',
+  countyCount: 66,
+  parallels: [43.1, 45.4], // scripts/build_landmask.py must use the same values
+  rotate: [100.2, 0],
+  middle: [-100.2, 44.2],
+  radiusScaleAt: [-100.2, 44.2], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
+  defaultRace: 'governor', // no Democrat ran for U.S. Senate here, so that race isn't on these pages (docs/records/south-dakota.md)
+  data: {
+    results: 'data/sd/results-2026.json',
+    history: null,
+    precincts: 'data/sd/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/sd/landmask.bin.gz',
+    cities: 'data/sd/cities.json',
+  },
+  results: { href: 'south-dakota.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'south-dakota-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the South Dakota Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the State Canvass Board certifies them',
+  votesCounted: "the votes reported in the selected race in each county, for every candidate on the ballot. The state lists 91 provisional ballots cast, counted if accepted just before each county's canvass, so they may not be in these totals. These results list no write-in votes.",
+  otherVotes: 'third-party votes',
+  twoCandidates: "Two candidates on the ballot. These results list no write-in votes.",
+  base: null,            // no precinct results or shapes here (docs/records/south-dakota.md)
+};
+
+const GEORGIA = {
+  slug: 'georgia',
+  name: 'Georgia',
+  fips: '13',
+  countyCount: 159,
+  parallels: [31.1, 34.2], // scripts/build_landmask.py must use the same values
+  rotate: [83.2, 0],
+  middle: [-83.2, 32.7],
+  radiusScaleAt: [-83.2, 32.7], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election, by county. Unofficial and partial, with some ballots still to report.',
+  data: {
+    results: 'data/ga/results-2026.json',
+    history: null,
+    precincts: 'data/ga/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/ga/landmask.bin.gz',
+    cities: 'data/ga/cities.json',
+  },
+  results: { href: 'georgia.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  dots: 'georgia-voters.html',
+  flights: [],
+  tour: false,
+  authority: 'the Georgia Secretary of State',
+  returns: 'unofficial, partial returns',
+  unofficialUntil: 'the state certifies them',
+  // Some counties' provisional ballots and part of Fulton's absentee ballots aren't reported yet, so a lead isn't yet a win (docs/records/georgia.md)
+  won: 'led',
+  winner: 'leader',
+  wonState: 'led the count so far',
+  reporting: (meta, fmt) => `with ${fmt(meta.reporting.precinctsReporting)} of ${fmt(meta.reporting.precincts)} precincts reporting in all ${fmt(meta.reporting.counties)} counties. The state's file doesn't yet have provisional ballots from ${meta.reporting.provisionalNames} counties, and has only part of ${meta.reporting.absenteeNames} County's absentee ballots, so these totals can change`,
+  votesCounted: "the votes reported in the selected race in each county, for the two candidates on the ballot. The Secretary of State's file lists no write-in votes in these races.",
+  twoCandidates: "Two candidates on the ballot. The Secretary of State's file lists no write-in votes in these races.",
+  base: null,            // county only: too few 2026 precincts reach a 2020 voting district clearly (docs/records/georgia.md)
+};
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA];
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

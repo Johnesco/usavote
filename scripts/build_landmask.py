@@ -26,7 +26,13 @@ Ohio (oh) likewise, written to data/oh/.
 Oklahoma (python scripts/build_landmask.py ok) and Iowa (ia) get the same grid in their own projections, written to data/ok/
 and data/ia/. The values here must match state.js.
 
-Run:  python scripts/build_landmask.py [ok|ks|sc|oh|ia]
+Idaho (id) likewise, written to data/id/. South Dakota (sd) too, into data/sd/.
+
+Oregon (or) likewise, written to data/or/, which stays local (.gitignore).
+
+Georgia (ga) likewise, written to data/ga/.
+
+Run:  python scripts/build_landmask.py [ok|ks|sc|oh|ia|nm|id|or|ga]
 """
 import gzip
 import io
@@ -52,6 +58,11 @@ NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "sc": ("South Carolina", "45", "sc/census", "data/sc/landmask.bin.gz", 32.5, 34.7, 80.9),
     "oh": ("Ohio", "39", "oh/census", "data/oh/landmask.bin.gz", 39, 41.4, 82.7),
     "ia": ("Iowa", "19", "ia/census", "data/ia/landmask.bin.gz", 40.9, 43, 93.4),
+    "nm": ("New Mexico", "35", "nm/census", "data/nm/landmask.bin.gz", 32.3, 36.1, 106),
+    "id": ("Idaho", "16", "id/census", "data/id/landmask.bin.gz", 43.2, 47.8, 114.1),
+    "or": ("Oregon", "41", "or/census", "data/or/landmask.bin.gz", 42.7, 45.5, 120.6),
+    "ga": ("Georgia", "13", "ga/census", "data/ga/landmask.bin.gz", 31.1, 34.2, 83.2),
+    "sd": ("South Dakota", "46", "sd/census", "data/sd/landmask.bin.gz", 43.1, 45.4, 100.2),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
