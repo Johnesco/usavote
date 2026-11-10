@@ -1,0 +1,46 @@
+/* The "why these maps" page. Colors come from style.css. */
+html, body { height: auto; }
+.why { max-width: 980px; margin: 0 auto; padding: 28px 32px 56px; }
+.why a { color: var(--accent); }
+.back { font-size: 14px; text-decoration: none; }
+.back:hover, .back:focus-visible { text-decoration: underline; }
+.why header { margin: 26px 0 8px; max-width: 760px; }
+.why .kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.why h1 { font-size: 44px; line-height: 1.08; letter-spacing: -0.02em; margin: 8px 0 16px; text-wrap: balance; }
+.why .lead { font-size: 19px; line-height: 1.55; color: #c5cedb; margin: 0 0 12px; }
+.why .lead b { color: var(--text); }
+.d { color: #8794ff; font-weight: 650; } .r { color: #ff5757; font-weight: 650; }
+
+.step { margin-top: 44px; padding-top: 30px; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 36px; align-items: center; }
+.step .n { display: inline-block; width: 30px; height: 30px; line-height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); text-align: center; font-weight: 700; font-size: 16px; }
+.step h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--text); margin: 12px 0 10px; }
+.step p { font-size: 17px; line-height: 1.55; color: var(--muted); margin: 0 0 12px; }
+.step p b { color: var(--text); font-weight: 650; }
+.step .say { font-size: 19px; color: var(--text); }
+.step img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.step figure { margin: 0; }
+.step figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.step .pair { display: grid; gap: 14px; }
+.go { display: inline-block; font-size: 15px; font-weight: 650; text-decoration: none; }
+.go:hover, .go:focus-visible { text-decoration: underline; }
+
+.next { margin-top: 48px; padding-top: 30px; border-top: 1px solid var(--line); }
+.next h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--text); margin: 0 0 16px; }
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.why .card { display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); text-decoration: none; }
+.card:hover, .card:focus-visible { border-color: var(--accent); background: rgba(242,193,78,.08); }
+.card b { display: block; font-size: 16px; color: var(--accent); }
+.card span { display: block; font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+
+.why footer { margin-top: 40px; font-size: 12.5px; color: var(--muted); }
+.why footer p { margin: 0 0 6px; }
+.why footer a { color: #b8c3d4; }
+
+@media (max-width: 780px) {
+  .why { padding: 20px 16px 40px; }
+  .why h1 { font-size: 32px; }
+  .why .lead { font-size: 17px; }
+  .step { grid-template-columns: 1fr; gap: 18px; margin-top: 32px; padding-top: 24px; }
+  .step figure { order: 2; }
+  .cards { grid-template-columns: 1fr; }
+}

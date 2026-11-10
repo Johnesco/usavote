@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Three Maps</title>
+<!-- One share image of the 2026 Texas U.S. Senate race drawn three ways, lightly labeled: flat county map, 3D columns,
+     one dot per voter. First make the two flat map panels:
+       python scripts/build_infographic.py 1 texas-series
+     then serve the repo root over HTTP and screenshot this page at 1920x1080, e.g. with headless Chrome:
+       chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1920,1080 --virtual-time-budget=20000
+              --screenshot=texas-series/texas-three-maps.png http://localhost:8765/scripts/three-maps.html -->
+<style>
+  :root { --bg: #0e1116; --text: #eef1f6; --muted: #a8b1c0; --dim: #788191; --accent: #f2c14e; --dem: #8794ff; --rep: #ff5757; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+  .page { position: relative; width: 1920px; height: 1080px; overflow: hidden; }
+  header { position: absolute; left: 0; right: 0; top: 56px; text-align: center; }
+  .kicker { font-size: 18px; font-weight: 600; letter-spacing: 0.08em; color: var(--accent); }
+  h1 { font: 700 64px/1.1 "Segoe UI", sans-serif; margin: 12px 0 14px; letter-spacing: -0.01em; }
+  .sub { font-size: 26px; color: var(--muted); }
+  .dem { color: var(--dem); font-weight: 600; } .rep { color: var(--rep); font-weight: 600; }
+  .col { position: absolute; top: 290px; width: 640px; height: 760px; }
+  .col img { position: absolute; left: -10px; top: 0; width: 660px; height: 563px; }
+  .col canvas { position: absolute; left: 0; top: -40px; }
+  .cap { position: absolute; left: 0; right: 0; top: 596px; text-align: center; }
+  .cap .n { display: inline-block; width: 34px; height: 34px; line-height: 34px; border-radius: 50%; background: var(--text); color: var(--bg);
+    font-size: 19px; font-weight: 700; margin-right: 12px; vertical-align: 3px; }
+  .cap .t { font-size: 32px; font-weight: 700; }
+  .cap .d { font-size: 21px; line-height: 1.4; color: var(--muted); margin: 10px auto 0; max-width: 540px; text-wrap: balance; }
+  footer { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 13px; color: var(--dim); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body>
+<div class="page">
+  <header id="head"></header>
+  <div class="col" id="c1" style="left: 0"></div>
+  <div class="col" id="c2" style="left: 640px"></div>
+  <div class="col" id="c3" style="left: 1280px"></div>
+  <footer id="foot"></footer>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { GEO_URL, buildMap, layout } from '../map3d.js';
+
+const getJSON = url => fetch(url).then(r => r.json());
+const [res, us] = await Promise.all([getJSON('../data/results-2026.json'), getJSON(GEO_URL)]);
+const race = res.races.find(r => r.id === 'u-s-senate');
+const D = race.candidates.find(c => c.party === 'DEM'), R = race.candidates.find(c => c.party === 'REP');
+const counties = res.counties.map((c, i) => { const [dem, rep, other, total] = race.counties[i]; return { ...c, dem, rep, other, total }; });
+const TOT = counties.reduce((s, c) => s + c.total, 0);
+const pct = (a, b) => (100 * a / b).toFixed(1) + '%';
+
+document.getElementById('head').innerHTML = `<div class="kicker">TEXAS · U.S. SENATE · NOVEMBER 3, 2026</div>
+  <h1>Same election, three maps</h1>
+  <div class="sub"><span class="dem">${D.name} (D) ${pct(D.votes, TOT)}</span>   ·   <span class="rep">${R.name} (R) ${pct(R.votes, TOT)}</span></div>`;
+const cap = (n, t, d) => `<div class="cap"><div><span class="n">${n}</span><span class="t">${t}</span></div><div class="d">${d}</div></div>`;
+const caps = [
+  ['County view', `The typical county-by-county color coding. Whether a county has 100 votes or 1 million doesn't affect its color.`],
+  ['3D view', `Let's add a dimension to see how many votes each county cast, and how they were split.`],
+  ['One dot per voter', `Taken down to one dot per person, the density is so vast you can't see it clearly from afar.`],
+];
+caps.forEach(([t, d], i) => document.getElementById('c' + (i + 1)).insertAdjacentHTML('beforeend', cap(i + 1, t, d)));
+document.getElementById('foot').textContent = `Texas Secretary of State, election night returns (unofficial), as of ${res.meta.resultsUpdated}. ` +
+  `Dot placement is an estimate from 2024 precinct results and 2020 census blocks, not a record of anyone's vote.   johnesco.github.io/usavote/why.html`;
+
+for (const [id, name] of [['c1', 'map-counties'], ['c3', 'map-dots']]) {
+  const img = new Image(); img.src = `../texas-series/${name}.png`;
+  await img.decode();
+  document.getElementById(id).prepend(img);
+}
+
+// the middle map: every county raised to its votes cast
+const el = document.getElementById('c2'), w = 640, h = 720;
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(devicePixelRatio); renderer.setSize(w, h);
+el.prepend(renderer.domElement);
+const scene = new THREE.Scene(); // no background: the canvas overlaps the header
+scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-600, 900, 700); scene.add(sun);
+const maxTotal = Math.max(...res.races.flatMap(r => r.counties.map(row => row[3]))); // one height scale for all races, as on the site
+buildMap(scene, us, counties, { maxTotal });
+for (const c of counties) layout(c, c.target);
+const target = new THREE.Vector3(0, 150, 20);
+const camera = new THREE.PerspectiveCamera(30, w / h, 10, 20000);
+camera.position.setFromSpherical(new THREE.Spherical(2300, 0.86, -0.22)).add(target);
+camera.lookAt(target);
+renderer.render(scene, camera);
+document.body.classList.add('ready');
+</script>
+</body>
+</html>

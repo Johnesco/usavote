@@ -4,6 +4,9 @@ html, body { height: auto; }
 .home header { margin-bottom: 26px; max-width: 720px; }
 .home h1 { font-size: 38px; letter-spacing: -0.02em; margin: 0 0 8px; }
 .home header p { color: var(--muted); font-size: 17px; margin: 0; }
+.home header .why-link { margin-top: 10px; font-size: 15px; }
+.why-link a { color: var(--accent); font-weight: 650; text-decoration: none; }
+.why-link a:hover, .why-link a:focus-visible { text-decoration: underline; }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 32px; align-items: start; }
 #map svg { display: block; width: 100%; height: auto; }
