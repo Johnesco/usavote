@@ -457,9 +457,9 @@ function leaveExplore() { if (explore) { explore = null; page.classList.remove('
 let starting = false;
 async function playFrom(i) {
   if (!explore || starting) return;
-  starting = true; $('race').disabled = $('year').disabled = true;
-  if (shown !== SENATE || chosen !== SENATE) await showRace(SENATE);
-  starting = false; $('race').disabled = $('year').disabled = false;
+  starting = true; $('race').disabled = $('year').disabled = $('per').disabled = true;
+  if (shown !== SENATE || chosen !== SENATE || shownPer !== 1) { per = 1; $('per').value = 1; await showRace(SENATE); }
+  starting = false; $('race').disabled = $('year').disabled = $('per').disabled = false;
   const s = scenes[i], from = explore;
   going = null;
   leaveExplore();
@@ -520,6 +520,13 @@ const SENATE = { ...race, year: 2026 };
 const RACES = res.races.map(r => r === race ? SENATE : { ...r, year: 2026 });
 const rowOf = new Map(res.counties.map((c, i) => [c.fips, i]));
 let chosen = SENATE; // the race asked for
+// How many voters one dot stands for (?per=100). With one dot each, a far-off view is too crowded to read; fewer, bigger dots show
+// the same pattern from afar. The tour's text is about single voters, so it always plays with one dot each.
+const PERS = [1, 10, 100, 1000];
+let per = 1, shownPer = 1;
+$('race').closest('.nav-group').insertAdjacentHTML('afterend', `<div class="nav-group"><label title="How many voters each dot stands for">1 dot =
+  <select id="per">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></label></div>`);
+$('per').onchange = e => { per = +e.target.value; showRace(chosen); };
 let shown = null;    // the race the dots show (they stay up until the next race's dots are ready)
 function fillRaces() {
   const years = [...new Set(RACES.map(r => r.year))].sort((a, b) => b - a), inYear = RACES.filter(r => r.year === chosen.year);
@@ -551,19 +558,19 @@ async function showRace(r) {
   const placing = `Placing ${fmt(r.counties.reduce((s, row) => s + row[3], 0))} voters…`;
   if ($('loading')) $('loading').textContent = placing; else busy.show('race', placing);
   // (if another race is asked for before this one is ready, this one never finishes)
-  await dots.place(votersOf(r), { per: 1, seed: 2026 + RACES.indexOf(r) });
-  shown = r; needsDraw = landed = true;
+  const asked = per, { n } = await dots.place(votersOf(r), { per: asked, seed: 2026 + RACES.indexOf(r) });
+  shown = r; shownPer = asked; needsDraw = landed = true;
   const [dem, rep, tot] = r.counties.reduce((s, row) => [s[0] + row[0], s[1] + row[1], s[2] + row[3]], [0, 0, 0]);
   const d = r.candidates.find(c => c.party === 'DEM'), e = r.candidates.find(c => c.party === 'REP');
   const dName = r.chamber ? 'Democrats' : d.last, rName = r.chamber ? 'Republicans' : e.last;
-  $('raceCount').innerHTML = `<b>${fmt(tot)} voters</b>, one dot each · ${dName} ${(100 * dem / tot).toFixed(1)}%, ${rName} ${(100 * rep / tot).toFixed(1)}%`;
+  $('raceCount').innerHTML = `<b>${fmt(tot)} voters</b>, ${asked === 1 ? 'one dot each' : `one dot per ${fmt(asked)} (${fmt(n)} dots)`} · ${dName} ${(100 * dem / tot).toFixed(1)}%, ${rName} ${(100 * rep / tot).toFixed(1)}%`;
   $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
   $('back').href = `${STATE.results.href}?race=${r.id}`;
   $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
-  if (explore) try { history.replaceState(null, '', `?race=${r.id}`); } catch {} // (a link's own address stays as it opened)
+  if (explore) try { history.replaceState(null, '', `?race=${r.id}${asked > 1 ? `&per=${asked}` : ''}`); } catch {} // (a link's own address stays as it opened)
 }
 $('race').onchange = e => { const r = raceWithId(e.target.value); if (r) showRace(r); };
 // a new year keeps the same office if that year had it, otherwise opens its first race
@@ -649,7 +656,7 @@ function frame(now) {
   if (explore) { // the reader's own view, leveling out to look straight down
     explore.tilt += (0.0001 - explore.tilt) * Math.min(1, dt * 3);
     explore.heading += -explore.heading * Math.min(1, dt * 3); // north up again, so the arrow keys and the drag feel right
-    v = explore; dot = exploreDot(v);
+    v = explore; dot = exploreDot(v) * Math.sqrt(shownPer); // a dot for more voters is wider, as their land would be
   } else if (resume) { // flying back into the show
     resume.k = Math.min(1, resume.k + dt / resume.dur);
     v = flight(resume.from, v, resume.k);
@@ -661,7 +668,7 @@ function frame(now) {
   dots.uniforms.uWorld.value = dot * UPM;
   // a scene's `size` enlarges the dots of its county only, so a few voters can be found without slowing the whole map
   const dpr = renderer.getPixelRatio();
-  dots.uniforms.uMinSize.value = dpr;
+  dots.uniforms.uMinSize.value = dpr * (1 + Math.log10(shownPer)); // 1, 2, 3 or 4 pixels: fewer dots, each easier to see
   dots.uniforms.uFocus.value = s.size && s.focus && !explore ? ordered.indexOf(s.focus) : -1;
   dots.uniforms.uFocusSize.value = dpr * (1 + ((s.size || 1) - 1) * e);
   // the tour opens by building the map up from nothing; flying into it from the reader's map, the dots clear first
@@ -701,6 +708,7 @@ const startAt = +query.get('scene'), onTour = STATE.tour && ((startAt >= 1 && st
 if (!onTour && /^\d{4}-/.test(asked) && !asked.startsWith('2026-')) await loadHistory();
 fillRaces();
 const firstRace = onTour ? SENATE : raceWithId(asked) || SENATE;
+if (!onTour && PERS.includes(+query.get('per'))) $('per').value = per = +query.get('per');
 await showRace(firstRace);
 $('loading').remove();
 if (onTour) {
