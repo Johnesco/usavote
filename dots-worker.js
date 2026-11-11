@@ -129,9 +129,15 @@ function intoTiles(buf, table) {
 onmessage = ({ data }) => {
   if (data.land) { land = data.land; return; }
   const { counties, per, seed, job } = data;
-  const n = c => [Math.round(c.dem / per), Math.round(c.rep / per), Math.round(c.other / per)];
+  // Dots for each county and party. With several voters to a dot, the part of a dot a county is owed carries over to the next county,
+  // so the state's dots add up for each party, and a county too small for a dot of its own still gets one now and then.
+  const owed = [0.5, 0.5, 0.5], share = counties.map(c => [c.dem, c.rep, c.other].map((v, p) => {
+    const before = Math.floor(owed[p]);
+    owed[p] += v / per;
+    return Math.floor(owed[p]) - before;
+  }));
   let total = 0;
-  for (const c of counties) total += n(c).reduce((a, b) => a + b, 0);
+  for (const k of share) total += k[0] + k[1] + k[2];
   const buf = new Int16Array(total * 4), table = new Float32Array(counties.length * 4), counts = [0, 0, 0];
   const rand = rng(seed);
   let o = 0;
@@ -149,7 +155,7 @@ onmessage = ({ data }) => {
     }
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, step = Math.max(x1 - x0, y1 - y0, 1e-6) / 2 / STEPS;
     table.set([cx, cy, step, c.delay || 0], ci * 4);
-    const left = n(c);
+    const left = share[ci].slice();
     let all = left[0] + left[1] + left[2];
     if (!all || !(T || U)) return;
     // where each party's layer starts in the column, bottom to top: runner-up, others, winner
