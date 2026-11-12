@@ -51,6 +51,7 @@
   .seg > :first-child { border-radius: 999px 0 0 999px; }
   .seg > :last-child { border-radius: 0 999px 999px 0; }
   .seg > :not(:first-child) { margin-left: -1px; }
+  .seg > :only-child { border-radius: 999px; }
   .seg > :disabled { opacity: .5; cursor: default; }
   .seg > [aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
   .seg > a:hover, .seg > a:focus-visible { color: var(--accent); }

@@ -97,11 +97,12 @@
       <div id="labels"></div>
       <div id="tip"></div>
       <div class="controls">
-        <button id="play">See in 3D</button>
-        <input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Flat map to 3D columns" />
-        <div class="seg" id="dragMode" role="group" aria-label="What dragging does" hidden>
-          <button type="button" id="dragMove" aria-pressed="true" title="Dragging moves the map">Move</button>
-          <button type="button" id="dragRotate" aria-pressed="false" title="Dragging rotates and tilts the map">Rotate</button>
+        <div class="seg" role="group" aria-label="Flat map or 3D columns">
+          <button type="button" id="viewFlat" aria-pressed="true" title="The flat map, seen from above">Flat</button>
+          <button type="button" id="view3d" aria-pressed="false" title="Columns raised by votes cast">3D</button>
+        </div>
+        <div class="seg" id="turnWrap" hidden>
+          <button type="button" id="turn" aria-pressed="false" title="Turn the map's slow rotation on or off">Rotation off</button>
         </div>
         <button class="ghost" id="reset" title="Reset camera">Reset</button>
       </div>

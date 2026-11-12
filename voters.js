@@ -523,6 +523,8 @@ const SENATE = { ...race, year: 2026 };
 const RACES = res.races.map(r => r === race ? SENATE : { ...r, year: 2026 });
 const rowOf = new Map(res.counties.map((c, i) => [c.fips, i]));
 let chosen = SENATE; // the race asked for
+let BAR_BY = '';     // the bar view's ?by=, for the way back to it
+let BAR_ANGLE = [0, 0]; // and its tilt and heading if it was in 3D: this map settles flat and north up, so it hands them back unchanged
 // How many voters one dot stands for (?per=100). With one dot each, a far-off view is too crowded to read; fewer, bigger dots show
 // the same pattern from afar. The tour's text is about single voters, so it always plays with one dot each.
 const PERS = [1, 10, 100, 1000];
@@ -570,7 +572,7 @@ async function showRace(r) {
   $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
-  $('back').href = `${STATE.results.href}?race=${r.id}`;
+  $('back').href = `${STATE.results.href}?race=${r.id}${BAR_BY}`;
   $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
   if (explore) try { history.replaceState(null, '', `?race=${r.id}${asked > 1 ? `&per=${asked}` : ''}`); } catch {} // (a link's own address stays as it opened)
@@ -705,6 +707,15 @@ resize();
 timeline();
 dots.setLand(PC?.land);
 const query = new URLSearchParams(location.search), asked = query.get('race') || '';
+// From the bar view and back to it (app.js): ?by= is the bar view's by precinct or by district, kept for the way back, and ?at= is
+// the camera, x,y,distance,tilt,heading, which the Bar view link also carries back, so changing views keeps the view. The place and
+// zoom go back as they are now; the tilt and heading go back as they came.
+BAR_BY = ['precinct', 'district'].includes(query.get('by')) ? `&by=${query.get('by')}` : '';
+for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
+  $('back').addEventListener(type, () => {
+    const v = explore || lastV;
+    if (v) $('back').href = `${STATE.results.href}?race=${chosen.id}${BAR_BY}&at=${[v.x, v.y, v.d, ...BAR_ANGLE].map(n => +n.toFixed(3)).join(',')}`;
+  });
 // ?scene=N (1-based) starts the tour at that scene, already arrived; ?tour=1 starts it from the beginning
 const startAt = +query.get('scene'), onTour = STATE.tour && ((startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1');
 // a race from an earlier year needs that file first; otherwise it comes in behind the map, for the race menu
@@ -720,6 +731,13 @@ if (onTour) {
   playing = toured = true;
 } else {
   explore = homeView();
+  const at = (query.get('at') || '').split(',').map(Number);
+  if (at.length === 5 && at.every(Number.isFinite)) {
+    const [x, y, d, tilt, heading] = at, near = milesView({ x: 0, y: 0 }, 0.08).d, far = explore.d * 1.6; // zoomAt's limits
+    explore = { x: Math.max(-650, Math.min(650, x)), y: Math.max(-650, Math.min(650, y)), d: Math.max(near, Math.min(far, d)),
+      tilt: Math.max(0.0001, Math.min(1.5, tilt)), heading };
+    BAR_ANGLE = [tilt, heading];
+  }
   off.x = free.ox; off.y = free.oy;
 }
 updateButton();

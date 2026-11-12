@@ -179,7 +179,7 @@ function setRace(id) {
     `The flat map colors each county by who ${WON} it, no matter how many people voted there. A county where ${fmt(small.total)} votes were cast ` +
     `(${small.name}) is painted just as boldly as one where ${(big.total / 1e6).toFixed(2)} million were cast (${big.name}).`;
   $('raiseText').innerHTML =
-    `Press <b>See in 3D</b> and each county becomes a column whose height is the number of votes cast there in the ${race.label} race. ` +
+    `Press <b>3D</b> and each county becomes a column whose height is the number of votes cast there in the ${race.label} race. ` +
     `Most of the red area is land where few people vote, and the tallest columns are in the cities.`;
   let acc = 0, n = 0, accLand = 0;
   while (n < asc.length && acc + asc[n].total < big.total) { acc += asc[n].total; accLand += asc[n].landSqMi; n++; }
@@ -231,14 +231,14 @@ function districtText() {
     `Each ${race.label} district is one shape here, colored by who ${wonWord()} it. A chamber's districts are drawn to hold about the same number of people, ` +
     `so the largest shapes are where few people live and the smallest are packed into the cities.`;
   $('raiseText').innerHTML =
-    `Press <b>See in 3D</b> and each district becomes a column whose height is the number of votes cast in it, on the same scale as the county columns. ` +
+    `Press <b>3D</b> and each district becomes a column whose height is the number of votes cast in it. District columns have a scale of their own: the ${race.label} district with the most votes in any year here stands as tall as the tallest county column would. ` +
     (voted.length ? `District ${voted[0].n} cast ${fmt(voted[0].total)}; District ${voted.at(-1).n} cast ${fmt(voted.at(-1).total)}.` : '');
   $('legRTitle').textContent = `${nmOf(R)} ${wonWord()} the district`;
   $('legDTitle').textContent = `${nmOf(D)} ${wonWord()} the district`;
   $('method').insertAdjacentHTML('beforeend',
     `<p><b>By district:</b> one column for each ${race.label} district, on the lines used for the ${race.year} election
     (<a href="${m.url}" target="_blank" rel="noopener">${m.source}</a>${m.license ? `; <a href="${m.licenseUrl}" target="_blank" rel="noopener">${m.license}</a>` : ''}).
-    A district's color is its ${winnerWord()}'s share of all votes cast in it, and its height is the votes cast, stacked like a county's column.
+    A district's color is its ${winnerWord()}'s share of all votes cast in it, and its height is the votes cast, stacked like a county's column. Heights are on the ${race.label}'s own scale, the same for every year of it here, and not the county columns' scale: a district has far fewer votes than a big county, so on that scale every district would be nearly flat.
     ${flat ? `${flat} district${flat > 1 ? 's' : ''} had a single candidate and ${flat > 1 ? 'were' : 'was'} left off the ballot: ${flat > 1 ? 'they have their winners\' color' : 'it has its winner\'s color'} and no height.` : ''}
     ${staggered ? `The ${race.size - up.length} districts not up this year are gray.` : ''}
     Outlines are simplified to about 55 meters, so they aren't exact at street level.</p>`);
@@ -287,7 +287,7 @@ function renderChamber(nm) {
     `${race.label} seats are won district by district, and districts don't follow county lines: ${big.name} County had ` +
     `${big.districts} ${race.label} district races on its ballot, while District ${wide.district} spans ${wide.counties} counties. This map adds up every district's votes within each county.`;
   $('raiseText').innerHTML =
-    `Press <b>See in 3D</b> and each county becomes a column whose height is the number of ${race.label} votes cast there. ` +
+    `Press <b>3D</b> and each county becomes a column whose height is the number of ${race.label} votes cast there. ` +
     `${small.name} County cast ${fmt(small.total)}; ${big.name} County cast ${fmt(big.total)}.`;
   const close = [...race.districts].map(d => {
     const [a, b] = d.candidates; return { d, m: b ? (a.votes - b.votes) / d.total : 1, w: a };
@@ -334,7 +334,7 @@ function renderHistory(minor, nm) {
     `On the flat map every county is one block of color, whatever its size in votes: ${small.name} County cast ${fmt(small.total)} votes in this race ` +
     `and ${big.name} County cast ${fmt(big.total)}.`;
   $('raiseText').innerHTML =
-    `Press <b>See in 3D</b> and each county becomes a column whose height is the number of votes cast there in this race. ` +
+    `Press <b>3D</b> and each county becomes a column whose height is the number of votes cast there in this race. ` +
     `Every year on this page uses the same height scale, so the columns also show how turnout has changed.`;
   const big5 = desc.slice(0, 5), big5v = big5.reduce((s, c) => s + c.total, 0);
   let acc = 0, n = 0, accLand = 0;
@@ -607,16 +607,15 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.maxPolarAngle = Math.PI / 2.05; controls.enabled = false;
 controls.minDistance = 2.5; controls.maxDistance = 6000; // close enough for one precinct
 controls.screenSpacePanning = false; // moving the map slides along the ground, even when tilted
-let dragRotates = false; // in 3D, what a plain drag does; a right-drag does the other
 let fitDist = 2000, flatOffZ = 0;
 const TOP = { phi: 0.0001, theta: 0 };
 const DEFAULT_TILT = { phi: 0.98, theta: -0.22, r: 1.08 };
 const RAISED_SHIFT = 0.6; // tilted, the ground is foreshortened, so centering in the clear part of the screen takes a longer shift
-// screen space kept clear of the map in the flat view: a margin at the top, the See in 3D controls at the bottom
+// screen space kept clear of the map in the flat view: a margin at the top, the Flat / 3D controls at the bottom
 const PAD = { top: 16, bottom: 84, side: 16 };
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const clamp01 = x => Math.min(1, Math.max(0, x));
-const playBtn = document.getElementById('play'), scrub = document.getElementById('scrub');
+const flatBtn = $('viewFlat'), raisedBtn = $('view3d'), turnBtn = $('turn');
 const hintEl = document.getElementById('hint');
 
 // A camera pose is a spherical offset (r, phi, theta) around a target point.
@@ -649,7 +648,13 @@ function setPose(o) {
 }
 
 let progress = 0, anim = null, going = null; // going: a flight to the place the Go to menus chose
-let focus = null; // a county or precinct from the Go to menus, which See in 3D and Flatten stay on: { view, kind, c, v }
+// In 3D the map turns slowly on its own, at the pace of the County Flythrough's last scene, by county, precinct or district alike.
+// Pressing 3D starts it. Taking hold of the map, or the Rotation switch, stops it, and then the map is the reader's to explore, as
+// the dot view is: drag to move, right-drag or two fingers to turn, scroll or pinch to zoom. The switch starts it again.
+let turning = false;
+const TURN = 0.08; // radians a second, toward the east as in the flythrough
+controls.autoRotateSpeed = -TURN * 60 / (2 * Math.PI); // OrbitControls counts in turns a minute, and the other way round
+let focus = null; // a county or precinct from the Go to menus, which 3D and Flat stay on: { view, kind, c, v }
 let precinctMix = 0; // 0 = county columns up, 1 = precinct columns up
 function layoutCounties() {
   const up = 1 - ease(precinctMix);
@@ -663,24 +668,24 @@ function applyProgress(p, pose = null) {
   progress = p;
   setPose(pose || canonicalPose(p));
   layoutCounties();
-  scrub.value = Math.round(p * 1000);
-  playBtn.textContent = p > 0.5 ? 'Flatten' : 'See in 3D';
+  flatBtn.setAttribute('aria-pressed', String(p <= 0.5));
+  raisedBtn.setAttribute('aria-pressed', String(p > 0.5));
 }
-// Drag moves the map. In 3D the Move / Rotate switch can make it rotate instead, and a right-drag does the other. Scroll or pinch zooms.
+// Drag moves the map and scroll or pinch zooms. In 3D a right-drag, or two fingers, turns and tilts it.
 function updateMode() {
   const flat = progress === 0, raised = progress === 1;
   controls.enabled = !anim && !going && (flat || raised);
   controls.enableRotate = raised;
-  const rotating = raised && dragRotates;
-  controls.mouseButtons.LEFT = rotating ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
-  controls.mouseButtons.RIGHT = raised && !rotating ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
-  controls.touches.ONE = rotating ? THREE.TOUCH.ROTATE : THREE.TOUCH.PAN;
-  $('dragMode').hidden = !raised;
-  $('dragMove').setAttribute('aria-pressed', String(!rotating));
-  $('dragRotate').setAttribute('aria-pressed', String(rotating));
+  controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+  controls.mouseButtons.RIGHT = raised ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
+  controls.touches.ONE = THREE.TOUCH.PAN;
+  controls.touches.TWO = raised ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN;
+  $('turnWrap').hidden = !raised;
+  turnBtn.setAttribute('aria-pressed', String(turning));
+  turnBtn.textContent = turning ? 'Rotation on' : 'Rotation off';
   const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
   hintEl.textContent = anim ? `Hover over a ${what}`
-    : raised ? `Drag to ${rotating ? 'rotate' : 'move'} · right-drag to ${rotating ? 'move' : 'rotate'} · scroll to zoom · hover over a ${what}`
+    : raised ? (turning ? `Turning slowly · drag or scroll to explore · hover over a ${what}` : `Drag to move · right-drag to turn · scroll to zoom · hover over a ${what}`)
     : flat ? `Drag to pan · scroll to zoom · hover over a ${what}`
     : `Hover over a ${what}`;
 }
@@ -699,10 +704,16 @@ function startAnim(goal, dur) {
   anim = { from: progress, to: goal, start: performance.now(), dur, pose: currentPose() };
   updateMode();
 }
-playBtn.onclick = () => { if (!focus) clearPlace(); going = null; const goal = progress > 0.5 ? 0 : 1; startAnim(goal, 4200 * Math.abs(goal - progress) + 1); };
-scrub.oninput = () => { if (!focus) clearPlace(); going = null; anim = null; applyProgress(scrub.value / 1000); updateMode(); };
-$('dragMove').onclick = () => { dragRotates = false; updateMode(); };
-$('dragRotate').onclick = () => { dragRotates = true; updateMode(); };
+function setRaised(on) { // Flat or 3D: the columns sink or rise, and in 3D the map starts turning
+  const goal = on ? 1 : 0;
+  if (goal === (anim ? anim.to : progress)) return;
+  if (!focus) clearPlace();
+  going = null; turning = on && !REDUCED;
+  startAnim(goal, 4200 * Math.abs(goal - progress) + 1);
+}
+flatBtn.onclick = () => setRaised(false);
+raisedBtn.onclick = () => setRaised(true);
+turnBtn.onclick = () => { turning = !turning; updateMode(); };
 document.getElementById('reset').onclick = () => { clearPlace(); startAnim(progress, 700); };
 
 // ---------- go to a city, county or precinct ----------
@@ -853,8 +864,8 @@ if (HAS_PRECINCTS) $('byPrecinct').onclick = () => setBy(true);
 if ($('byCounty')) $('byCounty').onclick = () => byDistrict ? setDistrict(false) : setBy(false);
 
 // ---------- bar view, by district ----------
-// One set of columns per chamber, made when first asked for. A district's column uses the county columns' height scale, so the two
-// views compare. A file that isn't there leaves its chamber without the view.
+// One set of columns per chamber, made when first asked for. District columns have a height scale of their own for each
+// chamber: its largest district in any year stands H_MAX tall. On the county columns' scale every district would be a low slab. A file that isn't there leaves its chamber without the view.
 function hasDistricts(r) {
   const e = districtEntry(r);
   if (!e) return Promise.resolve(false);
@@ -870,6 +881,13 @@ function loadDistrictSet(entry) {
     return { entry, cols, nums, meta: file.meta, rows: [], race: null };
   }).catch(e => { districtSets.delete(entry); throw e; }));
   return districtSets.get(entry);
+}
+// the most votes any district of the race's chamber had, in any year on the page: the top of that chamber's height scale
+const districtMaxes = new Map();
+function districtMax(r) {
+  const key = office(r);
+  if (!districtMaxes.has(key)) districtMaxes.set(key, Math.max(1, ...races.filter(x => x.chamber && office(x) === key).flatMap(x => x.districts.map(d => d.total))));
+  return districtMaxes.get(key);
 }
 // each district of the set, for the race on screen: its result if it had a race this year, and its column
 function setDistrictRows() {
@@ -887,7 +905,7 @@ function setDistrictRows() {
     // a single candidate left off the ballot has no votes: the winner's color at full strength, and no height
     const band = total ? Math.max(0, BINS.findLastIndex(b => 100 * w.votes / total >= b)) : BINS.length - 1;
     const major = w.party === 'DEM' || w.party === 'REP', dWon = w.party === 'DEM';
-    return { h: total ? Math.max(0.02, H_MAX * total / maxTotal) : 0,
+    return { h: total ? Math.max(0.02, H_MAX * total / districtMax(race)) : 0,
       top: !major ? PAL_OTHER : (dWon ? PAL_DEM : 0) + band, low: dWon ? PAL_LOSER_R : PAL_LOSER_D,
       fLow: total && major ? (dWon ? rep : dem) / total : 0, fMid: total && major ? other / total : 0 };
   }));
@@ -1012,7 +1030,7 @@ function placeTip(e, r) {
   tip.style.top = Math.max(8, Math.min(y + 14, r.height - tip.offsetHeight - 8)) + 'px';
 }
 // taking hold of the map ends a flight
-const stopGoing = () => { if (going) { going = null; updateMode(); } };
+const stopGoing = () => { if (going || turning) { going = null; turning = false; updateMode(); } };
 renderer.domElement.addEventListener('pointerdown', stopGoing);
 renderer.domElement.addEventListener('wheel', stopGoing, { passive: true });
 renderer.domElement.addEventListener('pointermove', onPointer);
@@ -1052,7 +1070,8 @@ function frame(now) {
     setPose({ ...mixPose(from, to, e), r });
     if (t === 1) { going = null; updateMode(); }
   }
-  if (controls.enabled) controls.update();
+  controls.autoRotate = turning && progress === 1 && !anim && !going;
+  if (controls.enabled) controls.update(Math.min(dt, 100) / 1000);
   // close enough for one precinct without cutting off anything near the camera
   camera.near = Math.min(10, Math.max(0.3, camera.position.distanceTo(controls.target) * 0.1));
   camera.updateProjectionMatrix();
@@ -1097,6 +1116,23 @@ fit.observe(stage);
 resize();
 updateMode();
 ready = true;
+// ---------- the same view in the dot view, and back ----------
+// The Dot view link carries the camera as ?at=x,y,distance,tilt,heading (map units and radians, as voters.js keeps its view), and
+// the dot view's Bar view link carries it back, so changing views doesn't start over from the whole state.
+const groundShift = r => ((PAD.bottom - PAD.top) / 2) * (2 * r * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) / stage.clientHeight);
+function atParam() {
+  const o = currentPose(), flat = progress < 0.5; // the camera aims south of what's centered in the clear part of the screen
+  return [o.target.x, groundShift(o.r) * (flat ? 1 : 1 + RAISED_SHIFT) - o.target.z, o.r, flat ? 0 : o.phi, flat ? 0 : o.theta].map(n => +n.toFixed(3)).join(',');
+}
+for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
+  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}&at=${atParam()}`; });
+const at = (params.get('at') || '').split(',').map(Number);
+if (at.length === 5 && at.every(Number.isFinite)) {
+  const [x, y, d, tilt, heading] = at, raised = tilt > 0.05, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
+  applyProgress(raised ? 1 : 0, { r, phi: raised ? Math.min(tilt, controls.maxPolarAngle) : TOP.phi, theta: raised ? heading : TOP.theta,
+    target: new THREE.Vector3(x, 0, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - y) });
+  updateMode();
+}
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
 requestAnimationFrame(frame);

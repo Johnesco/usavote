@@ -126,6 +126,8 @@ Nothing is computed on a server. Each page fetches its files and works everythin
 - Height: total votes on a linear scale shared by all races, with the tallest column at 420 map units.
 - Stacking: runner-up at the bottom, others in the middle, winner on top.
 - City names (`cities.js`): about 100,000 people and up when the whole state shows, and smaller places as you zoom in. At most 30 show at once.
+- Controls: **Flat** or **3D**. In 3D the map turns slowly (0.08 radians a second, the County Flythrough's closing pace) in every bar view, until the reader takes hold of it or switches **Rotation** off; then drag moves, right-drag or two fingers turn, and scroll zooms.
+- Bar view and dot view hand each other the camera in the link (`?at=x,y,distance,tilt,heading`), so switching keeps the place and zoom. The dot view always settles flat and north up, so it hands a 3D bar view's tilt and heading back unchanged.
 
 **Bar view by precinct** (`precinct-columns.js`), on the results page's **By precinct** toggle: one mesh holds every precinct's column, stacked in the shader. Height is on one scale at every zoom: 70 map units for the 2024 Senate race's largest precinct. Votes are as counted for the 2024 U.S. Senate race and otherwise estimated by step 1 below, and labeled so on screen.
 
@@ -415,7 +417,7 @@ Not checked: the 2022 and 2024 results against the House and Senate lines. That 
 ### On the page
 
 - `STATE.data.districts` in `state.js` lists each chamber's file and years. The page checks that a file is there before offering its view, so removing a file removes that chamber's button. `app.js` draws them with the precinct view's column code (`precinct-columns.js`).
-- **Color:** the winner's share of all votes cast in the district, in the same 10-point bands. **Height:** votes cast, on the county columns' scale.
+- **Color:** the winner's share of all votes cast in the district, in the same 10-point bands. **Height:** votes cast, on a scale of the chamber's own: its district with the most votes in any year on the page stands as tall as the tallest county column (420 map units). The first build used the county columns' scale, on which Texas's largest districts stood 7% to 23% as tall as Harris County, so every district was a low slab; the owner chose the change on 2026-11-12.
 - A district with a single candidate is left off the ballot in Texas, so it has its winner's color at full strength and no height. Senate districts not up that year are gray.
 - The sidebar's headline and bars still describe counties. Only the race line, "What you're seeing", the legend titles and a Method paragraph change.
 - Checked in a browser on 2026-11-12: all three chambers flat and in 3D, hover, 2022 Texas House, switching among county, precinct and district, and that Kansas and Oklahoma still load. Not checked: other screen sizes, or the Go to menus while by district.
