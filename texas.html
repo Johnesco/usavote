@@ -10,7 +10,7 @@
 <link rel="canonical" href="https://johnesco.github.io/usavote/texas.html" />
 <!-- Share previews (Open Graph / X). Crawlers don't run JavaScript, so every ?race= link shares this same preview. -->
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content="Texas Votes, Raised" />
+<meta property="og:site_name" content="How America Votes" />
 <meta property="og:url" content="https://johnesco.github.io/usavote/texas.html" />
 <meta property="og:title" content="How Texas Votes" />
 <meta property="og:description" content="In all 18 statewide races in 2026, Republicans won most counties and about 80% of the land, but Democrats won statewide. See the counties rise by votes cast." />
@@ -62,7 +62,7 @@
     <p id="raiseText"></p>
     <p id="harris"></p>
 
-    <h2>Winner's share of the county vote</h2>
+    <h2 id="legHead">Winner's share of the county vote</h2>
     <div class="legend-title" id="legRTitle"></div>
     <div class="legend" id="legR"></div>
     <div class="legend-title" id="legDTitle"></div>
@@ -80,12 +80,13 @@
       <div class="bar-groups">
       <div class="group" id="viewRow">
         <div class="seg" role="group" aria-label="View">
-          <button type="button" aria-pressed="true" title="Columns and colors, by county or by precinct">Bar view</button>
+          <button type="button" aria-pressed="true" title="Columns and colors, by county, precinct or district">Bar view</button>
           <a id="dotLink" href="voters.html" title="Open a map with one dot for each voter in this race">Dot view</a>
         </div>
         <div class="seg" role="group" aria-label="Show results">
           <button type="button" id="byCounty" aria-pressed="true">By county</button>
           <button type="button" id="byPrecinct" aria-pressed="false">By precinct</button>
+          <button type="button" id="byDistrict" aria-pressed="false" disabled title="For U.S. House, Texas House and Texas Senate races">By district</button>
         </div>
       </div>
       <div class="group" id="picker" role="group" aria-label="Choose a year and race">

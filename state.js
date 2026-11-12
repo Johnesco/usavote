@@ -18,6 +18,13 @@ const TEXAS = {
     precinctShapes: 'data/precinct-shapes.json.gz',
     land: 'data/landmask.bin.gz',
     cities: 'data/cities.json',
+    // By district: each chamber's district outlines and the general elections held on them (scripts/build_districts.py;
+    // docs/PIPELINE.md, Part 9). A file that isn't there leaves its chamber without the view.
+    districts: {
+      'u-s-house': { url: 'data/districts/u-s-house.json.gz', years: [2026] },
+      'texas-house': { url: 'data/districts/texas-house.json.gz', years: [2022, 2024, 2026] },
+      'texas-senate': { url: 'data/districts/texas-senate.json.gz', years: [2022, 2024, 2026] },
+    },
   },
   // where the state opens: any race in any year
   results: { href: 'texas.html', title: 'See the results', text: 'Any race in any year, 2008 to 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },

@@ -350,9 +350,76 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Built: silent, by the owner's choice | Vermont, West Virginia | No license and no limit found. The owner chose them knowing this. Their results sites carry bare copyright footers |
 | Chosen, not built | Maine | No November 2026 results were posted on the Secretary of State's results page when checked on 2026-11-09, only June primary files. Its Census files are saved under `data/raw/me/` |
 | Silent, not chosen | Alaska, Louisiana, North Dakota, New York | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
-| Copyright notice only, or not fully read | Kentucky, Mississippi, Virginia, Maryland, Alabama, New Jersey, Florida, Missouri, New Hampshire, Connecticut, Delaware, Illinois | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
+| Copyright notice only, or not fully read | Kentucky, Mississippi, Virginia, Maryland, Alabama, New Jersey, Missouri, New Hampshire, Connecticut, Delaware; Florida and Illinois were here until read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
 | Limiting wording | Utah, Hawaii, Indiana, Massachusetts | Utah allows copying only if "not modified in any respect"; Hawaii bars commercial use; Indiana allows personal use only, with no republishing or derivative works; Massachusetts allows only fair use without permission |
+
+**Florida and Illinois, read again on 2026-11-12.** The owner asked why these two weren't built, so their terms were read in full in a browser. This is a reading of the published pages, not legal advice, and neither agency was asked.
+
+| State | What it says | Outcome |
+|---|---|---|
+| Florida | The Department of State's [Copyright and Terms of Use](https://dos.fl.gov/copyright/) say no material from the site, or from any site owned or operated by the State of Florida or the department, "may be copied, reproduced, republished, uploaded, posted, transmitted, or distributed in any way", except a download to a single computer "for your personal, non-commercial use only". Modifying the materials, or using them on any other website, is prohibited. The results site, [Florida Election Watch](https://floridaelectionwatch.gov/), has no terms of its own; its footer links to the department. | Limiting wording. Not built |
+| Illinois | The State Board of Elections' [site](https://www.elections.il.gov/) shows no terms, copyright line or reuse policy on its homepage or its [results page](https://www.elections.il.gov/ElectionOperations/ElectionVoteTotals.aspx), which has "Download Vote Totals" buttons. The [State of Illinois legal notices](https://www.illinois.gov/about/privacy.html) disclaim liability, accuracy and endorsement and don't restrict copying; they recommend contacting "the originator of the data" with questions about appropriate use. That these notices reach the Board's site is inferred. | Silent, the same standing as Vermont and West Virginia, so the owner's to choose. Can't be built yet: the results list stopped at the 2026 General Primary, with no November 2026 results |
+
+**Gap in the record:** Illinois's county clerks' sites, which may post election-night results under their own terms, weren't read, and precinct data wasn't looked for in either state. The Board's inner pages weren't searched for terms beyond the two named.
 
 **Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
 
 **Build method:** the states were built in parallel on separate branches and merged, then all states were rebuilt from the merged scripts and compared with the committed files.
+
+## 9. Texas district lines: the record
+
+Built 2026-11-12, for the **By district** view on `texas.html`: one column for each U.S. House, Texas House or Texas Senate district, in place of the county columns. It's offered for a chamber's races in the years held on the lines below, and its button is off for every other race.
+
+### Raw files, under `data/raw/census-dl/tlc/districts/` (not committed)
+
+All three are shapefiles from the Texas Legislative Council's [Capitol Data Portal](https://data.capitol.texas.gov/), downloaded 2026-11-12.
+
+| What | Local file | SHA-256 (first 16) |
+|---|---|---|
+| [PLANC2333](https://data.capitol.texas.gov/dataset/planc2333), U.S. House, "enacted by 89th Legislature, 2nd C.S., 2025" ([zip](https://data.capitol.texas.gov/dataset/748c952b-e926-4f44-8d01-a738884b3ec8/resource/5712ebe1-d777-4d4a-b836-0534e17bca01/download/planc2333.zip)) | `planc2333.zip` | `6797d6e39f76224f` |
+| [PLANH2316](https://data.capitol.texas.gov/dataset/planh2316), "State House districts, 2023-2026" ([zip](https://data.capitol.texas.gov/dataset/71af633c-21bf-42cf-ad48-4fe95593a897/resource/a4d3230f-47f2-4253-85f3-51a6c3c9ad0a/download/planh2316.zip)) | `planh2316.zip` | `82d2a0aeb31e714c` |
+| [PLANS2168](https://data.capitol.texas.gov/dataset/plans2168), "State Senate districts, 2023-2026" ([zip](https://data.capitol.texas.gov/dataset/70836384-f10c-423d-a36e-748d7e000872/resource/8247dbc6-b942-4a29-813c-1ebc603a7236/download/plans2168.zip)) | `plans2168.zip` | `7bf496e41cfc6ddc` |
+
+**Which elections:** the portal tags all three "districts for 2026 elections", and the House and Senate plans also "districts for 2022-2026 elections". So the House and Senate views cover 2022, 2024 and 2026, and the U.S. House view covers 2026 only. The 2022 and 2024 U.S. House lines (PLANC2193) and every plan before 2022 weren't fetched.
+
+### Terms of use, read 2026-11-12
+
+This is a reading of the published pages, not legal advice. Each dataset page and its record in the portal's catalog were read in a browser.
+
+| Source | What it says | What it asks of us |
+|---|---|---|
+| PLANH2316, PLANS2168 | Listed as Creative Commons Attribution, linking to the same general [license page](http://www.opendefinition.org/licenses/cc-by) as `VTDs_24PG`, with no version named. | Credit, a license link and a note of changes: in the page's Sources and in each file's `meta` |
+| PLANC2333 | **No license.** The page shows none and its catalog record has an empty license field. The portal's [About page](https://data.capitol.texas.gov/about) describes the portal and has no terms. | Nothing stated. This is silence, not permission, the same standing as the Secretary of State's results. The owner was told and chose on 2026-11-12 to publish the outlines with credit, in the page's Sources and the file's `meta`. |
+
+**Gap in the record:** the Council wasn't asked about PLANC2333. Whether PLANC2193 has a license wasn't read.
+
+### Build
+
+`python scripts/build_districts.py` (after `build_data.py`; 6 seconds) writes one file per chamber to `data/districts/`:
+
+| File | Districts | Points, raw to simplified | Size | SHA-256 (first 16) |
+|---|---:|---|---:|---|
+| `texas-house.json.gz` | 150 | 615,053 to 49,235 | 119 KB | `5383ed86378e8f0f` |
+| `texas-senate.json.gz` | 31 | 386,881 to 31,215 | 76 KB | `322cddd96a64811f` |
+| `u-s-house.json.gz` | 38 | 411,204 to 35,578 | 85 KB | `b1d159bcf0e412f7` |
+
+Outlines are converted from the Council's Lambert projection and simplified to about 55 m along the borders neighbors share, the way the precinct outlines are.
+
+Checks that stop the build:
+- Each file has exactly the chamber's districts, numbered 1 to its size in `results-2026.json`.
+- **The lines match the results.** Each district's counties are worked out from the 2024 precincts whose centers fall inside it. Every district on the 2026 ballot must reach every county the Secretary of State's feed reports results from for it: all 38, 150 and 16 do.
+- A district may also reach one county with no results for it, where its piece has no voters or a precinct's center falls just over the line (4, 9 and 3 districts do). More than one stops the build.
+
+Not checked: the 2022 and 2024 results against the House and Senate lines. That rests on the portal's tags.
+
+### On the page
+
+- `STATE.data.districts` in `state.js` lists each chamber's file and years. The page checks that a file is there before offering its view, so removing a file removes that chamber's button. `app.js` draws them with the precinct view's column code (`precinct-columns.js`).
+- **Color:** the winner's share of all votes cast in the district, in the same 10-point bands. **Height:** votes cast, on the county columns' scale.
+- A district with a single candidate is left off the ballot in Texas, so it has its winner's color at full strength and no height. Senate districts not up that year are gray.
+- The sidebar's headline and bars still describe counties. Only the race line, "What you're seeing", the legend titles and a Method paragraph change.
+- Checked in a browser on 2026-11-12: all three chambers flat and in 3D, hover, 2022 Texas House, switching among county, precinct and district, and that Kansas and Oklahoma still load. Not checked: other screen sizes, or the Go to menus while by district.
+
+### Other states
+
+None of the other states' results files hold district races yet, so each would need its results adapter extended as well as shapes. Vermont and South Dakota have one U.S. House district, the whole state. Census TIGER/Line has every state's legislative and congressional districts under the terms in Part 8, but check the year: a state that redrew its lines before 2026, as Texas did for the U.S. House, needs the new ones from the state.

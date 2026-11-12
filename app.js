@@ -8,6 +8,7 @@ import { createPrecinctColumns, loadPrecinctShapes } from './precinct-columns.js
 import { createPlaceMenus, describePlace } from './places.js';
 import { STATE } from './state.js';
 import { createBusy } from './busy.js';
+import { createSiteNav } from './sitenav.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -80,6 +81,16 @@ let place = null;
 let byPrecinct = false, columns = null; // bar view by precinct: columns draws them once they have loaded
 let precinctRows = [], precinctOf = new Map(); // one row per precinct on the map, for the race on screen; which row a precinct from the menus is
 const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRECINCTS = BASE?.raceId; // the one race with results by precinct here; the rest are estimated from it
+// Bar view by district, for a chamber's races: one column per district, on the lines its election was held on (state.js lists the
+// files and their years). byDistrict is what was asked for; dist is the set of columns loaded for a chamber, and it's on screen
+// only once its rows are those of the race on screen.
+const DISTRICTS = STATE.data.districts || {};
+let byDistrict = false, dist = null, nmOf = c => c.last;
+const districtSets = new Map(), districtThere = new Map(); // a chamber's columns, once made; whether its file is there
+const districtEntry = r => { const e = DISTRICTS[r.id.replace(/^\d{4}-/, '')]; return r.chamber && e?.years.includes(r.year) ? e : null; };
+const districtCols = () => byDistrict && dist && dist.race === race ? dist.cols : null;
+const overlayCols = () => districtCols() || (byPrecinct ? columns : null); // what stands in place of the county columns, if anything
+const byParam = () => byDistrict ? '&by=district' : byPrecinct ? '&by=precinct' : '';
 const renderPlace = () => {
   let line = describePlace(place, race, c => [c.dem, c.rep, c.total]);
   if (byPrecinct && columns) {
@@ -111,7 +122,7 @@ function setRace(id) {
     Object.assign(counties[i], { dem, rep, other, total, districts, noD, noR }));
   D = race.candidates.find(c => c.party === 'DEM');
   R = race.candidates.find(c => c.party === 'REP');
-  const nm = c => D.last === R.last ? c.name : c.last;
+  const nm = nmOf = c => D.last === R.last ? c.name : c.last;
   const minor = race.candidates.filter(c => c.party !== 'DEM' && c.party !== 'REP');
   const named = minor.filter(c => c.party !== 'W' && c.votes > 0).map(c => `${c.last} (${PARTY_SHORT[c.party] || c.party})`);
   const hasWrite = minor.some(c => c.party === 'W' && c.votes > 0);
@@ -180,11 +191,47 @@ function setRace(id) {
 }
 function finishRace() {
   renderTable();
-  try { history.replaceState(null, '', `?race=${race.id}${byPrecinct ? '&by=precinct' : ''}`); } catch {}
+  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
   $('dotLink').href = `${STATE.dots}?race=${race.id}`;
   if (BASE) $('method').insertAdjacentHTML('beforeend', BASE.method);
+  // the same chamber in another year, on the same lines: its districts can change at once; anything else waits for syncDistricts
+  if (byDistrict && dist && districtEntry(race) === dist.entry) setDistrictRows();
+  districtText();
   if (meshes.length) { if (byPrecinct && columns) setPrecinctRows(); restyle(); }
   renderPlace();
+  syncDistricts();
+}
+// a chamber's words again, for when its map changes between counties and districts
+function chamberText() {
+  if (!race.chamber) return;
+  renderChamber(nmOf);
+  if (BASE) $('method').insertAdjacentHTML('beforeend', BASE.method);
+  districtText();
+}
+// By district: what the map shows, in place of the words about counties
+function districtText() {
+  const head = $('legHead');
+  if (head) head.textContent = `Winner's share of the ${districtCols() ? 'district' : 'county'} vote`;
+  if (!districtCols()) return;
+  const up = dist.rows.filter(r => r.d), voted = up.filter(r => r.total).sort((a, b) => a.total - b.total);
+  const staggered = race.size > up.length, flat = up.length - voted.length, m = dist.meta;
+  $('raceLine').textContent = `${race.year} ${race.label} elections in ${STATE.name}${race.date ? `, ${race.date}` : ''}${race.unofficial ? ' (unofficial results)' : ''} · ` +
+    (staggered ? `${up.length} of ${race.size} districts up this year` : `${up.length} districts`) + `, each drawn on its own lines`;
+  $('scale').textContent =
+    `Each ${race.label} district is one shape here, colored by who won it. A chamber's districts are drawn to hold about the same number of people, ` +
+    `so the largest shapes are where few people live and the smallest are packed into the cities.`;
+  $('raiseText').innerHTML =
+    `Press <b>See in 3D</b> and each district becomes a column whose height is the number of votes cast in it, on the same scale as the county columns. ` +
+    (voted.length ? `District ${voted[0].n} cast ${fmt(voted[0].total)}; District ${voted.at(-1).n} cast ${fmt(voted.at(-1).total)}.` : '');
+  $('legRTitle').textContent = `${nmOf(R)} won the district`;
+  $('legDTitle').textContent = `${nmOf(D)} won the district`;
+  $('method').insertAdjacentHTML('beforeend',
+    `<p><b>By district:</b> one column for each ${race.label} district, on the lines used for the ${race.year} election
+    (<a href="${m.url}" target="_blank" rel="noopener">${m.source}</a>${m.license ? `; <a href="${m.licenseUrl}" target="_blank" rel="noopener">${m.license}</a>` : ''}).
+    A district's color is its winner's share of all votes cast in it, and its height is the votes cast, stacked like a county's column.
+    ${flat ? `${flat} district${flat > 1 ? 's' : ''} had a single candidate and ${flat > 1 ? 'were' : 'was'} left off the ballot: ${flat > 1 ? 'they have their winners\' color' : 'it has its winner\'s color'} and no height.` : ''}
+    ${staggered ? `The ${race.size - up.length} districts not up this year are gray.` : ''}
+    Outlines are simplified to about 55 meters, so they aren't exact at street level.</p>`);
 }
 // Legislative races (U.S. House, Texas House, Texas Senate): every district of the chamber, added up by county. Seats are won district by
 // district, so the text compares the seats each party won with its share of the chamber's vote.
@@ -365,7 +412,9 @@ document.querySelector('aside').addEventListener('click', e => {
   const a = e.target.closest('a[data-go]'); if (!a) return;
   e.preventDefault(); if (a.dataset.go !== race.id) chooseRace(a.dataset.go);
 });
-// back to the U.S. homepage, and the guided flights over the county map
+// back to the U.S. homepage or on to another state: in the bar over the map, where it's always on screen, and at the top of the text
+document.querySelector('.bar-groups').prepend(createSiteNav('results'));
+// the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
 if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
@@ -383,6 +432,10 @@ $('sources').innerHTML = meta.sources ? `<ol>${meta.sources.map(s => `<li>${s}</
     (<a href="${meta.resultsApi}" target="_blank" rel="noopener">data feed</a>), as of ${meta.resultsUpdated}, retrieved ${meta.retrieved}.</li>
   <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/vtds" target="_blank" rel="noopener">VTDs_24PG</a> (2024 precinct boundaries, listed by the Council under a <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license; simplified here, with precincts under 10 votes merged) and
     <a href="https://ted.capitol.texas.gov/api/Offices/510/2/vtd" target="_blank" rel="noopener">2024 U.S. Senate results by precinct</a>, for the by-precinct columns.</li>
+  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/planh2316" target="_blank" rel="noopener">PLANH2316</a> (Texas House districts) and
+    <a href="https://data.capitol.texas.gov/dataset/plans2168" target="_blank" rel="noopener">PLANS2168</a> (Texas Senate districts), the lines used for the 2022, 2024 and 2026 elections, both listed by the Council under a
+    <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license, and
+    <a href="https://data.capitol.texas.gov/dataset/planc2333" target="_blank" rel="noopener">PLANC2333</a> (U.S. House districts for the 2026 elections), which the Council lists with no license; all simplified here, for the by-district columns.</li>
   <li>Texas Secretary of State, <a href="https://electionresults.sos.state.tx.us/results.html" target="_blank" rel="noopener">Election Results, Tuesday, November 3, 2026</a> (statewide totals, used as a cross-check).</li>
   <li>U.S. Census Bureau, <a href="${meta.landUrl}" target="_blank" rel="noopener">2024 Gazetteer Files</a>, counties: land area (ALAND_SQMI) and FIPS codes.</li>
   <li>U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html" target="_blank" rel="noopener">Cartographic Boundary Files</a>, 2017 counties,
@@ -509,7 +562,7 @@ const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].col
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
 function restyle() {
   if (ready) setHover(null);
-  const plain = byPrecinct && columns; // by precinct, the counties underneath are a plain floor, in the gaps between precincts
+  const plain = !!overlayCols(); // by precinct or district, the counties underneath are a plain floor, in the gaps between the columns
   for (const m of meshes) {
     const c = m.userData;
     c.target = Math.max(H_FLAT, H_MAX * c.total / maxTotal);
@@ -613,7 +666,7 @@ function updateMode() {
   $('dragMode').hidden = !raised;
   $('dragMove').setAttribute('aria-pressed', String(!rotating));
   $('dragRotate').setAttribute('aria-pressed', String(rotating));
-  const what = byPrecinct ? 'precinct' : 'county';
+  const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
   hintEl.textContent = anim ? `Hover over a ${what}`
     : raised ? `Drag to ${rotating ? 'rotate' : 'move'} · right-drag to ${rotating ? 'move' : 'rotate'} · scroll to zoom · hover over a ${what}`
     : flat ? `Drag to pan · scroll to zoom · hover over a ${what}`
@@ -662,6 +715,8 @@ function viewOf({ halfW, halfH }) {
 // how high to look on the place in focus, when fully raised
 function focusLift() {
   if (!focus) return 0;
+  const dc = districtCols();
+  if (dc) return dc.height(dc.pick({ x: focus.view.x, y: focus.view.y, z: 1e5 }, { x: 0, y: 0, z: -1 })); // the district standing there
   if (!byPrecinct || !columns) return focus.c.target;
   return focus.kind === 'precinct' ? columns.height(precinctOf.get(focus.v)) : (focus.c.tallest || 0) * 0.5;
 }
@@ -678,7 +733,7 @@ function flyTo(view) {
 }
 function outlinePlace(p) {
   placeLine.geometry.dispose();
-  const lines = p?.c ? [...p.c.lines, ...(p.boxEdges && !(byPrecinct && columns) ? p.boxEdges : [])] : null;
+  const lines = p?.c ? [...p.c.lines, ...(p.boxEdges && !overlayCols() ? p.boxEdges : [])] : null;
   placeLine.geometry = new THREE.BufferGeometry();
   if (lines) placeLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
 }
@@ -705,8 +760,8 @@ function clearPlace() { going = null; focus = null; menus.clear(); place = null;
 // Every precinct stands at once, on one height scale that never changes: the tallest in the state's precinct-level race is PRECINCT_H
 // map units. Precincts are small, so this is short enough to walk among them close up, unlike the county columns' scale.
 const PRECINCT_H = 70;
-const PALETTE = [...REP_C, ...DEM_C, LOSER_C.rep, LOSER_C.dem, NO_RACE_C].map(h => new THREE.Color(h));
-const PAL_DEM = REP_C.length, PAL_LOSER_R = PAL_DEM + DEM_C.length, PAL_LOSER_D = PAL_LOSER_R + 1, PAL_NONE = PAL_LOSER_D + 1;
+const PALETTE = [...REP_C, ...DEM_C, LOSER_C.rep, LOSER_C.dem, NO_RACE_C, OTHER_C].map(h => new THREE.Color(h));
+const PAL_DEM = REP_C.length, PAL_LOSER_R = PAL_DEM + DEM_C.length, PAL_LOSER_D = PAL_LOSER_R + 1, PAL_NONE = PAL_LOSER_D + 1, PAL_OTHER = PAL_NONE + 1;
 const countyFloor = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
 countyFloor.visible = false; mapGroup.add(countyFloor);
 let precinctUnit = 1, precinctCounties = [], loadingColumns = null;
@@ -756,13 +811,15 @@ function loadColumns() {
   return loadingColumns;
 }
 function showBy() {
-  $('byCounty').setAttribute('aria-pressed', String(!byPrecinct));
-  $('byPrecinct').setAttribute('aria-pressed', String(byPrecinct));
+  $('byCounty')?.setAttribute('aria-pressed', String(!byPrecinct && !byDistrict));
+  $('byPrecinct')?.setAttribute('aria-pressed', String(byPrecinct));
+  $('byDistrict')?.setAttribute('aria-pressed', String(byDistrict));
 }
 async function setBy(on) {
+  if (on && byDistrict) { byDistrict = false; dist?.cols.setHover(-1); chamberText(); } // one or the other
   if (on === byPrecinct) return;
   byPrecinct = on; showBy();
-  try { history.replaceState(null, '', `?race=${race.id}${on ? '&by=precinct' : ''}`); } catch {}
+  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
   if (on && !columns) {
     $('placeInfo').textContent = 'Loading precincts…';
     try { await busy.showNow('columns', 'Loading precincts…'); await loadColumns(); }
@@ -780,10 +837,86 @@ async function setBy(on) {
   if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
   busy.hide('columns');
 }
-if (HAS_PRECINCTS) {
-  $('byCounty').onclick = () => setBy(false);
-  $('byPrecinct').onclick = () => setBy(true);
+if (HAS_PRECINCTS) $('byPrecinct').onclick = () => setBy(true);
+if ($('byCounty')) $('byCounty').onclick = () => byDistrict ? setDistrict(false) : setBy(false);
+
+// ---------- bar view, by district ----------
+// One set of columns per chamber, made when first asked for. A district's column uses the county columns' height scale, so the two
+// views compare. A file that isn't there leaves its chamber without the view.
+function hasDistricts(r) {
+  const e = districtEntry(r);
+  if (!e) return Promise.resolve(false);
+  if (!districtThere.has(e.url)) districtThere.set(e.url, fetch(e.url, { method: 'HEAD' }).then(x => x.ok, () => false));
+  return districtThere.get(e.url);
 }
+function loadDistrictSet(entry) {
+  if (!districtSets.has(entry)) districtSets.set(entry, loadPrecinctShapes(entry.url).then(file => {
+    const nums = Object.keys(file.districts).map(Number).sort((a, b) => a - b);
+    const cols = createPrecinctColumns(mapGroup, P, nums.map(n => file.districts[n]), PALETTE, new THREE.Color(OTHER_C));
+    cols.group.visible = false;
+    cols.lineMat.opacity = 0.75;
+    return { entry, cols, nums, meta: file.meta, rows: [], race: null };
+  }).catch(e => { districtSets.delete(entry); throw e; }));
+  return districtSets.get(entry);
+}
+// each district of the set, for the race on screen: its result if it had a race this year, and its column
+function setDistrictRows() {
+  const had = new Map(race.districts.map(d => [d.district, d]));
+  dist.race = race;
+  dist.rows = dist.nums.map(n => {
+    const d = had.get(n);
+    if (!d) return { n, d: null, total: 0 }; // a Senate district not up this year
+    const of = party => d.candidates.reduce((s, c) => s + (c.party === party ? c.votes : 0), 0);
+    const dem = of('DEM'), rep = of('REP');
+    return { n, d, dem, rep, other: d.total - dem - rep, total: d.total, w: d.candidates[0] }; // candidates are listed winner first
+  });
+  dist.cols.setValues(dist.rows.map(({ d, dem, rep, other, total, w }) => {
+    if (!d) return { h: 0, top: PAL_NONE, low: PAL_NONE, fLow: 0, fMid: 0 };
+    // a single candidate left off the ballot has no votes: the winner's color at full strength, and no height
+    const band = total ? Math.max(0, BINS.findLastIndex(b => 100 * w.votes / total >= b)) : BINS.length - 1;
+    const major = w.party === 'DEM' || w.party === 'REP', dWon = w.party === 'DEM';
+    return { h: total ? Math.max(0.02, H_MAX * total / maxTotal) : 0,
+      top: !major ? PAL_OTHER : (dWon ? PAL_DEM : 0) + band, low: dWon ? PAL_LOSER_R : PAL_LOSER_D,
+      fLow: total && major ? (dWon ? rep : dem) / total : 0, fMid: total && major ? other / total : 0 };
+  }));
+}
+async function setDistrict(on) {
+  if (on) {
+    const want = race, entry = districtEntry(race);
+    let set = null;
+    if (await hasDistricts(race)) {
+      try { await busy.showNow('districts', 'Loading districts…'); set = await loadDistrictSet(entry); }
+      catch (e) { console.error('The district shapes did not load', e); $('placeInfo').textContent = 'The district map did not load. Please reload the page to try again.'; }
+      busy.hide('districts');
+    }
+    if (race !== want) return; // another race was chosen meanwhile, and it has asked for its own
+    if (!set) on = false;
+    else {
+      if (byPrecinct) { byPrecinct = false; columns?.setHover(-1); }
+      if (dist && dist !== set) { dist.cols.setHover(-1); dist.cols.group.visible = false; }
+      dist = set; byDistrict = true;
+      setDistrictRows();
+    }
+  }
+  if (!on) { byDistrict = false; dist?.cols.setHover(-1); }
+  showBy();
+  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
+  chamberText();
+  restyle(); showChosen(); renderPlace(); outlinePlace(place); updateMode();
+  if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
+}
+// after a race is chosen: whether it can be shown by district, and if that's the view, its districts or back to counties
+function syncDistricts() {
+  const btn = $('byDistrict'), r = race;
+  if (!btn) return;
+  hasDistricts(r).then(ok => {
+    if (r !== race) return;
+    btn.disabled = !ok;
+    btn.title = ok ? `One column for each ${r.label} district` : r.chamber ? `No district lines here for the ${r.year} ${r.label}` : 'For U.S. House, Texas House and Texas Senate races';
+    if (byDistrict && !districtCols()) setDistrict(ok);
+  });
+}
+if ($('byDistrict')) $('byDistrict').onclick = () => setDistrict(true);
 
 // ---------- hover ----------
 const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
@@ -799,6 +932,13 @@ function onPointer(e) {
   const r = renderer.domElement.getBoundingClientRect();
   mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(mouse, camera);
+  const dc = districtCols();
+  if (dc) {
+    const o = ray.ray.origin, d = ray.ray.direction; // from the world's axes to the map's: world (x, z, -y)
+    const i = dc.pick({ x: o.x, y: -o.z, z: o.y }, { x: d.x, y: -d.z, z: d.y });
+    dc.setHover(i);
+    if (i >= 0) { setHover(null); tip.innerHTML = districtTip(dist.rows[i]); placeTip(e, r); return; }
+  }
   if (byPrecinct && columns) {
     const o = ray.ray.origin, d = ray.ray.direction; // from the world's axes to the map's: world (x, z, -y)
     const i = columns.pick({ x: o.x, y: -o.z, z: o.y }, { x: d.x, y: -d.z, z: d.y });
@@ -839,6 +979,18 @@ function onPointer(e) {
     <div class="row m"><span>Margin</span><span style="color:${dWon ? '#8fa8ff' : '#ff8b8b'}">${dWon ? 'D' : 'R'}+${(100 * Math.abs(c.dem - c.rep) / c.total).toFixed(1)} (${fmt(Math.abs(c.dem - c.rep))} votes)</span></div>`;
   placeTip(e, r);
 }
+function districtTip({ n, d, total, w }) {
+  const head = `<div class="n">${race.label} District ${n}</div><div class="row m"><span>${race.year} general election</span><span></span></div>`;
+  if (!d) return head + `<div class="row m"><span>Not up for election this year</span><span></span></div>`;
+  const tag = c => `${c.name} (${PARTY_SHORT[c.party] || c.party})`;
+  if (!total) return head + `<div class="row"><span>${tag(w)}</span><span>won</span></div>
+    <div class="row m"><span>The only candidate, so the race was left off the ballot</span><span></span></div>`;
+  const second = d.candidates[1], lead = w.votes - (second?.votes ?? 0);
+  return head + d.candidates.map(c => `<div class="row${c === w || c === second ? '' : ' m'}"><span>${tag(c)}</span><span>${fmt(c.votes)} · ${pct(c.votes, total)}</span></div>`).join('') + `
+    <div class="row m"><span>Total votes</span><span>${fmt(total)}</span></div>
+    <div class="row m"><span>Counties with votes</span><span>${d.counties}</span></div>
+    <div class="row m"><span>Margin</span><span style="color:${w.party === 'DEM' ? '#8fa8ff' : w.party === 'REP' ? '#ff8b8b' : 'inherit'}">${PARTY_SHORT[w.party] || w.party}+${(100 * lead / total).toFixed(1)} (${fmt(lead)} votes)</span></div>`;
+}
 function placeTip(e, r) {
   tip.style.display = 'block';
   const x = e.clientX - r.left, y = e.clientY - r.top;
@@ -851,7 +1003,7 @@ renderer.domElement.addEventListener('pointerdown', stopGoing);
 renderer.domElement.addEventListener('wheel', stopGoing, { passive: true });
 renderer.domElement.addEventListener('pointermove', onPointer);
 renderer.domElement.addEventListener('pointerdown', onPointer);
-renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); });
+renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); });
 
 // ---------- loop ----------
 const v = new THREE.Vector3(), labelRay = new THREE.Raycaster();
@@ -862,10 +1014,11 @@ function anchorVisible(c, world) {
   const hit = labelRay.intersectObjects(pickables, false)[0];
   return !!hit && hit.object.userData === c;
 }
-let lastFrame = 0;
+let lastFrame = 0, lastOver = null;
 function frame(now) {
   // by county or by precinct: one set of columns goes down as the other comes up
-  const goal = byPrecinct && columns ? 1 : 0, dt = now - lastFrame; lastFrame = now;
+  const over = overlayCols(), goal = over ? 1 : 0, dt = now - lastFrame; lastFrame = now;
+  if (over) lastOver = over; // going back to counties, it stays up while it sinks
   if (precinctMix !== goal) {
     const step = REDUCED ? 1 : Math.min(dt, 100) / 900;
     precinctMix = goal > precinctMix ? Math.min(goal, precinctMix + step) : Math.max(goal, precinctMix - step);
@@ -890,18 +1043,20 @@ function frame(now) {
   camera.near = Math.min(10, Math.max(0.3, camera.position.distanceTo(controls.target) * 0.1));
   camera.updateProjectionMatrix();
   placeLine.position.z = (place?.c?.h ?? H_FLAT) + 0.05; // on top of the county's column
-  const showing = columns && precinctMix > 0;
+  const showing = precinctMix > 0 ? lastOver : null; // the precinct or district columns on screen, if any
   placeLine.material.depthTest = !!showing && progress > 0.02; // by precinct, the county's border is on the ground, among the columns
-  if (columns) {
-    columns.group.visible = countyFloor.visible = showing;
-    if (showing) {
-      const dist = camera.position.distanceTo(controls.target);
-      const lift = H_FLAT + Math.max(0.02, dist * 0.0006); // above the floor, by enough to stay clear of it from any distance
-      columns.group.position.z = lift;
-      columns.group.scale.z = Math.max(1e-5, riseK() * ease(precinctMix));
-      countyFloor.position.z = lift + 0.02;
-      placeLine.position.z = lift + 0.04;
-      columns.lineMat.opacity = 0.5 * clamp01((fitDist * 0.35 - dist) / (fitDist * 0.3)); // too fine to see from far out
+  if (columns) columns.group.visible = showing === columns;
+  if (dist) dist.cols.group.visible = showing === dist.cols; // a set that was swapped out was hidden then
+  countyFloor.visible = !!showing && showing === columns; // county lines would only confuse a map of districts
+  if (showing) {
+    const far = camera.position.distanceTo(controls.target);
+    const lift = H_FLAT + Math.max(0.02, far * 0.0006); // above the floor, by enough to stay clear of it from any distance
+    showing.group.position.z = lift;
+    showing.group.scale.z = Math.max(1e-5, riseK() * ease(precinctMix));
+    countyFloor.position.z = lift + 0.02;
+    placeLine.position.z = lift + 0.04;
+    if (showing === columns) {
+      columns.lineMat.opacity = 0.5 * clamp01((fitDist * 0.35 - far) / (fitDist * 0.3)); // too fine to see from far out
       columns.lineMat.visible = columns.lineMat.opacity > 0.01;
     }
   }
@@ -929,4 +1084,5 @@ resize();
 updateMode();
 ready = true;
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
+if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
 requestAnimationFrame(frame);

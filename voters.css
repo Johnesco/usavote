@@ -24,7 +24,9 @@
 .how p { position: absolute; top: 100%; left: 0; z-index: 4; width: min(340px, 80vw); margin: 6px 0 0; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
 .flight-badge { color: #111; background: var(--accent); border-radius: 999px; padding: 3px 11px; font-weight: 650; white-space: nowrap; }
 .voters.exploring .flight-badge, .voters:not(.exploring) #goHome, .voters:not(.exploring) .nav-group { display: none; }
-/* on the tour the bar is just its name, the way back and the legend */
+/* on the tour the bar is just its name, the ways back and the legend */
+.voters:not(.exploring) .site-nav select { display: none; }
+.voters:not(.exploring) .site-nav { width: auto; }
 .voters:not(.exploring) .topnav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 4px 14px; }
 .voters:not(.exploring) .nav-info { margin-top: 0; }
 .voters:not(.exploring) .nav-info > :not(#legend) { display: none; }

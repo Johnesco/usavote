@@ -9,12 +9,15 @@ import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, precinctUnits, DOT_C } from './dots.js';
 import { createBusy } from './busy.js';
+import { createSiteNav } from './sitenav.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
+// the way home and to the other states, first in the bar
+document.querySelector('.nav-row').prepend(createSiteNav('dots'));
 const fmt = n => n.toLocaleString('en-US');
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
 const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
