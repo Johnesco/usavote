@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>One turn around the 3D columns: one frame</title>
+<!-- One frame of texas-senate-2026-spin.gif: the 2026 Texas U.S. Senate race as columns by county, as on texas.html, with the
+     camera going once around the state. ?f=0 to ?f=71 are the turn; the next frame would match ?f=0, so the GIF loops.
+     scripts/build_gif.py serves the repo, screenshots every frame at 800x600 with headless Chrome and joins them:
+       python scripts/build_gif.py spin -->
+<style>
+  :root { --bg: #0e1116; --text: #eef1f6; --muted: #a8b1c0; --dim: #8a93a3; --accent: #f2c14e; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
+  .page { position: relative; width: 800px; height: 600px; overflow: hidden; }
+  canvas { position: absolute; inset: 0; }
+  .head { position: absolute; left: 22px; top: 12px; z-index: 2; }
+  h1 { font: 700 20px/1.3 "Segoe UI", sans-serif; margin: 0; }
+  .sub { font-size: 15px; font-weight: 600; color: var(--accent); margin: 2px 0 10px; }
+  .key { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 13px; font-weight: 600; max-width: 760px; }
+  .key i { display: inline-block; width: 13px; height: 13px; margin-right: 6px; vertical-align: -2px; }
+  .end { position: absolute; left: 22px; bottom: 50px; z-index: 2; font-size: 15px; font-weight: 600; line-height: 1.55; }
+  footer { position: absolute; left: 22px; right: 22px; bottom: 12px; z-index: 2; font-size: 11.5px; color: var(--dim); }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="head">
+    <h1 id="title"></h1>
+    <div class="sub" id="sub"></div>
+    <div class="key" id="key"></div>
+  </div>
+  <div class="end" id="end"></div>
+  <footer id="foot"></footer>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { GEO_URL, buildMap, layout, LOSER_C, OTHER_C, REP_C, DEM_C, H_FLAT } from '../map3d.js';
+
+const FRAMES = 72; // build_gif.py asks for 0..FRAMES-1: 5 degrees a frame
+const turn = 2 * Math.PI * (+(new URLSearchParams(location.search).get('f') || 0) % FRAMES) / FRAMES;
+const getJSON = url => fetch(url).then(r => r.json());
+const [res, us] = await Promise.all([getJSON('../data/results-2026.json'), getJSON(GEO_URL)]);
+const race = res.races.find(r => r.id === 'u-s-senate');
+const D = race.candidates.find(c => c.party === 'DEM'), R = race.candidates.find(c => c.party === 'REP');
+const counties = res.counties.map((c, i) => { const [dem, rep, other, total] = race.counties[i]; return { ...c, dem, rep, other, total }; });
+const pct = (a, b, d = 1) => (100 * a / b).toFixed(d) + '%';
+const sum = (list, f) => list.reduce((s, c) => s + f(c), 0);
+const DIST = +(new URLSearchParams(location.search).get('d') || 2850);
+
+// every number in the text is computed here from the results file
+const TOT = sum(counties, c => c.total), LAND = sum(counties, c => c.landSqMi);
+const rWon = counties.filter(c => c.rep >= c.dem), [W, L] = D.votes > R.votes ? [D, R] : [R, D];
+const [landW, landCount] = rWon.length * 2 > counties.length ? [R, rWon] : [D, counties.filter(c => c.dem > c.rep)];
+const $ = id => document.getElementById(id);
+$('title').textContent = 'Texas, 2026 U.S. Senate: votes by county';
+$('sub').textContent = 'Column height = votes cast in each county';
+$('key').innerHTML = `<span><i style="background:${REP_C[3]}"></i>${R.last} (R) won</span><span><i style="background:${DEM_C[3]}"></i>${D.last} (D) won</span>
+  <span class="stack">Each column is stacked:<i style="background:${LOSER_C.rep};margin-left:8px;margin-right:2px"></i><i style="background:${LOSER_C.dem}"></i>the runner-up's votes at the bottom,
+  <i style="background:${OTHER_C};margin-left:4px"></i>others, and the winner's on top</span>`;
+$('end').innerHTML = `${landW.last} won ${landCount.length} of ${counties.length} counties (${pct(sum(landCount, c => c.landSqMi), LAND, 0)} of the land).<br>
+  ${W.last} won the state ${pct(W.votes, TOT)} to ${pct(L.votes, TOT)}.`;
+$('foot').textContent = `Data: Texas Secretary of State, unofficial returns as of ${res.meta.resultsUpdated}; U.S. Census Bureau.   johnesco.github.io/usavote`;
+
+const page = $('page'), w = 800, h = 600;
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(devicePixelRatio); renderer.setSize(w, h);
+page.prepend(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color('#0e1116');
+scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-600, 900, 700); scene.add(sun);
+const maxTotal = Math.max(...res.races.flatMap(r => r.counties.map(row => row[3]))); // one height scale for all races, as on the site
+const { mapGroup, pickables } = buildMap(scene, us, counties, { maxTotal });
+counties.forEach(c => layout(c, c.target));
+
+// stand back far enough that the state's corners stay in the picture all the way round, and go round toward the east as texas.html does
+const camera = new THREE.PerspectiveCamera(30, w / h, 10, 20000);
+const target = new THREE.Vector3(0, 125, 0);
+camera.position.setFromSpherical(new THREE.Spherical(DIST, 0.98, -0.22 - turn)).add(target);
+camera.lookAt(target);
+scene.updateMatrixWorld(true);
+renderer.render(scene, camera);
+document.body.classList.add('ready');
+</script>
+</body>
+</html>

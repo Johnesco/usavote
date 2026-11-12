@@ -381,9 +381,11 @@ src = [
      f"{res['meta']['resultsUpdated']}. Percentages are of all votes cast, including third-party and write-in votes."),
     ("Dot placement: ", "An estimate, not a record of any person's vote; ballots are secret and 2026 precinct results aren't out yet. Each party's 2026 "
      "county total is shared among 2024 voting districts by that party's 2024 U.S. Senate votes there (Texas Legislative Council, "
-     "Capitol Data Portal), then among 2020 census blocks by population 18 and over (U.S. Census Bureau, 2020 P.L. 94-171), off land where the Census counted no one (2020 TIGER/Line blocks). "
-     "Every county adds up exactly to its 2026 result."),
-    ("Boundaries: ", "U.S. Census Bureau county boundaries via us-atlas (1:10m). Equal-area conic projection; both maps at the same scale."),
+     "Capitol Data Portal, VTDs_24PG, Creative Commons Attribution, opendefinition.org/licenses/cc-by; changed here: voting districts "
+     "under 10 votes are merged into a neighbor), then among 2020 census blocks by adults (U.S. Census Bureau, 2020 P.L. 94-171), "
+     "off land where the Census counted no one (2020 TIGER/Line blocks). Every county adds up exactly to its 2026 result."),
+    ("Boundaries: ", "U.S. Census Bureau 2017 county boundaries via us-atlas (1:10m). Equal-area conic projection; both maps at the same scale. "
+     "TIGER/Line® is a registered trademark of the Census Bureau; this image uses TIGER/Line data and isn't a Census Bureau product."),
 ]
 for label, body in src:
     words, line, first = body.split(), "", True

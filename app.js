@@ -9,6 +9,7 @@ import { createPlaceMenus, describePlace } from './places.js';
 import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
+import { sourceItems } from './sourcelist.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -431,30 +432,8 @@ $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
 if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
 
-$('sources').innerHTML = meta.sources ? `<ol>${[...meta.sources.slice(0, -1), STATE.data.districtSource, meta.sources.at(-1)].filter(Boolean).map(s => `<li>${s}</li>`).join('')}</ol>` : `<ol>
-  <li>Texas Secretary of State, <a href="https://elections.sos.state.tx.us/index.htm" target="_blank" rel="noopener">Election History</a>,
-    official canvassed county results for the 2008, 2010, 2012, 2014, 2016 and 2018 general elections, retrieved ${hist.meta.retrieved}.</li>
-  <li>Texas Secretary of State, <a href="https://results.texas-election.com/races" target="_blank" rel="noopener">election results site</a>,
-    final county results for the 2020, 2022 and 2024 general elections, retrieved ${hist.meta.retrieved}.</li>
-  <li>U.S. House, Texas House and Texas Senate: the same two sources, read district by district (2008–2018: each district's county-by-county canvass page,
-    checked against the Statewide Race Summary; 2020–2024: the county file, checked against the district totals). Districts with a single
-    candidate that were left off the November ballot (3 in 2010, 72 in 2022) are counted for the party that nominated a candidate, from the
-    same sources' party primary results. Texas Senate terms are staggered: the districts up each year are the ones in that year's primaries.</li>
-  <li>Texas Secretary of State, <a href="${meta.resultsUrl}" target="_blank" rel="noopener">Election Night Returns, 2026 November General Election</a>, county results for statewide races
-    (<a href="${meta.resultsApi}" target="_blank" rel="noopener">data feed</a>), as of ${meta.resultsUpdated}, retrieved ${meta.retrieved}.</li>
-  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/vtds" target="_blank" rel="noopener">VTDs_24PG</a> (2024 precinct boundaries, listed by the Council under a <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license; simplified here, with precincts under 10 votes merged) and
-    <a href="https://ted.capitol.texas.gov/api/Offices/510/2/vtd" target="_blank" rel="noopener">2024 U.S. Senate results by precinct</a>, for the by-precinct columns.</li>
-  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/planh2316" target="_blank" rel="noopener">PLANH2316</a> (Texas House districts) and
-    <a href="https://data.capitol.texas.gov/dataset/plans2168" target="_blank" rel="noopener">PLANS2168</a> (Texas Senate districts), the lines used for the 2022, 2024 and 2026 elections, both listed by the Council under a
-    <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license, and
-    <a href="https://data.capitol.texas.gov/dataset/planc2333" target="_blank" rel="noopener">PLANC2333</a> (U.S. House districts for the 2026 elections), which the Council lists with no license; all simplified here, for the by-district columns.</li>
-  <li>Texas Secretary of State, <a href="https://electionresults.sos.state.tx.us/results.html" target="_blank" rel="noopener">Election Results, Tuesday, November 3, 2026</a> (statewide totals, used as a cross-check).</li>
-  <li>U.S. Census Bureau, <a href="${meta.landUrl}" target="_blank" rel="noopener">2024 Gazetteer Files</a>, counties: land area (ALAND_SQMI) and FIPS codes.</li>
-  <li>U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html" target="_blank" rel="noopener">Cartographic Boundary Files</a>, 2017 counties,
-    via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a> v3.0.1 (counties-10m.json).</li>
-  <li>Software: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> r160, <a href="https://github.com/d3/d3-geo" target="_blank" rel="noopener">d3-geo</a> 3.1.1,
-    <a href="https://github.com/topojson/topojson-client" target="_blank" rel="noopener">topojson-client</a> 3.1.0.</li>
-</ol>`;
+$('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
+  <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`;
 
 // ---------- three.js scene ----------
 const stage = document.getElementById('stage');
@@ -617,6 +596,7 @@ const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const flatBtn = $('viewFlat'), raisedBtn = $('view3d'), turnBtn = $('turn');
 const hintEl = document.getElementById('hint');
+const TOUCH = matchMedia('(pointer: coarse)').matches; // a touch screen: the hint talks about fingers, not a mouse
 
 // A camera pose is a spherical offset (r, phi, theta) around a target point.
 function canonicalPose(p) { // the default camera for animation progress p (0 = flat, top-down; 1 = tilted 3D)
@@ -650,8 +630,14 @@ function setPose(o) {
 let progress = 0, anim = null, going = null; // going: a flight to the place the Go to menus chose
 // In 3D the map turns slowly on its own, at the pace of the County Flythrough's last scene, by county, precinct or district alike.
 // Pressing 3D starts it. Taking hold of the map, or the Rotation switch, stops it, and then the map is the reader's to explore, as
-// the dot view is: drag to move, right-drag or two fingers to turn, scroll or pinch to zoom. The switch starts it again.
+// the dot view is: drag to move, scroll or pinch to zoom. The switch starts it again.
 let turning = false;
+// What a plain drag, or one finger, does in 3D: move the map, or turn and tilt it. The switch beside Rotation chooses; a right-drag,
+// a Shift-drag or two fingers does the other. It's added here so every state's page has it without its own markup.
+let dragTurns = false;
+$('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" role="group" aria-label="What dragging the map does" hidden>
+  <button type="button" id="dragMove" aria-pressed="true" title="Dragging slides the map. Right-drag or Shift-drag turns it.">Drag moves</button>
+  <button type="button" id="dragTurn" aria-pressed="false" title="Dragging turns and tilts the map. Right-drag or Shift-drag slides it.">Drag turns</button></div>`);
 const TURN = 0.08; // radians a second, toward the east as in the flythrough
 controls.autoRotateSpeed = -TURN * 60 / (2 * Math.PI); // OrbitControls counts in turns a minute, and the other way round
 let focus = null; // a county or precinct from the Go to menus, which 3D and Flat stay on: { view, kind, c, v }
@@ -671,21 +657,26 @@ function applyProgress(p, pose = null) {
   flatBtn.setAttribute('aria-pressed', String(p <= 0.5));
   raisedBtn.setAttribute('aria-pressed', String(p > 0.5));
 }
-// Drag moves the map and scroll or pinch zooms. In 3D a right-drag, or two fingers, turns and tilts it.
+// Drag moves the map and scroll or pinch zooms. In 3D the Drag moves / Drag turns switch can make a drag turn and tilt it instead; a
+// right-drag, a Shift-drag (OrbitControls swaps the two when Shift, Ctrl or ⌘ is held) or two fingers does whichever a plain drag doesn't.
 function updateMode() {
   const flat = progress === 0, raised = progress === 1;
   controls.enabled = !anim && !going && (flat || raised);
   controls.enableRotate = raised;
-  controls.mouseButtons.LEFT = THREE.MOUSE.PAN;
-  controls.mouseButtons.RIGHT = raised ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
-  controls.touches.ONE = THREE.TOUCH.PAN;
-  controls.touches.TWO = raised ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN;
+  const drag = raised && dragTurns;
+  controls.mouseButtons.LEFT = drag ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
+  controls.mouseButtons.RIGHT = raised && !drag ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
+  controls.touches.ONE = drag ? THREE.TOUCH.ROTATE : THREE.TOUCH.PAN;
+  controls.touches.TWO = raised && !drag ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN;
   $('turnWrap').hidden = !raised;
+  $('dragMode').hidden = !raised;
+  $('dragMove').setAttribute('aria-pressed', String(!drag));
+  $('dragTurn').setAttribute('aria-pressed', String(drag));
   turnBtn.setAttribute('aria-pressed', String(turning));
   turnBtn.textContent = turning ? 'Rotation on' : 'Rotation off';
   const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
   hintEl.textContent = anim ? `Hover over a ${what}`
-    : raised ? (turning ? `Turning slowly · drag or scroll to explore · hover over a ${what}` : `Drag to move · right-drag to turn · scroll to zoom · hover over a ${what}`)
+    : raised ? `${turning ? 'Turning slowly · ' : ''}${TOUCH ? (drag ? 'One finger turns · two move' : 'One finger moves · two turn') : (drag ? 'Drag to turn · right-drag to move' : 'Drag to move · right-drag to turn')} · ${TOUCH ? 'pinch' : 'scroll'} to zoom${TOUCH ? '' : ` · hover over a ${what}`}`
     : flat ? `Drag to pan · scroll to zoom · hover over a ${what}`
     : `Hover over a ${what}`;
 }
@@ -714,6 +705,8 @@ function setRaised(on) { // Flat or 3D: the columns sink or rise, and in 3D the 
 flatBtn.onclick = () => setRaised(false);
 raisedBtn.onclick = () => setRaised(true);
 turnBtn.onclick = () => { turning = !turning; updateMode(); };
+$('dragMove').onclick = () => { dragTurns = false; updateMode(); };
+$('dragTurn').onclick = () => { dragTurns = true; updateMode(); };
 document.getElementById('reset').onclick = () => { clearPlace(); startAnim(progress, 700); };
 
 // ---------- go to a city, county or precinct ----------

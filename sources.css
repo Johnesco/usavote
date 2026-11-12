@@ -1,0 +1,36 @@
+/* The Sources page. Colors come from style.css. */
+html, body { height: auto; }
+.src { max-width: 860px; margin: 0 auto; padding: 28px 32px 56px; }
+.src a { color: var(--accent); }
+.src .back { font-size: 14px; }
+.src header { margin: 26px 0 8px; }
+.src .kicker { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.src h1 { font-size: 40px; line-height: 1.1; letter-spacing: -0.02em; margin: 8px 0 16px; text-wrap: balance; }
+.src .lead { font-size: 18px; line-height: 1.55; color: #c5cedb; margin: 0; }
+
+.src > section { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }
+.src h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--text); margin: 0 0 12px; }
+.src p, .src li { font-size: 15px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
+.src p { margin: 0 0 10px; }
+.src ul, .src ol { margin: 0; padding-left: 20px; }
+.src li { margin-bottom: 8px; }
+.src li b { color: var(--text); font-weight: 650; }
+
+.jump { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.jump a { padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 13.5px; text-decoration: none; }
+.jump a:hover, .jump a:focus-visible { border-color: var(--accent); background: rgba(242,193,78,.08); }
+
+.state { margin-top: 26px; scroll-margin-top: 16px; }
+.state h3 { font-size: 20px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+.state .as-of { color: #c5cedb; }
+.state li { font-size: 14px; }
+.state li a { color: #b8c3d4; }
+.state .open { margin: 10px 0 0; display: flex; gap: 18px; font-size: 14px; }
+.state .open a { font-weight: 650; text-decoration: none; }
+.state .open a:hover, .state .open a:focus-visible { text-decoration: underline; }
+
+@media (max-width: 780px) {
+  .src { padding: 20px 16px 40px; }
+  .src h1 { font-size: 30px; }
+  .src .lead { font-size: 16px; }
+}
