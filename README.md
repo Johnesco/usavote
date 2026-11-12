@@ -108,6 +108,9 @@ and the seat count is of the seats that were up.
   Texas House and 10 Texas Senate in 2022). They count as a seat for the nominee's party, taken from the party primary results, and add no votes. In 2022 Texas Senate District 10 had nominees from both parties, but the Democrat, Beverly
   Powell, withdrew, so it is counted for the Republican, Phil King.
 - In the 2022 results-site file, Ellis County's District 2 Senate total is twice its candidates' votes; the candidates' sum is used.
+- **By district:** for the Texas House and Texas Senate in 2022, 2024 and 2026, and the U.S. House in 2026, the results page can also draw each
+  district on its own lines (Texas Legislative Council plans PLANH2316, PLANS2168 and PLANC2333). `scripts/build_districts.py` builds the outlines;
+  [`docs/PIPELINE.md`](docs/PIPELINE.md), Part 9, has the record and the terms read.
 - Some accented letters on the 2008–2018 district pages were lost in extraction; `build_history.py` restores them (José, Peña, …).
 
 ## Earlier years

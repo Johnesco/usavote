@@ -43,16 +43,22 @@
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); padding: 8px 14px; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   input[type=range] { width: 180px; accent-color: var(--accent); }
-  /* two choices joined together: bar view or dot view (a link to its page), by county or by precinct */
+  /* choices joined together: bar view or dot view (a link to its page); by county, precinct or district */
   .seg { display: inline-flex; }
   .seg[hidden] { display: none; }
   .seg > * { font-size: 13px; font-weight: 600; line-height: 1.3; padding: 5px 11px; border: 1px solid var(--line); background: var(--bg); color: var(--text); text-decoration: none; white-space: nowrap; border-radius: 0; }
   .seg > :focus-visible { position: relative; z-index: 1; }
   .seg > :first-child { border-radius: 999px 0 0 999px; }
-  .seg > :last-child { border-radius: 0 999px 999px 0; margin-left: -1px; }
+  .seg > :last-child { border-radius: 0 999px 999px 0; }
+  .seg > :not(:first-child) { margin-left: -1px; }
+  .seg > :disabled { opacity: .5; cursor: default; }
   .seg > [aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
   .seg > a:hover, .seg > a:focus-visible { color: var(--accent); }
   .place-note:not(:first-child)::before { content: " · "; }
+  /* first in a state page's top bar (sitenav.js): the site's name, which goes home, and a menu of the other states */
+  .site-nav { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .site-home { font-size: 13px; font-weight: 700; color: var(--accent); text-decoration: none; white-space: nowrap; }
+  .site-home:hover, .site-home:focus-visible { text-decoration: underline; }
   .races { flex: none; background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 16px 6px; z-index: 4; }
   /* each group wraps as a whole, and the bar always takes as little height as the width allows */
   .bar-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
@@ -119,7 +125,8 @@
     .hint { display: none; }
     .races { padding: 8px 12px 6px; }
     #viewRow, #picker, #goRow { flex: none; width: 100%; max-width: none; }
-    #viewRow { justify-content: space-between; }
+    .site-nav { width: 100%; justify-content: space-between; }
+    #viewRow { justify-content: space-between; flex-wrap: wrap; }
     .seg > * { padding: 5px 9px; font-size: 12px; }
     .controls .seg > * { padding: 7px 8px; }
     #goRow select { padding: 5px 8px; }
