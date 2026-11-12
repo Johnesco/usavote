@@ -67,7 +67,7 @@ This is a reading of the published pages, not legal advice. Nobody at these offi
 | # | Command | Writes to `data/id/` | SHA-256 (first 16) |
 |---|---|---|---|
 | 0 | `python scripts/id_results_record.py` (needs `pdftotext`) | `data/raw/id/results/SAVED.json`, `report-summary.txt` | as above |
-| 1 | `python scripts/build_id_results.py` | `results-2026.json` | `48783ed4836fa8a4` |
+| 1 | `python scripts/build_id_results.py` | `results-2026.json` | `cda357a85e31d040` |
 | 2 | `python scripts/build_cities.py id` | `cities.json` | `5b44a8b833752c2e` |
 | 3 | `python scripts/build_precincts.py id` (reads #1) | `blocks.json.gz` | `730e9d930281b7fb` |
 | 4 | `python scripts/build_landmask.py id` | `landmask.bin.gz` | `8531a88aa6263da4` |
@@ -156,3 +156,7 @@ Why an exception: these are the state's own figures, and its statewide summary h
 - The land grid was decoded and looked at as a whole and in close-ups. **Lake Pend Oreille** and **American Falls Reservoir** are empty in their right shapes, as are spot checks in Lake Coeur d'Alene, Palisades Reservoir, Dworshak Reservoir and Bear Lake. Boise, Sandpoint, Idaho Falls, Pocatello, American Falls and Twin Falls are lived on. A first point for American Falls Reservoir, at 42.85° N, turned out to be on land southeast of the lake in the picture, so the point was off rather than the grid. Priest Lake is the gap above.
 - With the changed scripts, Iowa's `blocks.json.gz`, `cities.json` and `landmask.bin.gz`, Oklahoma's `blocks.json.gz` and Texas's `cities.json` were rebuilt into a scratch folder from the main checkout's raw files, and all five match the committed files byte for byte. Other files weren't rebuilt.
 - **Not checked:** no page was opened. Browser checking is due after the merge, including the default race, the homepage label and the fit. The whole sequence hasn't been run on a new machine.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. Both districts are in the export; counties add up to its statewide rows. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

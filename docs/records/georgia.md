@@ -77,7 +77,7 @@ What this costs: dots use one mix of parties across a county, so they don't show
 
 | # | Command | Writes to `data/ga/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_ga_results.py` | `results-2026.json` | `6b414e2f9d19f036` |
+| 1 | `python scripts/build_ga_results.py` | `results-2026.json` | `f35da56a2fdac02a` |
 | 2 | `python scripts/build_cities.py ga` | `cities.json` | `ce599a02e698dd0c` |
 | 3 | `python scripts/build_precincts.py ga` (reads #1) | `blocks.json.gz` | `9ed6639dba8083ce` |
 | 4 | `python scripts/build_landmask.py ga` | `landmask.bin.gz` | `d79dfdc72bf51fa0` |
@@ -150,3 +150,7 @@ Checks that stop the build:
 - Land grid, decoded and viewed whole and at four places: Lake Lanier, Lake Oconee, Lake Sinclair, West Point Lake, Lake Seminole and Thurmond Lake appear empty in their right shapes, the Atlantic and Fort Stewart are empty, and St. Simons, Tybee, Savannah and Atlanta are lived on. Of 30 spot checks, the ones reading wrong were points that missed narrow water, confirmed in the pictures, plus the Okefenokee block above.
 - With the edited scripts, in a scratch copy using the main checkout's raw files: `cities.json` for Oklahoma, Kansas, South Carolina, Ohio and Iowa, and Iowa's `blocks.json.gz` and `landmask.bin.gz`, match the committed files byte for byte. Texas and the other precinct and land builds weren't rerun; the only changes there are new dictionary entries and adding `ga` to the county-only tuples.
 - **Not checked:** no page was opened. Browser checking is due after the merge. The whole sequence hasn't been run on a new machine.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. All 14 districts are in the export; District 14's item is named `USH14R` there. Counties add up to its statewide rows. Georgia needs a majority to win, and every district's leader has one in this file. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

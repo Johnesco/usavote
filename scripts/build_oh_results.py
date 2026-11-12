@@ -27,6 +27,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "oh"
 FEED = RAW / "results" / "VSSC1622-2026-11-08.xml"
@@ -183,6 +185,33 @@ order = [v[0] for v in RACES.values()]
 races.sort(key=lambda r: order.index(r["id"]))
 print("left out:", left_out)
 assert all(sum(row[3] for row in r["counties"]) for r in races)
+
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+HOUSE_PARTY = {**PARTY, "Indep": "IND", "Nonprtycan": "NP"}  # codes the statewide races don't have: independent, nonparty candidate
+house_votes, house_expect = {}, {}
+for contest in election.find("{*}ContestCollection"):
+    m = re.fullmatch(r"Representative to Congress - District (\d+)", contest.get("Name").strip())
+    if not m: continue
+    assert contest.get(XSI_TYPE) == "CandidateContest" and contest.get("VotesAllowed") == "1", contest.get("Name")
+    num, scope = int(m.group(1)), contest.findtext("{*}JurisdictionalScopeId")
+    house_votes[num], house_expect[num] = {}, {}
+    for s in contest.findall("{*}BallotSelection"):
+        people = [candidates[i.text] for i in s.findall("{*}CandidateId")]
+        code = parties[people[0].findtext("{*}PartyId")]
+        assert len(people) == 1 and code in HOUSE_PARTY, (contest.get("Name"), "ticket shape or a party with no code here", code)
+        k = (" ".join(people[0].findtext("{*}BallotName/{*}LanguageString").split()), HOUSE_PARTY[code])
+        assert k not in house_expect[num], (contest.get("Name"), k)
+        for v in s.findall(".//{*}VoteCounts"):
+            unit, n = v.findtext("{*}GpUnitId"), int(v.get("Count"))
+            if unit == scope:
+                assert k not in house_expect[num], (contest.get("Name"), k); house_expect[num][k] = n
+            else:
+                here = house_votes[num].setdefault(row_of[unit], {})  # a KeyError is a unit that's neither the district nor a county
+                assert k not in here, (contest.get("Name"), k, unit); here[k] = n
+        assert k in house_expect[num], (contest.get("Name"), k, "no district total")
+house = chamber_race("u-s-house", "U.S. House", "Federal", "Representative to Congress", 15, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
+print(chamber_summary(house))
 
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 TIGER = ("TIGER/Line&reg; is a registered trademark of the U.S. Census Bureau. This site's land grid is reworked from TIGER/Line&reg; "

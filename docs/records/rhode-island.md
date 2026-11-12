@@ -37,7 +37,7 @@ This is a reading of the published pages, not legal advice. Nobody at the Board 
 
 | # | Command | Writes to `data/ri/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_ri_results.py` | `results-2026.json` | `81840b7ecaf15084` |
+| 1 | `python scripts/build_ri_results.py` | `results-2026.json` | `57fa96ea8513c7a4` |
 | 2 | `python scripts/build_cities.py ri` | `cities.json` | `58c1c08ef60f7c7c` |
 | 3 | `python scripts/build_precincts.py ri` (reads #1) | `blocks.json.gz` | `051917e74cdd2d82` |
 | 4 | `python scripts/build_landmask.py ri` | `landmask.bin.gz` | `287af9abdca2542a` |
@@ -84,3 +84,7 @@ Checks that stop the build: the export is this election; all 39 towns and the Fe
 
 - In the browser at desktop width: the results page opens on U.S. Senate with "led" wording and the partial and federal-only notes in Method; the dot view counts 359,475 voters, matching the race. No console errors.
 - **Not checked:** phone width, the 3D view, whether the homepage label fits the small state, and the land grid in close-ups.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. Both districts are in the export. As for the statewide races, towns add up to counties and the Federal entry's votes, which belong to no town, are left out of the counties and the districts alike. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

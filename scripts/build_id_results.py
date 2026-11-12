@@ -29,6 +29,8 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "id"
 OUT = ROOT / "data" / "id" / "results-2026.json"
@@ -203,6 +205,23 @@ for row in races[0]["counties"]:
     assert row[3] >= 10, "a county with under 10 Governor votes"
 BALLOTS = sum(county_sheet[(n, "gov")]["Ballots Cast"] for n in by_name)
 REGISTERED = sum(v["total"] for v in load("vr.json")["data"])
+
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+house_votes, house_expect = {}, {}
+for item, num in (("usrep1", 1), ("usrep2", 2)):
+    b = state_items[item]
+    assert b["contestType"] == "Candidate" and b["voteFor"] == 1, item
+    key = {o["name"]: (o["name"].strip(), "W" if o["politicalParty"] is None or o["name"].endswith("(Write-in)") else PARTY[o["politicalParty"]]) for o in b["ballotOptions"]}
+    house_expect[num] = {key[o["name"]]: o["voteCount"] for o in b["ballotOptions"]}
+    house_votes[num] = {}
+    for name, items in local.items():
+        if item not in items: continue
+        here = items[item]
+        assert here["precinctsReporting"] == here["precinctsParticipating"] > 0, (item, name, "precincts not all reporting")
+        house_votes[num][index[by_name[name]["fips"]]] = {key[o["name"]]: o["voteCount"] for o in here["ballotOptions"]}
+house = chamber_race("u-s-house", "U.S. House", "Federal", "United States Representative", 2, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
+print(chamber_summary(house))
 
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 senate = sorted(state_items["ussen"]["ballotOptions"], key=lambda o: -o["voteCount"])

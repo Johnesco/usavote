@@ -27,6 +27,8 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "ia"
 OUT = ROOT / "data" / "ia" / "results-2026.json"
@@ -188,6 +190,29 @@ for office in statewide:
 assert sorted(r["office"] for r in races) == sorted(RACES), "statewide races differ from the RACES table"
 order = list(RACES)
 races.sort(key=lambda r: order.index(r["office"]))
+
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+HOUSE = "United States Representative District "
+house_votes, house_expect = {}, {}
+for office in sorted(t for t in summary if t.startswith(HOUSE)):
+    num, rs = int(office[len(HOUSE):]), summary[office]
+    assert all(r["num Area total"] == r["num Area rptg"] for r in rs), (office, "counties not all reporting")
+    cands, rows, totals = detail[office]
+    assert cands == [r["choice name"] for r in rs], (office, "candidates differ between the two reports")
+    n = len(cands)
+    # a named candidate the report lists with no party is "NP"
+    keys = [(r["choice name"], PARTY.get(r["party name"], "W" if r["choice name"] == "Write-in" else r["party name"] or "NP")) for r in rs]
+    house_votes[num] = {}
+    for key, nums in rows.items():
+        if len(nums) == 3 * n and cands[-1] == "Write-in" and nums[-2] == 0:  # Pottawattamie's blank write-in columns, as above
+            nums[-2:-1] = [0, 0, 0]
+        assert len(nums) == 2 + 3 * n, (office, key, nums)
+        votes = [nums[3 + 3 * k] for k in range(n)]
+        assert sum(votes) == nums[-1], (office, key, "candidates don't add up to the county's total")
+        house_votes[num][index[by_name[key]["fips"]]] = dict(zip(keys, votes))
+    house_expect[num] = {k: int(r["total votes"]) for k, r in zip(keys, rs)}
+house = chamber_race("u-s-house", "U.S. House", "Federal", HOUSE.strip(), 4, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
 for row in races[0]["counties"]:
     assert row[3] >= 10, "a county with under 10 U.S. Senate votes"
 stale = sum(summary_json[t]["PR"] != summary_json[t]["TP"] for t in statewide)
@@ -222,6 +247,7 @@ print(f"summary.json fields reading fewer counties than the Summary CSV: {stale}
 print("counties whose write-in columns are blank, counted as 0:", sorted(blank_write_ins))
 assert blank_write_ins <= {"Pottawattamie"}, "a new county with blank write-in columns: look at it"
 print(f"OK: {len(races)} races; {COUNTIES} counties, {PRECINCTS:,} precincts, all reporting; {CERTIFIED} counties marked certified; {BALLOTS:,} ballots; updated {UPDATED}, retrieved {RETRIEVED}.")
-for r in races:
+print(chamber_summary(house))
+for r in races[:-1]:
     d = next(c for c in r["candidates"] if c["party"] == "DEM"); p = next(c for c in r["candidates"] if c["party"] == "REP")
     print(f"  {r['id']:20} {d['name']} {d['votes']:,} vs {p['name']} {p['votes']:,}; total {sum(row[3] for row in r['counties']):,}; D carried {sum(row[0] > row[1] for row in r['counties'])} counties")

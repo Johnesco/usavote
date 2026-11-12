@@ -61,7 +61,7 @@ This is a reading of the published pages, not legal advice. **No wording limitin
 | # | Command | Writes to `data/nm/` | SHA-256 (first 16) |
 |---|---|---|---|
 | 0 | `python scripts/nm_results_save.py` | (the raw results; the site's files may have changed since) | |
-| 1 | `python scripts/build_nm_results.py` | `results-2026.json` | `ddd890bf8edf4f00` |
+| 1 | `python scripts/build_nm_results.py` | `results-2026.json` | `d7d56d1acec62178` |
 | 2 | `python scripts/build_cities.py nm` | `cities.json` | `29ffcc00cad00be2` |
 | 3 | `python scripts/build_precincts.py nm` (reads #1) | `blocks.json.gz` | `38a2012b4787b710` |
 | 4 | `python scripts/build_landmask.py nm` | `landmask.bin.gz` | `0aebcc190f32e3f7` |
@@ -122,3 +122,7 @@ The county rows carry no county total of their own, so the percentage is the onl
 - The land grid was decoded and looked at as a whole, around Elephant Butte and Caballo, around Navajo Lake and around Conchas, with the water blocks' outlines drawn over two of them, and each block's internal point was tested. 58,284 of 58,300 lived-on blocks' points are on lived-on cells. Empty blocks read 11,435 of 48,915, and the outlines show why for the lakes tested: neighbors' edges light the cells along a shoreline, so narrow arms read 25% to 35% lit.
 - With the changed scripts, Iowa's `cities.json`, `blocks.json.gz` and `landmask.bin.gz`, Oklahoma's `cities.json` and Texas's `cities.json` were rebuilt in a scratch folder from the main checkout's raw files, and all five match the committed files byte for byte. Other states' files weren't rebuilt; the changes to the scripts only add New Mexico's entries.
 - **Not checked:** no page was opened. Browser checking is due after the merge. The whole sequence hasn't been run on a new machine.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. The 3 districts' totals are in `federal.csv` and their county rows in `county-11186.json` to `county-11188.json`. **One hidden figure:** the site shows an asterisk for Gabriel Vasquez in Chaves County's part of District 2, where fewer than 5 voters cast a ballot. That figure is left out of Chaves County's row and still counted in District 2's total, which the state publishes; the build stops if more than one figure per candidate or 5 or more votes are missing. The state's own total and percentage give the figure away, so this follows its intent, not a guarantee. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.
