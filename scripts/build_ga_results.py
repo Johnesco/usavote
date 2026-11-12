@@ -31,6 +31,8 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "ga"
 OUT = ROOT / "data" / "ga" / "results-2026.json"
@@ -167,6 +169,28 @@ provisional = open_by_type.get("Provisional", {}).get("Not Reported", [])
 absentee = open_by_type.get("Absentee by Mail", {}).get("Partially Reported", [])
 assert sum(map(len, (w for t in open_by_type.values() for w in t.values()))) == len(provisional) + len(absentee), open_by_type
 names = lambda xs: ", ".join(xs[:-1]) + " and " + xs[-1] if len(xs) > 1 else xs[0]
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+house_votes, house_expect, house_incumbents = {}, {}, set()
+for cid, item in state.items():
+    m = re.fullmatch(r"USH(\d+)R?", cid)  # USH14R: District 14's regular election, as the export names it
+    if not m: continue
+    assert item["contestType"] == "Candidate" and item["voteFor"] == 1 and item["name"] == f"US House of Representatives - District {m.group(1)}", (cid, item["name"])
+    num, key = int(m.group(1)), {}
+    for o in item["ballotOptions"]:
+        nm, _, inc = person(o["name"])
+        key[o["id"]] = (nm, PARTY[o["politicalParty"]])
+        if inc: house_incumbents.add(key[o["id"]])
+    house_expect[num] = {key[o["id"]]: o["voteCount"] for o in item["ballotOptions"]}
+    house_votes[num] = {}
+    for fips, block in local.items():
+        here = [b for b in block["ballotItems"] if b["id"] == cid]
+        if not here: continue
+        assert len(here) == 1 and here[0]["precinctsParticipating"] == here[0]["precinctsReporting"], (cid, block["name"], "precincts not all reporting")
+        house_votes[num][index[fips]] = {key[o["id"]]: o["voteCount"] for o in here[0]["ballotOptions"]}
+house = chamber_race("u-s-house", "U.S. House", "Federal", "US House of Representatives", 14, house_votes, COUNTIES, incumbents=house_incumbents, expect=house_expect)
+races.append(house)
+print(chamber_summary(house))
+
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 out = dict(
     meta=dict(

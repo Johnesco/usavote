@@ -54,7 +54,7 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 | # | Command | Writes | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_sc_results.py` (reads the table `data/sc/precinct-crosswalk.csv`, `5ebd2b06a91b9d77`) | `data/sc/results-2026.json` | `327df5306e18192f` |
+| 1 | `python scripts/build_sc_results.py` (reads the table `data/sc/precinct-crosswalk.csv`, `5ebd2b06a91b9d77`) | `data/sc/results-2026.json` | `fe4ad07fa0253315` |
 |   | | `data/raw/sc/derived/precinct-votes.json` (not committed: it holds any precinct under 10 votes) | not recorded |
 | 2 | `python scripts/build_cities.py sc` | `data/sc/cities.json` | `29261ac6915b6d76` |
 | 3 | `python scripts/build_precincts.py sc` (reads #1) | `data/sc/precincts.json.gz` | `d784da9786eb5ff7` |
@@ -148,3 +148,7 @@ Moved votes are concentrated: Spartanburg 30,515 (25.5% of its votes), Beaufort 
 - Land grid, viewed as a picture: Lakes Marion, Moultrie, Hartwell and Murray are empty where marked, the Atlantic is empty, and the coast and sea islands line up; Myrtle Beach and Columbia are lived on.
 - Texas and Oklahoma: with the edited scripts, in a scratch copy reading the main checkout's `data/raw/` (read-only; these raw files aren't in this worktree), all seven rebuilt files match the hashes in PIPELINE Parts 3 and 7: `cities.json`, `landmask.bin.gz`, `precincts.json.gz`, `precinct-shapes.json.gz`, and Oklahoma's `cities.json`, `blocks.json.gz`, `landmask.bin.gz`. `build_data.py`, `build_history.py` and `build_ok_results.py` weren't changed, so they weren't rerun.
 - **Not checked:** the pages in a browser. That's planned after the merge.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. All 7 districts are in the statewide file, with each one's counties; counties add up to its totals. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

@@ -280,12 +280,12 @@ This is a reading of the published pages, not legal advice.
 
 | # | Command | Writes to `data/ok/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_ok_results.py` | `results-2026.json` | `23414a8bb3514866` |
+| 1 | `python scripts/build_ok_results.py` | `results-2026.json` | `029131a254b22b9c` |
 | 2 | `python scripts/build_cities.py ok` | `cities.json` | `03e595d5154fc24e` |
 | 3 | `python scripts/build_precincts.py ok` (reads #1) | `blocks.json.gz` | `cc635054c09e4a3b` |
 | 4 | `python scripts/build_landmask.py ok` | `landmask.bin.gz` | `3c08d559b02e7cb8` |
 
-Numbers to expect: 8 races on 77 counties; 297 places; 180,154 blocks, 118,191 with adults, 3,010,698 adults; a 7,947 × 3,859 land grid.
+Numbers to expect: 8 statewide races and the U.S. House (Part 10) on 77 counties; 297 places; 180,154 blocks, 118,191 with adults, 3,010,698 adults; a 7,947 × 3,859 land grid.
 
 Checks that stop the build: all precincts reporting; counties add up to the state file and precincts to the county file, candidate by candidate, in every mapped race; adults match the Census file's state record; and every county has adults and at least 10 U.S. Senate votes.
 
@@ -422,4 +422,74 @@ Not checked: the 2022 and 2024 results against the House and Senate lines. That 
 
 ### Other states
 
-None of the other states' results files hold district races yet, so each would need its results adapter extended as well as shapes. Vermont and South Dakota have one U.S. House district, the whole state. Census TIGER/Line has every state's legislative and congressional districts under the terms in Part 8, but check the year: a state that redrew its lines before 2026, as Texas did for the U.S. House, needs the new ones from the state.
+Part 10 is the record of the U.S. House in seven more states. Legislatures aren't done in any state but Texas.
+
+## 10. U.S. House districts in other states: the record
+
+Built 2026-11-12. Seven more states have the **By district** view, for the 2026 U.S. House: Oklahoma, Iowa, Idaho, Georgia, Rhode Island, South Carolina and New Mexico. The owner chose U.S. House first; legislatures are a later pass.
+
+### Which states, and why not the rest
+
+| States | U.S. House |
+|---|---|
+| Oklahoma, Iowa, Idaho, Georgia, Rhode Island, South Carolina, New Mexico | District results were already in the saved raw files. Built |
+| Ohio | Results are in the saved file and now on its county map, but its 2026 districts aren't in the Census file (below). No By district view |
+| Kansas, California, West Virginia | No district results were saved, so their sites would have to be read again |
+| Vermont, South Dakota | One district, the whole state, already mapped as a statewide race |
+
+### Results
+
+Each state's results script now adds a `u-s-house` race through `scripts/chamber.py`, in the shape `build_data.py` gives Texas's chambers: every district added up by county, plus each district's own candidates and the rows of the counties its results came from (`where`). Each script stops unless a district's counties add up to the source's own total for it. What's particular to a state is in its record under `records/`; Oklahoma's is here: all 5 districts are in the state and county exports, which agree.
+
+| State | Districts | Seats | `results-2026.json` SHA-256 (first 16) |
+|---|---:|---|---|
+| Oklahoma | 5 | 5 R | `029131a254b22b9c` |
+| Iowa | 4 | 3 D, 1 R | `4551da147af142f3` |
+| Idaho | 2 | 2 R | `cda357a85e31d040` |
+| Georgia | 14 | 9 R, 5 D | `f35da56a2fdac02a` |
+| Rhode Island | 2 | 2 D | `57fa96ea8513c7a4` |
+| South Carolina | 7 | 5 R, 2 D | `fe4ad07fa0253315` |
+| New Mexico | 3 | 3 D | `d7d56d1acec62178` |
+| Ohio (county map only) | 15 | 8 D, 7 R | `a64e40d3a784a7c4` |
+
+These are unofficial, like each state's other results, and in a state still counting the page says "led", not "won".
+
+### Outlines
+
+Two Census Bureau files of the 119th Congress's districts, downloaded 2026-11-12 (not committed). Terms: Part 8's reading of the TIGER/Line documentation covers both, with the credit and trademark statement in each page's Sources and each file's `meta`.
+
+- **Drawn:** the national 2024 Cartographic Boundary File, [`cb_2024_us_cd119_500k.zip`](https://www2.census.gov/geo/tiger/GENZ2024/shp/cb_2024_us_cd119_500k.zip), saved to `data/raw/census-dl/cb/` (SHA-256 `2b4238aed7e865df`). It stops at the shoreline, as the page's county shapes do. The owner approved this download after seeing the first build, whose TIGER/Line outlines filled in Narragansett Bay and ran out to sea.
+- **Checked against:** each state's 2024 TIGER/Line file, `tl_2024_<code>_cd119.zip`, saved to `data/raw/<state>/census/`. It is exact, and includes the water the Bureau assigns to a district.
+
+| State | TIGER/Line file, `tl_2024_<code>_cd119.zip` | SHA-256 (first 16) | `data/<state>/districts/u-s-house.json.gz` | SHA-256 (first 16) |
+|---|---|---|---:|---|
+| Oklahoma | `40` | `b33fd53f5a0e9fef` | 9 KB | `0abf183e113bca52` |
+| Iowa | `19` | `6f2a45cfa1ec1e3f` | 5 KB | `f2984903e285ff64` |
+| Idaho | `16` | `6b6a96d8597620be` | 13 KB | `594250407fc951dc` |
+| Georgia | `13` | `42055d2deb7f2faa` | 28 KB | `1389748df8c9eabb` |
+| Rhode Island | `44` | `07408bf88c39c2d2` | 3 KB | `1395670a5da6345d` |
+| South Carolina | `45` | `c224e2d4662775c5` | 24 KB | `7db63a8aa2bea3df` |
+| New Mexico | `35` | `1dcb982600be0eba` | 5 KB | `50489907fd55a807` |
+| Ohio | `39` | `11c6b089975f310f` | not built | |
+
+`python scripts/build_districts.py ok` (or several codes, or `all`) builds them, after the state's results script. It needs numpy.
+
+**The check that these are the lines the results were counted on** is exact here. Every census block with people is placed in a district by its inside point, on the TIGER/Line outlines as published, which gives each district's people in each county. The build stops unless:
+- every county a district's results came from is one where its people live, and
+- a district has fewer than 100 people in any county with no results for it.
+
+All seven pass. Three districts have a few people in a county that reports nothing for them: South Carolina's 3rd (36 people in Lexington), Georgia's 6th (17 in DeKalb) and 7th (7 in DeKalb).
+
+**Ohio fails it,** as expected: the state redrew its U.S. House districts for 2026. Its results for District 1 come from Clinton County, which the 2024 file's District 1 doesn't reach. So no outlines were written for Ohio.
+
+**Not compared:** the cartographic file's outlines against the TIGER/Line ones, beyond both having the same districts. The cartographic file is generalized to 1:500,000, so a drawn border can sit a little off the exact one.
+
+### On the page
+
+- A state lists its file under `STATE.data.districts` in `state.js`. `app.js` adds the By district button to a page that doesn't have it in its markup.
+- The Method text names each state's own authority, and uses `STATE.chamberTotals` where county figures don't simply add up to the published district totals (New Mexico, Rhode Island).
+
+### Gaps
+
+- Not checked: that each state's 2026 U.S. House election was held on the 119th Congress's lines other than by the check above, which would miss a change that moved no county in or out of a district.
+- Georgia's majority rule and any runoff weren't looked into beyond every leader having a majority in this file.

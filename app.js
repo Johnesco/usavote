@@ -85,6 +85,17 @@ const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRE
 // files and their years). byDistrict is what was asked for; dist is the set of columns loaded for a chamber, and it's on screen
 // only once its rows are those of the race on screen.
 const DISTRICTS = STATE.data.districts || {};
+if (Object.keys(DISTRICTS).length && !$('byDistrict')) { // Texas's page has the button in its markup; other states get it here
+  let seg = $('byCounty')?.parentElement;
+  if (!seg) { // a county-only page has no "Show results" choice yet
+    seg = document.createElement('div');
+    seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Show results');
+    seg.innerHTML = `<button type="button" id="byCounty" aria-pressed="true">By county</button>`;
+    $('viewRow').append(seg);
+  }
+  seg.insertAdjacentHTML('beforeend', `<button type="button" id="byDistrict" aria-pressed="false" disabled>By district</button>`);
+}
+const legHead = $('legHead') || [...document.querySelectorAll('aside h2')].find(h => /share of the county vote/.test(h.textContent));
 let byDistrict = false, dist = null, nmOf = c => c.last;
 const districtSets = new Map(), districtThere = new Map(); // a chamber's columns, once made; whether its file is there
 const districtEntry = r => { const e = DISTRICTS[r.id.replace(/^\d{4}-/, '')]; return r.chamber && e?.years.includes(r.year) ? e : null; };
@@ -210,29 +221,30 @@ function chamberText() {
 }
 // By district: what the map shows, in place of the words about counties
 function districtText() {
-  const head = $('legHead');
-  if (head) head.textContent = `Winner's share of the ${districtCols() ? 'district' : 'county'} vote`;
+  if (legHead) legHead.textContent = `${WINNER[0].toUpperCase() + WINNER.slice(1)}'s share of the ${districtCols() ? 'district' : 'county'} vote`;
   if (!districtCols()) return;
   const up = dist.rows.filter(r => r.d), voted = up.filter(r => r.total).sort((a, b) => a.total - b.total);
   const staggered = race.size > up.length, flat = up.length - voted.length, m = dist.meta;
   $('raceLine').textContent = `${race.year} ${race.label} elections in ${STATE.name}${race.date ? `, ${race.date}` : ''}${race.unofficial ? ' (unofficial results)' : ''} · ` +
     (staggered ? `${up.length} of ${race.size} districts up this year` : `${up.length} districts`) + `, each drawn on its own lines`;
   $('scale').textContent =
-    `Each ${race.label} district is one shape here, colored by who won it. A chamber's districts are drawn to hold about the same number of people, ` +
+    `Each ${race.label} district is one shape here, colored by who ${wonWord()} it. A chamber's districts are drawn to hold about the same number of people, ` +
     `so the largest shapes are where few people live and the smallest are packed into the cities.`;
   $('raiseText').innerHTML =
     `Press <b>See in 3D</b> and each district becomes a column whose height is the number of votes cast in it, on the same scale as the county columns. ` +
     (voted.length ? `District ${voted[0].n} cast ${fmt(voted[0].total)}; District ${voted.at(-1).n} cast ${fmt(voted.at(-1).total)}.` : '');
-  $('legRTitle').textContent = `${nmOf(R)} won the district`;
-  $('legDTitle').textContent = `${nmOf(D)} won the district`;
+  $('legRTitle').textContent = `${nmOf(R)} ${wonWord()} the district`;
+  $('legDTitle').textContent = `${nmOf(D)} ${wonWord()} the district`;
   $('method').insertAdjacentHTML('beforeend',
     `<p><b>By district:</b> one column for each ${race.label} district, on the lines used for the ${race.year} election
     (<a href="${m.url}" target="_blank" rel="noopener">${m.source}</a>${m.license ? `; <a href="${m.licenseUrl}" target="_blank" rel="noopener">${m.license}</a>` : ''}).
-    A district's color is its winner's share of all votes cast in it, and its height is the votes cast, stacked like a county's column.
+    A district's color is its ${winnerWord()}'s share of all votes cast in it, and its height is the votes cast, stacked like a county's column.
     ${flat ? `${flat} district${flat > 1 ? 's' : ''} had a single candidate and ${flat > 1 ? 'were' : 'was'} left off the ballot: ${flat > 1 ? 'they have their winners\' color' : 'it has its winner\'s color'} and no height.` : ''}
     ${staggered ? `The ${race.size - up.length} districts not up this year are gray.` : ''}
     Outlines are simplified to about 55 meters, so they aren't exact at street level.</p>`);
 }
+// "won" and "winner" for the race on screen: a state whose count is still open says "led" and "leader" of this year's results
+const wonWord = () => race.year === 2026 ? WON : 'won', winnerWord = () => race.year === 2026 ? WINNER : 'winner';
 // Legislative races (U.S. House, Texas House, Texas Senate): every district of the chamber, added up by county. Seats are won district by
 // district, so the text compares the seats each party won with its share of the chamber's vote.
 function renderChamber(nm) {
@@ -252,8 +264,8 @@ function renderChamber(nm) {
   const mapR = S.landR > S.landD, [mapName, mapCnt, mapLand] = mapR ? [nm(R), S.cntR, S.landR] : [nm(D), S.cntD, S.landD];
   $('headline').innerHTML =
     `Adding up every ${race.label} district, ${mapName} got more votes in <b class="hl">${mapCnt} of ${counties.length}</b> counties, which cover ` +
-    `<b class="hl">${pct(mapLand, land, 0)}</b> of the land${S.cntNone ? ` (${S.cntNone} counties had ${staggered ? `no ${race.label} race this year or no contested one` : 'no contested race'})` : ''}. ${vW} won the ${race.label} vote ${staggered ? 'in the districts that were up' : 'statewide'}, <b class="hl">${pct(va, S.tot)} to ${pct(vb, S.tot)}</b>, ` +
-    (dVotes === dSeats ? `and` : `but ${sW} won`) + ` <b class="hl">${sa} of the ${n} seats</b>${staggered ? ` that were up (the Senate has ${race.size})` : ''}.`;
+    `<b class="hl">${pct(mapLand, land, 0)}</b> of the land${S.cntNone ? ` (${S.cntNone} counties had ${staggered ? `no ${race.label} race this year or no contested one` : 'no contested race'})` : ''}. ${vW} ${wonWord()} the ${race.label} vote ${staggered ? 'in the districts that were up' : 'statewide'}, <b class="hl">${pct(va, S.tot)} to ${pct(vb, S.tot)}</b>, ` +
+    (dVotes === dSeats ? `and` : `but ${sW} ${wonWord()}`) + ` <b class="hl">${sa} of the ${n} seats</b>${staggered ? ` that were up (the Senate has ${race.size})` : ''}.`;
   const lD = 100 * S.landD / land, vD = 100 * S.votesInD / S.tot;
   const sD = 100 * S.dem / S.tot, sR = 100 * S.rep / S.tot, sO = 100 - sD - sR;
   const kD = 100 * seatD / n;
@@ -264,7 +276,7 @@ function renderChamber(nm) {
     bar('Votes cast, split the same way', [['d', vD, vD.toFixed(0) + '% D'], ['r', 100 - vD, (100 - vD).toFixed(0) + '% R']]) +
     bar(staggered ? `${race.label} vote, all districts that were up` : `Statewide ${race.label} vote`, [['d', sD, sD.toFixed(1) + '% D'], ['o', sO, ''], ['r', sR, sR.toFixed(1) + '% R']],
       otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : '') +
-    bar(staggered ? `Seats won (${n} of ${race.size} were up)` : 'Seats won', [['d', kD, `${seatD} D`], ['o', 100 * (n - seatD - seatR) / n, ''], ['r', 100 * seatR / n, `${seatR} R`]],
+    bar(staggered ? `Seats won (${n} of ${race.size} were up)` : wonWord() === 'won' ? 'Seats won' : 'Seats, by who leads', [['d', kD, `${seatD} D`], ['o', 100 * (n - seatD - seatR) / n, ''], ['r', 100 * seatR / n, `${seatR} R`]],
       (noD || noR ? [noD ? `${noD} district${noD > 1 ? 's' : ''} had no Democratic candidate` : '', noR ? `${noR} district${noR > 1 ? 's' : ''} had no Republican candidate` : '']
         .filter(Boolean).join(' and ') + `. Their votes all count for the other party, so the vote shares above lean that way.`
         : 'Every district had both a Democratic and a Republican candidate.') +
@@ -288,9 +300,9 @@ function renderChamber(nm) {
     <p><b>Votes:</b> for each county, the votes cast in every ${race.label} district that reaches into it, added up by party. Where a district
     crosses county lines, only the part of its vote cast in that county is counted. A district with no candidate from one party adds
     nothing to that party's total, so counties in uncontested districts lean further toward the other party than its voters may.</p>
-    <p><b>Seats:</b> each district's winner, from the same results. ${race.year !== 2026 ? `Source for this race: <a href="${race.sourceUrl}" target="_blank" rel="noopener">${race.source}</a>.` :
-      `These are the Secretary of State's election-night returns as of ${meta.resultsUpdated}, unofficial until the state canvass. Every candidate's
-      county figures add up exactly to the district totals the Secretary of State publishes.`}</p>
+    <p><b>Seats:</b> each district's ${winnerWord()}, from the same results. ${race.year !== 2026 ? `Source for this race: <a href="${race.sourceUrl}" target="_blank" rel="noopener">${race.source}</a>.` :
+      `These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, unofficial until ${STATE.unofficialUntil}. ${STATE.chamberTotals ?? `Every candidate's
+      county figures add up exactly to the district totals ${STATE.authority} publishes.`}`}</p>
     <p><b>Column height</b> is proportional to votes cast, on the same scale as every other race. Each raised column is stacked by party, and
     <b>color</b> shows the leading party's share of all ${race.label} votes cast in the county, in 10-point bands.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded).</p>
@@ -419,7 +431,7 @@ $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
 if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
 
-$('sources').innerHTML = meta.sources ? `<ol>${meta.sources.map(s => `<li>${s}</li>`).join('')}</ol>` : `<ol>
+$('sources').innerHTML = meta.sources ? `<ol>${[...meta.sources.slice(0, -1), STATE.data.districtSource, meta.sources.at(-1)].filter(Boolean).map(s => `<li>${s}</li>`).join('')}</ol>` : `<ol>
   <li>Texas Secretary of State, <a href="https://elections.sos.state.tx.us/index.htm" target="_blank" rel="noopener">Election History</a>,
     official canvassed county results for the 2008, 2010, 2012, 2014, 2016 and 2018 general elections, retrieved ${hist.meta.retrieved}.</li>
   <li>Texas Secretary of State, <a href="https://results.texas-election.com/races" target="_blank" rel="noopener">election results site</a>,
@@ -912,7 +924,9 @@ function syncDistricts() {
   hasDistricts(r).then(ok => {
     if (r !== race) return;
     btn.disabled = !ok;
-    btn.title = ok ? `One column for each ${r.label} district` : r.chamber ? `No district lines here for the ${r.year} ${r.label}` : 'For U.S. House, Texas House and Texas Senate races';
+    const offices = [...new Set(races.filter(districtEntry).map(x => x.label))];
+    btn.title = ok ? `One column for each ${r.label} district` : r.chamber ? `No district lines here for the ${r.year} ${r.label}`
+      : `For ${offices.length > 1 ? offices.slice(0, -1).join(', ') + ' and ' : ''}${offices.at(-1)} races`;
     if (byDistrict && !districtCols()) setDistrict(ok);
   });
 }
@@ -982,7 +996,7 @@ function onPointer(e) {
 function districtTip({ n, d, total, w }) {
   const head = `<div class="n">${race.label} District ${n}</div><div class="row m"><span>${race.year} general election</span><span></span></div>`;
   if (!d) return head + `<div class="row m"><span>Not up for election this year</span><span></span></div>`;
-  const tag = c => `${c.name} (${PARTY_SHORT[c.party] || c.party})`;
+  const tag = c => c.party === 'W' ? c.name : `${c.name} (${PARTY_SHORT[c.party] || c.party})`;
   if (!total) return head + `<div class="row"><span>${tag(w)}</span><span>won</span></div>
     <div class="row m"><span>The only candidate, so the race was left off the ballot</span><span></span></div>`;
   const second = d.candidates[1], lead = w.votes - (second?.votes ?? 0);

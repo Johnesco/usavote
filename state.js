@@ -1,3 +1,6 @@
+// The source of the U.S. House district outlines every state but Texas uses (scripts/build_districts.py), for a page's Sources.
+const CD119_SOURCE = `U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/cartographic-boundary.html" target="_blank" rel="noopener">2024 Cartographic Boundary Files</a>, 119th Congressional Districts: the U.S. House district outlines, simplified here, for the by-district columns; checked against the Bureau's 2024 TIGER/Line Shapefiles. TIGER/Line is a registered trademark of the Census Bureau; this site is not a Census Bureau product.`;
+
 // Everything the pages need to know about which state they're showing. A new state gets its own values here and its own
 // pages, which name it with <html data-state="...">; joining STATES opens it on the U.S. homepage (home.js).
 const TEXAS = {
@@ -62,6 +65,8 @@ const OKLAHOMA = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/ok/landmask.bin.gz',
     cities: 'data/ok/cities.json',
+    districts: { 'u-s-house': { url: 'data/ok/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'oklahoma.html', title: 'See the results', text: 'U.S. Senate and seven statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
   dots: 'oklahoma-voters.html',
@@ -130,6 +135,8 @@ const SOUTH_CAROLINA = {
     precinctShapes: 'data/sc/precinct-shapes.json.gz',
     land: 'data/sc/landmask.bin.gz',
     cities: 'data/sc/cities.json',
+    districts: { 'u-s-house': { url: 'data/sc/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'south-carolina.html', title: 'See the results', text: 'U.S. Senate and the statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
   dots: 'south-carolina-voters.html',
@@ -196,6 +203,8 @@ const IOWA = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/ia/landmask.bin.gz',
     cities: 'data/ia/cities.json',
+    districts: { 'u-s-house': { url: 'data/ia/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'iowa.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
   dots: 'iowa-voters.html',
@@ -224,6 +233,8 @@ const NEW_MEXICO = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/nm/landmask.bin.gz',
     cities: 'data/nm/cities.json',
+    districts: { 'u-s-house': { url: 'data/nm/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'new-mexico.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
   dots: 'new-mexico-voters.html',
@@ -233,6 +244,8 @@ const NEW_MEXICO = {
   returns: 'unofficial returns',
   unofficialUntil: 'the State Canvassing Board declares them, due Nov. 24, 2026',
   votesCounted: 'the total votes cast in the selected race in each county, counting every candidate on the ballot. New Mexico counts write-ins only for declared write-in candidates, and these results list none in these races.',
+  // U.S. House: the site hides a county's figure where fewer than 5 voters cast a ballot (docs/records/new-mexico.md)
+  chamberTotals: `County figures add up to the district totals the Secretary of State publishes, except where the state hides a county's figure because fewer than 5 voters cast a ballot there: that figure is left out of its county here and still counted in its district's total.`,
   base: null,            // no precinct results or shapes here (docs/records/new-mexico.md)
 };
 
@@ -255,6 +268,8 @@ const IDAHO = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/id/landmask.bin.gz',
     cities: 'data/id/cities.json',
+    districts: { 'u-s-house': { url: 'data/id/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'idaho.html', title: 'See the results', text: "Governor and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter." },
   dots: 'idaho-voters.html',
@@ -316,6 +331,8 @@ const GEORGIA = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/ga/landmask.bin.gz',
     cities: 'data/ga/cities.json',
+    districts: { 'u-s-house': { url: 'data/ga/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'georgia.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
   dots: 'georgia-voters.html',
@@ -388,6 +405,8 @@ const RHODE_ISLAND = {
     precinctShapes: null,                // county only: no By precinct view or precinct menu
     land: 'data/ri/landmask.bin.gz',
     cities: 'data/ri/cities.json',
+    districts: { 'u-s-house': { url: 'data/ri/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
+    districtSource: CD119_SOURCE,
   },
   results: { href: 'rhode-island.html', title: 'See the results', text: 'U.S. Senate and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
   dots: 'rhode-island-voters.html',
@@ -402,6 +421,7 @@ const RHODE_ISLAND = {
   wonState: 'led the count so far',
   reporting: (meta, fmt) => `with all ${meta.reporting.towns} cities and towns reporting, added up here by county, though the Board marks ${meta.reporting.precinctsPartlyReported} of ${meta.reporting.precincts} precincts as partly reported, so these totals can change. The Board's U.S. Senate totals also include ${fmt(meta.reporting.federalOnlySenateVotes)} votes on federal-only ballots, which belong to no town and aren't on this map`,
   otherVotes: 'independent and write-in votes',
+  chamberTotals: `Each district's figures are its cities and towns added up. Ballots cast for federal offices only belong to no town, so they are left out of the counties and the districts alike, as in the statewide races.`,
   base: null,            // no precinct results or shapes here (docs/records/rhode-island.md)
 };
 

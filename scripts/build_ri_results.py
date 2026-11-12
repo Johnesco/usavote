@@ -32,6 +32,8 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "ri"
 OUT = ROOT / "data" / "ri" / "results-2026.json"
@@ -160,6 +162,27 @@ for row in races[0]["counties"]:
     assert row[3] >= 10
 PARTIAL = sum(s == "Partially Reported" for s in precincts.values())
 assert PARTIAL == PARTIAL_EXPECTED, (PARTIAL, "partly reported precincts changed: read the record again")
+
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+# Towns add up to counties, as for the statewide races, and the Federal entry's votes belong to no town, so they are left out.
+house_votes, house_expect = {}, {}
+for num in (1, 2):
+    item = state_items[f"Representative in Congress District {num}"]
+    assert item["contestType"] == "Candidate" and item["voteFor"] == 1
+    key = {o["id"]: (clean(o["name"]), PARTY[o["politicalParty"]]) for o in item["ballotOptions"]}
+    house_expect[num] = {key[o["id"]]: o["voteCount"] for o in item["ballotOptions"]}
+    house_votes[num] = {}
+    for name, l in locals_.items():
+        b = next((b for b in l["ballotItems"] if b["id"] == item["id"]), None)
+        if b is None: continue
+        if name == "Federal":
+            for o in b["ballotOptions"]: house_expect[num][key[o["id"]]] -= o["voteCount"]
+            continue
+        here = house_votes[num].setdefault(index[town_county[name]], {})
+        for o in b["ballotOptions"]: here[key[o["id"]]] = here.get(key[o["id"]], 0) + o["voteCount"]
+house = chamber_race("u-s-house", "U.S. House", "Federal", "Representative in Congress", 2, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
+print(chamber_summary(house))
 
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 word = {"DEMOCRAT": "Democrat", "REPUBLICAN": "Republican", "Independent": "independent"}

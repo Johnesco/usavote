@@ -68,7 +68,7 @@ This is a reading of the published pages, not legal advice.
 
 | # | Command | Writes to `data/ia/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_ia_results.py` | `results-2026.json` | `c42eebcfad4b1680` |
+| 1 | `python scripts/build_ia_results.py` | `results-2026.json` | `4551da147af142f3` |
 | 2 | `python scripts/build_cities.py ia` | `cities.json` | `a091fc6b1b442654` |
 | 3 | `python scripts/build_precincts.py ia` (reads #1) | `blocks.json.gz` | `93be075ac2e3056a` |
 | 4 | `python scripts/build_landmask.py ia` | `landmask.bin.gz` | `d2c054961dedbff5` |
@@ -127,3 +127,7 @@ Checks that stop the build:
 - The land grid was decoded and looked at as a whole and at eight places. Saylorville Lake, Lake Red Rock, Rathbun Lake and the Okoboji lakes appear empty in their right shapes, Carter Lake's lived-on patch shows west of the Missouri at Council Bluffs, and the Mississippi and Missouri edges follow the rivers. Of nine spot checks, eight came out as expected; the ninth, a point meant for Rathbun Lake, was on land just south of the lake in the picture, so the point was off rather than the grid.
 - `scripts/build_precincts.py`, `build_cities.py` and `build_landmask.py` gained Iowa entries and otherwise behave as before. With the changed scripts, Oklahoma's four files and Texas's `cities.json`, `landmask.bin.gz`, `precincts.json.gz` and `precinct-shapes.json.gz` were rebuilt into a scratch folder from the main checkout's raw files, and all eight match the committed files byte for byte. `build_data.py` and `build_history.py` weren't changed or rerun.
 - **Not checked:** no page was opened. Browser checking is due after the merge. The whole sequence hasn't been run on a new machine.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. All 4 districts are in the Detail TXT report and the Summary CSV, and the two agree. Two named candidates the report lists with no party are marked NP. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

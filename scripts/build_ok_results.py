@@ -21,6 +21,8 @@ import zipfile
 from collections import defaultdict
 from pathlib import Path
 
+from chamber import chamber_race, summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "ok"
 OUT = ROOT / "data" / "ok" / "results-2026.json"
@@ -130,6 +132,21 @@ order = list(RACES)
 races.sort(key=lambda r: order.index(r["office"]))
 print("left out, not one Democrat against one Republican or not a candidate race:", skipped)
 
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+HOUSE = "FOR UNITED STATES REPRESENTATIVE DISTRICT "
+cand_key = lambda r: (person(r["cand_name"])[0], r["cand_party"])
+house_votes, house_expect = defaultdict(lambda: defaultdict(dict)), defaultdict(dict)
+for r in state_rows:
+    if r["race_description"].startswith(HOUSE):
+        assert r["race_prec_reporting"] == r["tot_race_prec"], (r["race_description"], "precincts not all reporting")
+        house_expect[int(r["race_description"][len(HOUSE):])][cand_key(r)] = int(r["cand_tot_votes"])
+for r in county_rows:
+    if r["race_description"].startswith(HOUSE):
+        assert r["race_prec_reporting"] == r["tot_race_prec"], (r["race_description"], r["county"], "precincts not all reporting")
+        house_votes[int(r["race_description"][len(HOUSE):])][index[by_name[norm(r["county"])]["fips"]]][cand_key(r)] = int(r["cand_tot_votes"])
+house = chamber_race("u-s-house", "U.S. House", "Federal", HOUSE.strip(), 5, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
+
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 out = dict(
     meta=dict(
@@ -152,6 +169,7 @@ out = dict(
 OUT.parent.mkdir(parents=True, exist_ok=True)
 OUT.write_text(json.dumps(out, separators=(",", ":")), encoding="utf-8")
 print(f"OK: {len(races)} races, {COUNTIES} counties, all precincts reporting; counties match the state file and precincts match the counties.")
-for r in races:
+print(summary(house))
+for r in races[:-1]:
     d = next(c for c in r["candidates"] if c["party"] == "DEM"); p = next(c for c in r["candidates"] if c["party"] == "REP")
     print(f"  {r['id']:26} {d['name']} {d['votes']:,} vs {p['name']} {p['votes']:,}; D carried {sum(row[0] > row[1] for row in r['counties'])} counties")

@@ -42,6 +42,8 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "sc"
 OUT = ROOT / "data" / "sc" / "results-2026.json"
@@ -316,6 +318,27 @@ UNITS.write_text(json.dumps(dict(
 
 # ---------- write ----------
 fmt = lambda x: f"{x:,}"
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+house_votes, house_expect = {}, {}
+for contest in state.findall("Contest"):
+    m = re.fullmatch(r"U\.S\.\s+House of Representatives, District\s+(\d+)", contest.get("text").strip())
+    if not m: continue
+    num = int(m.group(1))
+    assert contest.get("precinctsReported") == contest.get("precinctsParticipating"), (contest.get("text"), "precincts not all reporting")
+    taking_part = {by_name[norm(e.get("name"))]["fips"] for e in contest.find("ParticipatingCounties")}
+    house_votes[num], house_expect[num] = {index[f]: {} for f in taking_part}, {}
+    for ch in contest.findall("Choice"):
+        k = (person(ch.get("text"))[0], PARTY.get(ch.get("party"), ch.get("party")))
+        assert k not in house_expect[num], (contest.get("text"), k)
+        house_expect[num][k] = int(ch.get("totalVotes"))
+        for vt in ch.findall("VoteType"):
+            for e in vt.findall("County"):
+                here = house_votes[num][index[by_name[norm(e.get("name"))]["fips"]]]  # a KeyError is a county the contest doesn't list as taking part
+                here[k] = here.get(k, 0) + int(e.get("votes"))
+house = chamber_race("u-s-house", "U.S. House", "Federal", "U.S. House of Representatives", 7, house_votes, COUNTIES, expect=house_expect)
+races.append(house)
+print(chamber_summary(house))
+
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 tiger = link("https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html", "2020 TIGER/Line®")
 out = dict(

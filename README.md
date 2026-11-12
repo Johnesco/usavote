@@ -30,7 +30,7 @@ Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/rec
 
 [`oklahoma.html`](https://johnesco.github.io/usavote/oklahoma.html) and [`oklahoma-voters.html`](https://johnesco.github.io/usavote/oklahoma-voters.html) show the Nov. 3, 2026 general election by county: bar view and dot view. They use the same code as Texas, with the data in [`data/ok/`](data/ok/). The results are **unofficial** until the state certifies them, set for Nov. 10, 2026.
 
-It has eight races: U.S. Senate, Governor, Lieutenant Governor, Attorney General, Superintendent of Public Instruction, Commissioner of Labor, Insurance Commissioner and Corporation Commissioner. Left out: State Treasurer, because no Democrat ran and the maps compare one Democrat with one Republican; judicial retention and state questions; and for now U.S. House, the legislature, earlier years and guided flights.
+It has eight races: U.S. Senate, Governor, Lieutenant Governor, Attorney General, Superintendent of Public Instruction, Commissioner of Labor, Insurance Commissioner and Corporation Commissioner, plus the U.S. House, which can also be drawn district by district. Left out: State Treasurer, because no Democrat ran and the maps compare one Democrat with one Republican; judicial retention and state questions; and for now the legislature, earlier years and guided flights.
 
 Oklahoma is county-only, unlike Texas. There's no By precinct view or precinct menu, and each county's dots are placed by where adults lived in 2020, with the same mix of parties across the county. So the dots show how many people voted and roughly where, but not which neighborhoods lean which way. The reason is the precinct map's terms of use, which didn't clearly cover this use.
 

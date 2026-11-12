@@ -45,7 +45,7 @@ It appears near the top of `ohio.html`'s sidebar, in `ohio-voters.html`'s **How?
 
 | # | Command | Writes to `data/oh/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_oh_results.py` | `results-2026.json` | `f5e31823ae9e7f21` |
+| 1 | `python scripts/build_oh_results.py` | `results-2026.json` | `a64e40d3a784a7c4` |
 | 2 | `python scripts/build_cities.py oh` | `cities.json` | `85fde05a80f9c215` |
 | 3 | `python scripts/build_precincts.py oh` (reads #1) | `blocks.json.gz` | `73f9bfe05fca4dd0` |
 | 4 | `python scripts/build_landmask.py oh` | `landmask.bin.gz` | `3416d00d8f8b9f84` |
@@ -105,3 +105,7 @@ The file gives no separate total for a race in a county, so "candidates add up b
 - Every county has adults (fewest: Vinton, 9,981) and at least 10 U.S. Senate votes (fewest: Vinton, 3,903).
 - The land grid was checked as pictures of the state, the Lake Erie shore, Grand Lake St. Marys and Indian Lake. The shore, Sandusky Bay, the islands and both lakes look right, and sample points on open water are empty: five in Lake Erie and one each in the two lakes. Sample points in Columbus, Cleveland, Cincinnati, Toledo, Celina and Russells Point are lived on. Airports weren't looked at one by one.
 - The two lakes' sample points fall in blocks with no people or housing, per the block file. A first sample near Grand Lake's north shore picked up the shoreline, so the sample was moved to open water. A block just east of the lake's straight edge is land, with almost no water on record.
+
+## U.S. House, added 2026-11-12
+
+`results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. All 15 districts are in the file, each with its counties and its own total, and counties add up. **No By district view:** Ohio's 2026 districts aren't the ones in the Census Bureau's 2024 file. The build found District 1 with results from Clinton County, which that file's District 1 doesn't reach, so the outlines were not used. The 2026 lines would have to come from the state, with its terms read first. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.

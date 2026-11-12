@@ -21,6 +21,15 @@ nothing for it, where its piece of the county has no voters or a precinct's cent
 how many do and stops if any district has more than one such county.
 
 Run:  python scripts/build_districts.py   (after scripts/build_data.py)
+
+Other states (python scripts/build_districts.py ok, or several codes, or "all") get data/<state>/districts/u-s-house.json.gz, in
+the same format, from two Census Bureau files of the 119th Congress's districts. The outlines drawn are from the national 2024
+Cartographic Boundary File (data/raw/census-dl/cb/cb_2024_us_cd119_500k.zip), which stops at the shoreline. The check uses the
+state's 2024 TIGER/Line file (data/raw/<state>/census/tl_2024_<code>_cd119.zip), which is exact but runs out over water. Run the
+state's results script first. The check: every census block with people is placed in a district by its inside point, and the
+build stops unless each district's results came only from counties where its people live, and unless it has no more than a few
+people in any other county. This needs numpy. Ohio isn't here: its 2026 districts are newer than these files, and the check
+says so (district 1 has results from Clinton County, which the Census file's district 1 doesn't reach).
 """
 import base64
 import gzip
@@ -28,6 +37,7 @@ import json
 import math
 import re
 import struct
+import sys
 import zipfile
 from collections import defaultdict
 from pathlib import Path
@@ -204,6 +214,113 @@ def simplify_all(rings_of):
         assert out[d], f"district {d} lost its shape"
     return out, len(arcs)
 
+
+# ---------- another state: U.S. House districts from the Census Bureau, checked against the state's census blocks ----------
+STATES = {  # state: (Census code, a middle latitude, size of its U.S. House delegation)
+    "ok": ("40", 35.5, 5), "oh": ("39", 40.2, 15), "ia": ("19", 42, 4), "id": ("16", 45.5, 2), "ga": ("13", 32.7, 14),
+    "ri": ("44", 41.6, 2), "sc": ("45", 33.6, 7), "nm": ("35", 34.2, 3),
+}
+CB_STEM = "cb_2024_us_cd119_500k"  # the national file, clipped to the shoreline; a state's TIGER/Line file runs out over water
+CB = "U.S. Census Bureau, 2024 Cartographic Boundary Files, 119th Congressional Districts (1:500,000)"
+TRADEMARK = "Checked against the Bureau's 2024 TIGER/Line Shapefiles. TIGER/Line is a registered trademark of the Census Bureau; this file is not a Census Bureau product."
+_cb = []
+
+
+def cb_shapes(fips):
+    """The state's districts in the national cartographic file: {number: [ring, ...]}."""
+    if not _cb: _cb.extend(read_shapes(zipfile.ZipFile(ROOT / "data" / "raw" / "census-dl" / "cb" / f"{CB_STEM}.zip"), CB_STEM, ["STATEFP", "CD119FP"]))
+    out = {}
+    for (state, num), rings in _cb:
+        if state != fips or num == "ZZ": continue
+        assert int(num) not in out, f"{fips}: district {num} twice in the cartographic file"
+        out[int(num)] = [q for q in map(quantized, rings) if len(q) >= 3]
+    return out
+
+
+def census_state(st):
+    import numpy as np
+    global KX
+    fips, mid_lat, size = STATES[st]
+    KX = math.cos(math.radians(mid_lat))
+    results = json.loads((ROOT / "data" / st / "results-2026.json").read_text(encoding="utf-8"))
+    race = next(r for r in results["races"] if r["id"] == "u-s-house")
+    assert race["size"] == size, (st, race["size"])
+    stem = f"tl_2024_{fips}_cd119"
+    raw_points, rings_of = 0, {}
+    for (num,), rings in read_shapes(zipfile.ZipFile(ROOT / "data" / "raw" / st / "census" / f"{stem}.zip"), stem, ["CD119FP"]):
+        if num == "ZZ": continue  # water that belongs to no district
+        raw_points += sum(map(len, rings))
+        assert int(num) not in rings_of, f"{st}: district {num} twice"
+        rings_of[int(num)] = [q for q in map(quantized, rings) if len(q) >= 3]
+    assert sorted(rings_of) == list(range(1, size + 1)), f"{st}: districts {sorted(rings_of)} for a delegation of {size}"
+    # what's drawn: the same districts from the cartographic file, which stops at the shoreline as the page's county shapes do
+    drawn = cb_shapes(fips)
+    assert sorted(drawn) == sorted(rings_of), f"{st}: the cartographic file has districts {sorted(drawn)}"
+    drawn_points = sum(len(r) for rs in drawn.values() for r in rs)
+    small, n_arcs = simplify_all(drawn)
+    polys = {d: to_polygons(rings) for d, rings in small.items()}
+
+    # Each census block with people, by its inside point: its county and the district it falls in (on the outlines as published by
+    # the Census Bureau, before simplifying). Blocks nest inside districts, so this is each district's counties, with their people.
+    cnty, xs, ys, pop = [], [], [], []
+    with zipfile.ZipFile(ROOT / "data" / "raw" / st / "census" / f"{st}2020.pl.zip").open(f"{st}geo2020.pl") as f:
+        for line in f:
+            r = line.decode("latin-1").rstrip("\n").split("|")
+            if r[2] == "750" and int(r[-7]) > 0:  # from the end: ... POP100, HU100, INTPTLAT, INTPTLON, LSADC, PARTFLAG, UGA
+                cnty.append(r[8].split("US")[1][:5]); xs.append(float(r[-4]) * Q); ys.append(float(r[-5]) * Q); pop.append(int(r[-7]))
+    xs, ys, pop = np.array(xs), np.array(ys), np.array(pop)
+    row_of = {c["fips"]: i for i, c in enumerate(results["counties"])}
+    rows = np.array([row_of[c] for c in cnty])
+    people, placed = {}, np.zeros(len(xs), bool)
+    for d, rings in rings_of.items():
+        ring_x = np.array([p[0] for r in rings for p in r]); ring_y = np.array([p[1] for r in rings for p in r])
+        near = np.flatnonzero((xs >= ring_x.min()) & (xs <= ring_x.max()) & (ys >= ring_y.min()) & (ys <= ring_y.max()))
+        near = near[np.argsort(ys[near], kind="stable")]  # by latitude, so each edge looks only at the blocks level with it
+        x, y, odd = xs[near], ys[near], np.zeros(len(near), bool)
+        for r in rings:  # even-odd over every ring handles holes and multipart shapes
+            for (xi, yi), (xj, yj) in zip(r, r[1:] + r[:1]):
+                if yi == yj: continue
+                a, b = np.searchsorted(y, (min(yi, yj), max(yi, yj)))  # the blocks with min <= y < max: those the edge passes beside
+                if a < b: odd[a:b] ^= x[a:b] < (xj - xi) * (y[a:b] - yi) / (yj - yi) + xi
+        assert not placed[near[odd]].any(), f"{st}: a block falls in two districts"
+        placed[near[odd]] = True
+        people[d] = {int(i): int(pop[near[odd]][rows[near[odd]] == i].sum()) for i in set(rows[near[odd]].tolist())}
+    assert placed.sum() >= 0.999 * len(xs), f"{st}: {len(xs) - placed.sum():,} blocks with people fall in no district"
+
+    # every county a district's results came from must be one where its people live; the other way round, a county with a few
+    # people and no results for the district is printed, and one with many stops the build
+    name = [c["name"] for c in results["counties"]]
+    notes = []
+    for d in race["districts"]:
+        here = people[d["district"]]
+        missing = set(d["where"]) - set(here)
+        assert not missing, f"{st}: district {d['district']} has results from counties its shape doesn't reach: {[name[i] for i in missing]}"
+        for i in sorted(set(here) - set(d["where"])):
+            assert here[i] < 100, f"{st}: district {d['district']}'s shape holds {here[i]:,} people in {name[i]} County, which has no results for it"
+            notes.append(f"district {d['district']}: {here[i]} people in {name[i]}")
+    assert {d["district"] for d in race["districts"]} == set(rings_of), f"{st}: the results don't have every district"
+    print(f"{st}: {size} districts, {drawn_points:,} points -> {sum(len(r) for rs in small.values() for r in rs):,} in {n_arcs:,} border pieces ({raw_points:,} in the TIGER/Line file used for the check); "
+          f"{int(placed.sum()):,} of {len(xs):,} blocks with people placed; every district's people live in exactly the counties its results came from"
+          + (f", but for: {'; '.join(notes)}" if notes else ""))
+
+    path = ROOT / "data" / st / "districts" / "u-s-house.json.gz"
+    path.parent.mkdir(exist_ok=True)
+    path.write_bytes(gzip.compress(json.dumps({
+        "meta": {
+            "plan": "CD119", "what": "U.S. House districts of the 119th Congress", "years": [2026],
+            "source": f"{CB}, simplified along shared borders. {TRADEMARK}",
+            "url": f"https://www2.census.gov/geo/tiger/GENZ2024/shp/{CB_STEM}.zip", "license": None, "licenseUrl": None,
+            "checkedAgainst": f"https://www2.census.gov/geo/tiger/TIGER2024/CD/{stem}.zip",
+            "format": "districts[number] = [[outer, hole...], ...]; a ring is [lon, lat, dlon, dlat, ...] in 1e-4 degrees, not closed.",
+        },
+        "districts": {str(d): [[encode(r) for r in poly] for poly in polys[d]] for d in sorted(polys)},
+    }, separators=(",", ":")).encode("utf-8"), 9, mtime=0))
+    print(f"wrote {path} ({path.stat().st_size / 1e3:.0f} KB)")
+
+
+if len(sys.argv) > 1:
+    for st in (list(STATES) if sys.argv[1] == "all" else sys.argv[1:]): census_state(st)
+    sys.exit()
 
 # ---------- the 2026 county feed (which counties each district's results came from) and the 2024 precincts (each one's
 # county and center), to check that these are the lines the results were counted on ----------

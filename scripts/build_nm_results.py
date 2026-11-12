@@ -26,6 +26,8 @@ import zipfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from chamber import chamber_race, summary as chamber_summary
+
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "nm" / "results"
 OUT = ROOT / "data" / "nm" / "results-2026.json"
@@ -169,6 +171,39 @@ order = list(RACES)
 races.sort(key=lambda r: order.index(r["office"]))
 for row in races[0]["counties"]:
     assert row[3] >= 10, "a county with under 10 U.S. Senate votes"
+
+# ---------- U.S. House: every district, added up by county, with each district's own result (scripts/chamber.py) ----------
+# The site hides a county figure where fewer than 5 voters cast a ballot (an asterisk). A hidden figure stays out of its county's
+# row here, and the district's total, which the state publishes, still counts it. The build stops if more than a few votes or more
+# than one figure per candidate are hidden.
+house_rows = {}
+for r in csv.DictReader(io.StringIO((RAW / "federal.csv").read_text(encoding="utf-8-sig"))):
+    if r["RaceName"] == "United States Representative": house_rows.setdefault(r["AreaNum"], []).append(r)
+assert sorted(house_rows) == ["DISTRICT 1", "DISTRICT 2", "DISTRICT 3"], sorted(house_rows)
+house_votes, house_expect, house_withheld, house_hidden = {}, {}, {}, []
+for area, rs in house_rows.items():
+    num = int(area.split()[1])
+    assert len({r["PrecinctsReporting"] for r in rs}) == 1 and len(set(rs[0]["PrecinctsReporting"].split("/"))) == 1, (area, "precincts not all reporting")
+    key = {r["CandidateID"]: (nice(r["CandidateName"]), r["PartyCode"]) for r in rs}
+    house_expect[num] = {key[r["CandidateID"]]: int(r["CandidateVotes"]) for r in rs}
+    house_votes[num], placed = {}, dict.fromkeys(key.values(), 0)
+    for c in json.loads(text(f"county-{rs[0]['RaceID']}.json")):
+        assert c["AreaNum"] == area and c["PrecinctsPartial"] == 0, (area, c["CountyName"])
+        here = house_votes[num].setdefault(index[by_name[norm(c["CountyName"])]["fips"]], {})
+        if c["calcCandidateVotes"].isdigit():
+            here[key[c["CandidateID"]]] = int(c["calcCandidateVotes"]); placed[key[c["CandidateID"]]] += int(c["calcCandidateVotes"])
+        else:
+            assert c["calcCandidateVotes"] == "*", (area, c["CountyName"], c["calcCandidateVotes"])
+            here[key[c["CandidateID"]]] = 0; house_hidden.append((num, c["CountyName"], key[c["CandidateID"]]))
+    gap = {k: house_expect[num][k] - v for k, v in placed.items() if house_expect[num][k] != v}
+    if gap: house_withheld[num] = gap
+for num, gap in house_withheld.items():
+    for k, v in gap.items():
+        assert 0 < v < 5 and sum(1 for h in house_hidden if h[0] == num and h[2] == k) == 1, (num, k, "votes missing from the county rows that one hidden figure doesn't explain")
+assert len(house_hidden) == sum(map(len, house_withheld.values())), ("a hidden county figure with no votes behind it", house_hidden)
+house = chamber_race("u-s-house", "U.S. House", "Federal", "United States Representative", 3, house_votes, COUNTIES, expect=house_expect, withheld=house_withheld)
+races.append(house)
+print(chamber_summary(house) + f"; county figures the site hides (fewer than 5 voters), left out of the county's row: {[(n, c) for n, c, _ in house_hidden]}")
 
 link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}</a>'
 out = dict(
