@@ -9,6 +9,7 @@ import { createPlaceMenus, describePlace } from './places.js';
 import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
+import { sourceItems } from './sourcelist.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -431,30 +432,8 @@ $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
 if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
 
-$('sources').innerHTML = meta.sources ? `<ol>${[...meta.sources.slice(0, -1), STATE.data.districtSource, meta.sources.at(-1)].filter(Boolean).map(s => `<li>${s}</li>`).join('')}</ol>` : `<ol>
-  <li>Texas Secretary of State, <a href="https://elections.sos.state.tx.us/index.htm" target="_blank" rel="noopener">Election History</a>,
-    official canvassed county results for the 2008, 2010, 2012, 2014, 2016 and 2018 general elections, retrieved ${hist.meta.retrieved}.</li>
-  <li>Texas Secretary of State, <a href="https://results.texas-election.com/races" target="_blank" rel="noopener">election results site</a>,
-    final county results for the 2020, 2022 and 2024 general elections, retrieved ${hist.meta.retrieved}.</li>
-  <li>U.S. House, Texas House and Texas Senate: the same two sources, read district by district (2008–2018: each district's county-by-county canvass page,
-    checked against the Statewide Race Summary; 2020–2024: the county file, checked against the district totals). Districts with a single
-    candidate that were left off the November ballot (3 in 2010, 72 in 2022) are counted for the party that nominated a candidate, from the
-    same sources' party primary results. Texas Senate terms are staggered: the districts up each year are the ones in that year's primaries.</li>
-  <li>Texas Secretary of State, <a href="${meta.resultsUrl}" target="_blank" rel="noopener">Election Night Returns, 2026 November General Election</a>, county results for statewide races
-    (<a href="${meta.resultsApi}" target="_blank" rel="noopener">data feed</a>), as of ${meta.resultsUpdated}, retrieved ${meta.retrieved}.</li>
-  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/vtds" target="_blank" rel="noopener">VTDs_24PG</a> (2024 precinct boundaries, listed by the Council under a <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license; simplified here, with precincts under 10 votes merged) and
-    <a href="https://ted.capitol.texas.gov/api/Offices/510/2/vtd" target="_blank" rel="noopener">2024 U.S. Senate results by precinct</a>, for the by-precinct columns.</li>
-  <li>Texas Legislative Council, <a href="https://data.capitol.texas.gov/dataset/planh2316" target="_blank" rel="noopener">PLANH2316</a> (Texas House districts) and
-    <a href="https://data.capitol.texas.gov/dataset/plans2168" target="_blank" rel="noopener">PLANS2168</a> (Texas Senate districts), the lines used for the 2022, 2024 and 2026 elections, both listed by the Council under a
-    <a href="http://www.opendefinition.org/licenses/cc-by" target="_blank" rel="noopener">Creative Commons Attribution</a> license, and
-    <a href="https://data.capitol.texas.gov/dataset/planc2333" target="_blank" rel="noopener">PLANC2333</a> (U.S. House districts for the 2026 elections), which the Council lists with no license; all simplified here, for the by-district columns.</li>
-  <li>Texas Secretary of State, <a href="https://electionresults.sos.state.tx.us/results.html" target="_blank" rel="noopener">Election Results, Tuesday, November 3, 2026</a> (statewide totals, used as a cross-check).</li>
-  <li>U.S. Census Bureau, <a href="${meta.landUrl}" target="_blank" rel="noopener">2024 Gazetteer Files</a>, counties: land area (ALAND_SQMI) and FIPS codes.</li>
-  <li>U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html" target="_blank" rel="noopener">Cartographic Boundary Files</a>, 2017 counties,
-    via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a> v3.0.1 (counties-10m.json).</li>
-  <li>Software: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> r160, <a href="https://github.com/d3/d3-geo" target="_blank" rel="noopener">d3-geo</a> 3.1.1,
-    <a href="https://github.com/topojson/topojson-client" target="_blank" rel="noopener">topojson-client</a> 3.1.0.</li>
-</ol>`;
+$('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
+  <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`;
 
 // ---------- three.js scene ----------
 const stage = document.getElementById('stage');

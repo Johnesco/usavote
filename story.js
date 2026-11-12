@@ -178,7 +178,7 @@ const STEPS = [
       <a class="cta" href="texas.html?race=u-s-senate"><b>See all the results →</b><span>Any race in any year, every county, hover for details</span></a>
     </div>
     <p class="note">Sources: Texas Secretary of State, election-night returns as of ${res.meta.resultsUpdated} (unofficial until the canvass) and 2024 final county results;
-      U.S. Census Bureau land area and county boundaries. Column height is proportional to votes cast in the Senate race; each column is split by candidate.</p>` },
+      U.S. Census Bureau land area and county boundaries. Column height is proportional to votes cast in the Senate race; each column is split by candidate. <a href="sources.html#texas">Sources and credits →</a></p>` },
 ];
 
 // The timeline: a flight to each scene, then long enough to read its card. The last scene stays until the reader moves on.

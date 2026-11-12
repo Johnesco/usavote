@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sources and Credits · How America Votes</title>
+<meta name="description" content="Where every number and shape on How America Votes comes from, state by state, and what is counted and what is estimated." />
+<link rel="canonical" href="https://johnesco.github.io/usavote/sources.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="How America Votes" />
+<meta property="og:url" content="https://johnesco.github.io/usavote/sources.html" />
+<meta property="og:title" content="Sources and credits" />
+<meta property="og:description" content="Where every number and shape on How America Votes comes from, state by state, and what is counted and what is estimated." />
+<meta name="twitter:card" content="summary" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="sources.css" />
+</head>
+<body>
+<!-- Each state's list is filled in by sources.js from the same place its results page reads it (sourcelist.js), so the two can't drift apart. -->
+<div class="src">
+  <a class="back" href="index.html">← How America Votes</a>
+  <header>
+    <div class="kicker">Sources and credits</div>
+    <h1>Where the numbers and shapes come from</h1>
+    <p class="lead">Every result on this site comes from the state office that runs the election. Every shape and population count comes from the U.S. Census Bureau or, where named below, a state or university source.</p>
+  </header>
+
+  <section>
+    <h2>Counted and estimated</h2>
+    <ul>
+      <li><b>County totals are the source's own.</b> Each build stops unless every county adds up and the counties add up to the totals the state published.</li>
+      <li><b>2026 results are unofficial</b> until each state's canvass or certification. In some states, marked on their pages, ballots were still being counted.</li>
+      <li><b>A dot's spot and color are estimates,</b> not a record of anyone's vote. Ballots are secret. Each county's total is shared among precincts where a state has them, then among census blocks by how many adults lived there in 2020, and kept off land where no one lives.</li>
+      <li><b>Precinct columns are estimates</b> unless the page says they're shown as counted. Precincts with fewer than 10 votes are merged into a neighbor.</li>
+      <li><b>No voter files are used.</b> Nothing here comes from a list of voters or points to a household.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Used for every state</h2>
+    <ul>
+      <li>U.S. Census Bureau, <a href="https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html" target="_blank" rel="noopener">2020 Census Redistricting Data</a> (P.L. 94-171): cities, county land area, and each block's location and population 18 and over.</li>
+      <li>U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html" target="_blank" rel="noopener">TIGER/Line® Shapefiles</a>: 2020 tabulation blocks, for keeping dots off empty land, and in some states voting districts or U.S. House districts. TIGER/Line® is a registered trademark of the Census Bureau; this site uses TIGER/Line data and isn't a Census Bureau product.</li>
+      <li>U.S. Census Bureau, <a href="https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html" target="_blank" rel="noopener">Cartographic Boundary Files</a>: 2017 state and county outlines, via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a> v3.0.1, and 2024 outlines of the 119th Congress's districts.</li>
+      <li>The Census Bureau asks to be cited and doesn't endorse this site. Shapes are simplified here.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>By state</h2>
+    <p class="jump" id="jump"></p>
+    <div id="states"><p class="wait">Loading each state's sources…</p></div>
+  </section>
+
+  <section>
+    <h2>Images shared from this site</h2>
+    <p>The Texas images, such as the county map beside the one-dot-per-voter map, are drawn from the same files as the Texas pages, so the <a href="#texas">Texas sources</a> are theirs too: the Texas Secretary of State for results, the Texas Legislative Council for 2024 precinct votes and shapes (Creative Commons Attribution; small precincts merged), and the Census Bureau for population, land and boundaries.</p>
+  </section>
+
+  <section>
+    <h2>Tools</h2>
+    <ul>
+      <li>The 3D maps: <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> r160, with <a href="https://github.com/d3/d3-geo" target="_blank" rel="noopener">d3-geo</a> 3.1.1 and <a href="https://github.com/topojson/topojson-client" target="_blank" rel="noopener">topojson-client</a> 3.1.0.</li>
+      <li>The data files and still images: Python, with NumPy and Pillow. Layouts and labels for some images are HTML and CSS, captured in headless Chrome.</li>
+      <li>The code was written with Claude Code, using the models Claude Opus 5.5 and Claude Fable 5.2.</li>
+      <li>Visits are counted with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Terms of use, and states not here</h2>
+    <p>Before a state is added, its terms of use are read to see whether they cover redrawing and republishing its results. Some states aren't here because their terms limit that, or aren't clear. What was read, when, and what was decided is in the <a href="https://github.com/Johnesco/usavote/blob/main/docs/PIPELINE.md" target="_blank" rel="noopener">pipeline record</a> and each state's <a href="https://github.com/Johnesco/usavote/tree/main/docs/records" target="_blank" rel="noopener">record</a>, with every file's source and build step. Those are readings of published pages, not legal advice.</p>
+    <p>This site isn't affiliated with or endorsed by any election office or the Census Bureau.</p>
+  </section>
+</div>
+<script type="module" src="sources.js"></script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
