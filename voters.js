@@ -16,6 +16,7 @@ import { createPlaceMenus, describePlace } from './places.js';
 import { viewBarGroups } from './viewbar.js';
 import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
 import { sourceItems } from './sourcelist.js';
+import { createPlayer } from './player.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -453,19 +454,22 @@ function showCaption(i) {
   focusLine.geometry = outlined.length ? lineGeo(outlined.flatMap(c => c.edges)) : new THREE.BufferGeometry();
   needsDraw = true;
 }
-function jump(time) { leaveExplore(); resume = null; t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
+// the controls along the bottom, the same in every guide (player.js): only while the tour has the screen, not while exploring
+const player = createPlayer({
+  time: () => t, playing: () => playing, setPlaying: on => { playing = on; },
+  seek: time => { leaveExplore(); resume = null; t = time; playing = true; updateButton(); },
+  starts: () => scenes.map(s => s.start), end: () => END,
+  active: () => !explore && STATE.tour,
+});
+const jump = player.jump;
 function updateButton() {
-  const label = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
-  $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
+  player.update();
   // a tour left part way can be picked up again from the top bar
   const partWay = toured && t < END;
   if (!$('tourPlay')) return;
   $('tourName').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
   $('tourRestart').hidden = !partWay;
 }
-$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
-$('prev').onclick = () => { const i = sceneAt(t); jump(scenes[t - scenes[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
-$('next').onclick = () => { const i = sceneAt(t); if (i + 1 < scenes.length) jump(scenes[i + 1].start); };
 addEventListener('keydown', e => {
   if (e.target.matches?.('select, input, textarea')) return;
   if (explore) { // arrows move the map, + and - zoom, Esc goes back to a tour under way
@@ -474,11 +478,7 @@ addEventListener('keydown', e => {
     if (e.key === '+' || e.key === '=') zoomAt(...screenCenter(), 0.7);
     if (e.key === '-') zoomAt(...screenCenter(), 1.4);
     if (e.key === 'Escape' && toured) resumeShow();
-    return;
   }
-  if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('pause').click(); }
-  if (e.key === 'ArrowRight') $('next').click();
-  if (e.key === 'ArrowLeft') $('prev').click();
 });
 
 // ---------- explore: drag, scroll or pinch to move around the map yourself ----------
@@ -491,6 +491,7 @@ function enterExplore() {
   if (explore || !lastV) return;
   explore = { ...lastV }; resume = null; playing = false; going = null;
   page.classList.add('exploring'); updateButton(); needsDraw = true;
+  saveUrl(); // the race, in place of the tour's scene
 }
 function leaveExplore() { if (explore) { explore = null; page.classList.remove('exploring'); updateButton(); needsDraw = true; } }
 // Fly from the reader's view into scene i of the tour. The tour is about the Senate race, so those dots come back first.
@@ -733,7 +734,7 @@ function frame(now) {
   const rs = resume && resume.k < 1 ? 1 - ease(resume.k) : null; // (resume ends just above, on its last frame)
   dots.uniforms.uReveal.value = i !== 0 || explore ? 1 : rs ?? clamp01(local / s.reveal) ** 1.6;
   focusMat.opacity = explore ? 0 : clamp01(local / 0.4); // fades in over the first moment of the scene
-  $('fill').style.width = `${100 * t / END}%`;
+  player.update();
   // Ten million dots are a lot of work, so nothing is drawn while nothing moves: not during a tour under way or a flight, and only once
   // the camera has settled, to within what could be seen (differences are measured from the last picture drawn, so slow drifts add up).
   const uW = dots.uniforms.uWorld.value;

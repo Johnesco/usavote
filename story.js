@@ -3,6 +3,7 @@
 // Every number in the cards is computed here from the data files; only the choice of which counties to visit is written by hand.
 import * as THREE from 'three';
 import { createCityLabels } from './cities.js';
+import { createPlayer } from './player.js';
 import { GEO_URL, buildMap, layout, H_FLAT, REP_C, DEM_C, LOSER_C, OTHER_C, winnerColor } from './map3d.js';
 
 const $ = id => document.getElementById(id);
@@ -250,19 +251,13 @@ function fly(a, b, w) {
 // ---------- the clock ----------
 let t = 0, playing = true;
 const sceneAt = time => { let i = 0; while (i + 1 < STEPS.length && STEPS[i + 1].start <= time) i++; return i; };
-function jump(time) { t = Math.max(0, Math.min(time, END)); spin = 0; playing = true; updateButton(); }
-function updateButton() {
-  const label = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
-  $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
-}
-$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
-$('prev').onclick = () => { const i = sceneAt(t); jump(STEPS[t - STEPS[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
-$('next').onclick = () => { const i = sceneAt(t); if (i + 1 < STEPS.length) jump(STEPS[i + 1].start); };
-addEventListener('keydown', e => {
-  if (e.key === ' ' && e.target === document.body) { e.preventDefault(); $('pause').click(); }
-  if (e.key === 'ArrowRight') $('next').click();
-  if (e.key === 'ArrowLeft') $('prev').click();
+// the controls along the bottom, the same in every guide (player.js)
+const player = createPlayer({
+  time: () => t, playing: () => playing, setPlaying: on => { playing = on; },
+  seek: time => { t = time; spin = 0; playing = true; player.update(); },
+  starts: () => STEPS.map(s => s.start), end: () => END,
 });
+const updateButton = player.update;
 
 // ---------- caption, labels, key, tooltip ----------
 const cap = $('caption');
@@ -362,7 +357,7 @@ function frame(now) {
   if (b.spin && !REDUCED && (playing || t >= END)) spin += dt * 0.08;
   setPose(fly(poseFor(a), poseFor(b), w));
   const raise = a.raise + (b.raise - a.raise) * w;
-  $('fill').style.width = `${100 * t / END}%`;
+  player.update();
   const fade = 1 - Math.exp(-dt * 5); // colors and highlights ease toward the current step's
   for (const c of counties) {
     layout(c, H_FLAT + (c.target - H_FLAT) * ease(clamp01((raise * 1.3 - c.delay))));

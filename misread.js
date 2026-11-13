@@ -14,6 +14,7 @@ import { createDots, countyTris, loadPrecincts, precinctUnits, precinctVotes, DO
 import { createBusy } from './busy.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
+import { createPlayer } from './player.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -452,20 +453,14 @@ function showScene(i) {
   $('steps').style.opacity = i === 0 ? 0 : 1;
   cur = i;
 }
-function jump(time) { t = Math.max(0, Math.min(time, END)); playing = true; updateButton(); }
-function updateButton() {
-  const text = t >= END ? 'Watch again' : playing ? 'Pause' : 'Play';
-  $('pause').textContent = text; $('pause').setAttribute('aria-label', text);
-}
-$('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
-$('prev').onclick = () => { const i = sceneAt(t); jump(scenes[t - scenes[i].start < 1.5 && i > 0 ? i - 1 : i].start); };
-$('next').onclick = () => { const i = sceneAt(t); if (i + 1 < scenes.length) jump(scenes[i + 1].start); };
-addEventListener('keydown', e => {
-  if (RECORD) return;
-  if (e.key === ' ') { e.preventDefault(); $('pause').click(); }
-  if (e.key === 'ArrowRight') $('next').click();
-  if (e.key === 'ArrowLeft') $('prev').click();
+// the controls along the bottom, the same in every guide (player.js); recording leaves them, and the address, alone
+const player = createPlayer({
+  time: () => t, playing: () => playing, setPlaying: on => { playing = on; },
+  seek: time => { t = time; playing = true; player.update(); },
+  starts: () => scenes.map(s => s.start), end: () => END,
+  active: () => !RECORD, saveScene: !RECORD,
 });
+const jump = player.jump, updateButton = player.update;
 
 // Everything on screen at time t. Returns false while the dots it needs are still being placed.
 const lerpLog = (a, b, w) => Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * w);
@@ -499,7 +494,7 @@ function draw(time) {
   for (const name of SETS) if (sets[name].group.visible) sets[name].showVisible(camera);
   renderer.render(scene, camera);
   cityLabels.update(camera, mapGroup, W, H, fill > 0.5 ? 0.85 : 1, placeLabels(s, clamp01((local - s.fly + 0.5) / 0.6)));
-  $('fill').style.width = `${100 * time / END}%`;
+  player.update();
   return !waiting;
 }
 function frame(now) {
