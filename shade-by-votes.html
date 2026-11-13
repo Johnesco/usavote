@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Relative Color: Texas 2026</title>
+<title>Shade by Votes: Texas 2026</title>
 <meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored two ways: by each county's percentage, as usual, and by how many votes its lead was worth, so counties where few people voted fade out." />
-<link rel="canonical" href="https://johnesco.github.io/usavote/relative.html" />
+<link rel="canonical" href="https://johnesco.github.io/usavote/shade-by-votes.html" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="How America Votes" />
-<meta property="og:url" content="https://johnesco.github.io/usavote/relative.html" />
-<meta property="og:title" content="Relative color: shading counties by votes, not percentages" />
-<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Relative color shades each county by the votes its lead was worth." />
+<meta property="og:url" content="https://johnesco.github.io/usavote/shade-by-votes.html" />
+<meta property="og:title" content="Shade by votes: vote-lead color for county maps" />
+<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote-lead color shades each county by the votes its lead was worth." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="stylesheet" href="style.css" />
 <link rel="stylesheet" href="why.css" />
-<link rel="stylesheet" href="relative.css" />
+<link rel="stylesheet" href="shade-by-votes.css" />
 <script type="importmap">
 { "imports": {
   "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
@@ -24,15 +24,15 @@
 </script>
 </head>
 <body>
-<!-- relative.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
-     view, sets how far the map has faded from the usual colors (percentages) to relative color (votes). The slider and the
+<!-- shade-by-votes.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
+     view, sets how far the map has faded from the usual colors (percentages) to vote-lead color (votes). The slider and the
      Fade button do the same by hand. -->
 <div class="why rel">
   <a class="back" href="texas.html">← Texas results</a>
   <header>
-    <div class="kicker">Relative color · 2026 U.S. Senate</div>
+    <div class="kicker">Vote-lead color · 2026 U.S. Senate</div>
     <h1>Shade by votes, not by percentages</h1>
-    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. <b>Relative color</b> shades each county by how many votes its lead was worth instead, so places that cast few votes fade out.</p>
+    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. <b>Vote-lead color</b> shades each county by how many votes its lead was worth instead, so places that cast few votes fade out.</p>
   </header>
 
   <div class="rel-body">
@@ -46,8 +46,8 @@
       </div>
       <div class="rel-controls">
         <span>Percentage</span>
-        <input type="range" id="mix" min="0" max="1000" value="0" aria-label="Fade from percentage color to relative color" />
-        <span>Relative</span>
+        <input type="range" id="mix" min="0" max="1000" value="0" aria-label="Fade from percentage color to vote-lead color" />
+        <span>Vote lead</span>
         <button id="fade">Fade ▶</button>
       </div>
     </figure>
@@ -79,7 +79,7 @@
 
       <section class="rel-step" data-mix="1">
         <span class="n">5</span>
-        <h2>Relative color</h2>
+        <h2>Vote-lead color</h2>
         <p id="s5">Now each county is shaded by its lead in votes: the winner's votes minus the runner-up's. The more votes a county added to its winner's statewide total, the darker it is.</p>
         <p class="rel-how">The shading is on a square-root scale, the way a circle's area is scaled on a bubble map, so a county with a quarter of the biggest lead is half as dark. Without it, every county but a handful would be white.</p>
       </section>
@@ -98,14 +98,14 @@
 
       <section class="rel-step" data-mix="1" data-focus="none">
         <span class="n">8</span>
-        <h2>What relative color hides</h2>
+        <h2>What vote-lead color hides</h2>
         <p id="s8">No color scale shows everything. This one leaves out how a county split.</p>
         <ul class="rel-list">
           <li>A pale county may still have voted 9 to 1. It just didn't have many voters. Slide back to see its percentage.</li>
           <li id="s8b">A big county can be dark with a modest win, because its lead is measured in votes.</li>
           <li>Size on the map still isn't people: a big pale county and a small dark one are drawn as big as their land.</li>
         </ul>
-        <p>So read the two together. Percentage color says how a county split; relative color says how much that split counted. Use the slider to go back and forth.</p>
+        <p>So read the two together. Percentage color says how a county split; vote-lead color says how much that split counted. Use the slider to go back and forth.</p>
       </section>
     </div>
   </div>
@@ -125,7 +125,7 @@
     <p><a href="sources.html">Sources and credits for every state →</a></p>
   </footer>
 </div>
-<script type="module" src="relative.js"></script>
+<script type="module" src="shade-by-votes.js"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

@@ -1,15 +1,16 @@
-// Relative color: the 2026 U.S. Senate race in Texas, county by county, in two color scales, and a fade between them.
+// Shade by Votes: the 2026 U.S. Senate race in Texas, county by county, in two color scales, and a fade between them.
 //
 // Percentage color is the usual one, the same as the bar view's (app.js): the winner's color, shaded by the winner's share
-// of the county's vote in 10-point bands. Relative color keeps the winner's color but shades by the county's lead in
+// of the county's vote in 10-point bands. Vote-lead color keeps the winner's color but shades by the county's lead in
 // votes (winner minus runner-up), on a square-root scale up to the biggest lead in the state, so counties where few
 // people voted fade to pale whatever their percentage. The page fades each county's color from one to the other.
 //
-// Each step in the text names how far the map has faded (data-mix, 0 = percentage, 1 = relative) and which counties to
+// Each step in the text names how far the map has faded (data-mix, 0 = percentage, 1 = vote lead) and which counties to
 // point at (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATE } from './state.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -34,24 +35,14 @@ const wonBy = (c, cand) => (c.dWon ? D : R) === cand;
 const party = cand => cand === D ? 'd' : 'r';
 const name = cand => `<span class="${party(cand)}">${cand.last}</span>`;
 
-// ---------- the two color scales ----------
-const BINS = [40, 50, 60, 70, 80, 90];
-const BAND_LABELS = ['<50%', '50–60', '60–70', '70–80', '80–90', '90+'];
-const REP_C = ['#ffb2b2', '#e27f7f', '#d75d5d', '#d72f30', '#c21b18', '#a80000'];
-const DEM_C = ['#a5b0ff', '#7996e2', '#6674de', '#584cde', '#3933e5', '#0d0596'];
-const PALE = '#ece7e1';
+// ---------- the two color scales (colors.js) ----------
 const band = c => Math.max(0, BINS.findLastIndex(b => c.share >= b));
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const ramp = c => c.dWon ? DEM_C : REP_C;
 const pctColor = c => rgb(ramp(c)[band(c)]);
 const MAX_LEAD = Math.max(...counties.map(c => c.lead));
-const relT = lead => Math.sqrt(lead / MAX_LEAD);               // 0 to 1: how dark, by the county's lead in votes
-// relative ramp: pale, then the same six shades as the percentage scale, evenly spaced
-function relColorAt(t, cols) {
-  const stops = [PALE, ...cols].map(rgb), x = Math.min(1, t) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)), f = x - i;
-  return stops[i].map((v, k) => v + (stops[i + 1][k] - v) * f);
-}
-const relColor = c => relColorAt(relT(c.lead), ramp(c));
+const relT = lead => leadT(lead, MAX_LEAD);
+const relColor = c => leadRGB(c.dWon, c.lead, MAX_LEAD);
 for (const c of counties) { c.colA = pctColor(c); c.colB = relColor(c); }
 const mixColor = (c, m) => `rgb(${c.colA.map((v, k) => Math.round(v + (c.colB[k] - v) * m)).join(',')})`;
 
@@ -98,9 +89,7 @@ const legRow = (cand, inner) => `<div class="row"><span class="${party(cand)}">$
 $('legPct').innerHTML = `<div class="t">Winner's share of the county's vote</div>` +
   [W, L].map(cand => legRow(cand, `<div class="bands">${(cand === D ? DEM_C : REP_C).map(col => `<i style="background:${col}"></i>`).join('')}</div>`)).join('') +
   `<div class="ticks"><span></span><div class="bandlabels">${BAND_LABELS.map(l => `<span>${l}</span>`).join('')}</div></div>`;
-const gradient = cols => `linear-gradient(90deg, ${[PALE, ...cols].map((c, i, a) => `${c} ${(100 * i / (a.length - 1)).toFixed(1)}%`).join(', ')})`;
-const TICKS = [0, 10000, 50000, 150000, MAX_LEAD].filter((v, i, a) => i === a.length - 1 || v < MAX_LEAD * 0.8);
-const tickLabel = v => v === 0 ? '0' : v >= 1000 ? Math.round(v / 1000) + 'K' : String(v);
+const gradient = leadGradient, TICKS = leadTicks(MAX_LEAD);
 $('legRel').innerHTML = `<div class="t">County's lead in votes</div>` +
   [W, L].map(cand => legRow(cand, `<div class="ramp" style="background:${gradient(cand === D ? DEM_C : REP_C)}"></div>`)).join('') +
   `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
@@ -129,7 +118,7 @@ function drawColors() {
   for (const c of shapes) c.node.style.fill = mixColor(c, mix);
   $('legPct').style.opacity = String(1 - mix);
   $('legRel').style.opacity = String(mix);
-  $('modeName').textContent = mix < 0.02 ? 'Percentage color' : mix > 0.98 ? 'Relative color' : 'Fading…';
+  $('modeName').textContent = mix < 0.02 ? 'Percentage color' : mix > 0.98 ? 'Vote-lead color' : 'Fading…';
   $('mix').value = String(Math.round(mix * 1000));
 }
 function drawFocus() {
