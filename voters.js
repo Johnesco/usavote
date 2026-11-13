@@ -13,12 +13,44 @@ import { createSiteNav } from './sitenav.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
+import { viewBarGroups } from './viewbar.js';
+import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
+import { sourceItems } from './sourcelist.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
 // the way home and to the other states, first in the bar
 document.querySelector('.nav-row').prepend(createSiteNav('dots'));
-document.querySelector('.nav-info .how')?.insertAdjacentHTML('afterend', `<a class="src-link" href="sources.html#${STATE.slug}">Sources</a>`);
+// the control bar along the bottom, the same as the bar view's (viewbar.js): Look, with Flat and 3D as links back to the bar view,
+// By and Color, which are for Flat and 3D, then Whole state. It takes the place of the old Bar view link in the top bar.
+{
+  const bar = document.createElement('div');
+  bar.className = 'controls viewbar';
+  bar.innerHTML = viewBarGroups('dots');
+  bar.append($('goHome'));
+  document.querySelector('main.voters').append(bar);
+  $('back')?.remove();
+}
+// the details panel down the left (panel.js), as in the bar view: the race and its count, the key, how the dots are placed, the
+// guided flights and the sources. It takes the guided flights, the count and How? from the top strip, which keeps the menus.
+{
+  const panel = document.createElement('aside');
+  panel.id = 'panel';
+  panel.innerHTML = `<a class="back" href="./">← All states</a>
+    <div class="kicker">${STATE.name} · one dot for each voter</div>
+    <h1 id="panelTitle">${STATE.name} voters</h1>
+    <p class="sub" id="raceCount">Loading…</p>
+    <div class="legend-dots side" id="legendSide"></div>
+    <h2>How the dots are placed</h2>
+    ${[...document.querySelectorAll('.how p')].map(p => p.outerHTML).join('')}
+    <div class="flights">${flightsHtml(true)}</div>
+    <h2>Sources</h2>
+    <div class="sources" id="sources"></div>
+    <p class="sources">This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>`;
+  document.body.prepend(panel);
+  document.querySelectorAll('.how, .nav-flight, #raceCount:not(#panel *)').forEach(el => el.remove());
+  document.querySelector('.nav-row').prepend(createPanelToggle(panel, () => saveUrl()));
+}
 const fmt = n => n.toLocaleString('en-US');
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
 const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
@@ -27,6 +59,9 @@ const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.statu
 let res, us;
 try { [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]); }
 catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; $('loading').classList.add('failed'); throw e; }
+const showSources = histMeta => { $('sources').innerHTML = `<ol>${sourceItems(STATE, res.meta, histMeta).map(s => `<li>${s}</li>`).join('')}</ol>
+  <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`; };
+showSources();
 
 // ---------- data: the 2026 U.S. Senate race, by county (the tour is written around it) ----------
 const race = res.races.find(r => r.id === (STATE.defaultRace ?? 'u-s-senate'));
@@ -424,7 +459,8 @@ function updateButton() {
   $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
   // a tour left part way can be picked up again from the top bar
   const partWay = toured && t < END;
-  $('tourPlay').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
+  if (!$('tourPlay')) return;
+  $('tourName').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
   $('tourRestart').hidden = !partWay;
 }
 $('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
@@ -526,12 +562,22 @@ const rowOf = new Map(res.counties.map((c, i) => [c.fips, i]));
 let chosen = SENATE; // the race asked for
 let BAR_BY = '';     // the bar view's ?by=, for the way back to it
 let BAR_ANGLE = [0, 0]; // and its tilt and heading if it was in 3D: this map settles flat and north up, so it hands them back unchanged
+let BAR_COLOR = '';  // and its ?color=lead, if vote-lead color was on
+// the Flat and 3D links back to the bar view: the same race, place and zoom, and Flat looking straight down or 3D at the angle it
+// came with (or the bar view's usual tilt)
+function barLinks(r = chosen) {
+  const v = explore || lastV, base = `${STATE.results.href}?race=${r.id}${BAR_BY}${BAR_COLOR}${panelParam()}`;
+  const at = angle => v ? `&at=${[v.x, v.y, v.d, ...angle].map(n => +n.toFixed(3)).join(',')}` : '';
+  $('viewFlat').href = base + at([0, 0]);
+  $('view3d').href = `${base}&look=3d` + at(BAR_ANGLE[0] > 0.05 ? BAR_ANGLE : [0.98, -0.22]);
+}
 // How many voters one dot stands for (?per=100). With one dot each, a far-off view is too crowded to read; fewer, bigger dots show
 // the same pattern from afar. The tour's text is about single voters, so it always plays with one dot each.
 const PERS = [1, 10, 100, 1000];
 let per = 1, shownPer = 1;
-$('race').closest('.nav-group').insertAdjacentHTML('afterend', `<div class="nav-group"><label title="How many voters each dot stands for">1 dot =
-  <select id="per">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></label></div>`);
+// in the control bar under the map, before Whole state
+$('goHome').insertAdjacentHTML('beforebegin', `<div class="vb-group"><label class="vb-label keep" for="per">1 dot =</label>
+  <select id="per" title="How many voters each dot stands for">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></div>`);
 $('per').onchange = e => { per = +e.target.value; showRace(chosen); };
 let shown = null;    // the race the dots show (they stay up until the next race's dots are ready)
 function fillRaces() {
@@ -545,7 +591,7 @@ function fillRaces() {
 }
 let historyLoad = null;
 const loadHistory = () => historyLoad ??= !STATE.data.history ? Promise.resolve() : getJSON(STATE.data.history)
-  .then(h => { RACES.push(...h.races); fillRaces(); })
+  .then(h => { RACES.push(...h.races); fillRaces(); showSources(h.meta); })
   .catch(e => console.error('Earlier years did not load', e));
 const raceWithId = id => RACES.find(r => r.id === id) || RACES.find(r => r.year === 2026 && `2026-${r.id}` === id);
 // this race's votes in each county, placed the same way as the Senate race's
@@ -573,10 +619,16 @@ async function showRace(r) {
   $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
-  $('back').href = `${STATE.results.href}?race=${r.id}${BAR_BY}`;
-  $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
+  barLinks(r);
+  if ($('tourPlay')) $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
-  if (explore) try { history.replaceState(null, '', `?race=${r.id}${asked > 1 ? `&per=${asked}` : ''}`); } catch {} // (a link's own address stays as it opened)
+  $('panelTitle').textContent = `${r.year} ${r.label}`;
+  $('legendSide').innerHTML = $('legend').innerHTML;
+  saveUrl();
+}
+// what's on screen, in the address (only once the reader is exploring: a link's own address stays as it opened)
+function saveUrl() {
+  if (explore) try { history.replaceState(null, '', `?race=${chosen.id}${shownPer > 1 ? `&per=${shownPer}` : ''}${panelParam()}`); } catch {}
 }
 $('race').onchange = e => { const r = raceWithId(e.target.value); if (r) showRace(r); };
 // a new year keeps the same office if that year had it, otherwise opens its first race
@@ -584,8 +636,8 @@ $('year').onchange = e => {
   const inYear = RACES.filter(r => r.year === +e.target.value);
   showRace(inYear.find(r => r.label === chosen.label) || inYear[0]);
 };
-$('tourPlay').onclick = () => playFrom(toured && t < END ? sceneAt(t) : 0);
-$('tourRestart').onclick = () => playFrom(0);
+if ($('tourPlay')) $('tourPlay').onclick = () => playFrom(toured && t < END ? sceneAt(t) : 0);
+if ($('tourRestart')) $('tourRestart').onclick = () => playFrom(0);
 
 // ---------- go to a city, county or precinct ----------
 // A flight here is quicker than the tour's: the reader asked for this place, and is waiting for it.
@@ -712,11 +764,9 @@ const query = new URLSearchParams(location.search), asked = query.get('race') ||
 // the camera, x,y,distance,tilt,heading, which the Bar view link also carries back, so changing views keeps the view. The place and
 // zoom go back as they are now; the tilt and heading go back as they came.
 BAR_BY = ['precinct', 'district'].includes(query.get('by')) ? `&by=${query.get('by')}` : '';
-for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
-  $('back').addEventListener(type, () => {
-    const v = explore || lastV;
-    if (v) $('back').href = `${STATE.results.href}?race=${chosen.id}${BAR_BY}&at=${[v.x, v.y, v.d, ...BAR_ANGLE].map(n => +n.toFixed(3)).join(',')}`;
-  });
+BAR_COLOR = query.get('color') === 'lead' ? '&color=lead' : '';
+for (const id of ['viewFlat', 'view3d'])
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) $(id).addEventListener(type, () => barLinks());
 // ?scene=N (1-based) starts the tour at that scene, already arrived; ?tour=1 starts it from the beginning
 const startAt = +query.get('scene'), onTour = STATE.tour && ((startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1');
 // a race from an earlier year needs that file first; otherwise it comes in behind the map, for the race menu
@@ -742,6 +792,29 @@ if (onTour) {
   off.x = free.ox; off.y = free.oy;
 }
 updateButton();
+// ---------- compare: two views side by side (compare.html, panel.js) ----------
+// The Compare link opens this map beside the flat bar view, both where this camera is now. In a frame there, the camera follows the other side's.
+if (!FRAMED) {
+  const cmp = document.createElement('a');
+  cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
+  cmp.title = 'This map beside the flat county map, moving together. Each side keeps its own look, race and color';
+  document.querySelector('.nav-row').append(cmp);
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
+    const v = explore || lastV;
+    barLinks();
+    cmp.href = compareHref(`${STATE.dots}?race=${chosen.id}${shownPer > 1 ? `&per=${shownPer}` : ''}${v ? `&at=${[v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',')}` : ''}`,
+      $('viewFlat').getAttribute('href'));
+  });
+}
+followCamera(() => explore && { x: explore.x, y: explore.y, d: explore.d }, c => {
+  if (!explore) return;
+  explore.home = false; going = null;
+  explore.x = Math.max(-650, Math.min(650, c.x)); explore.y = Math.max(-650, Math.min(650, c.y));
+  explore.d = Math.max(milesView({ x: 0, y: 0 }, 0.08).d, Math.min(homeView().d * 1.6, c.d));
+  needsDraw = true;
+}, () => H);
+// the panel shown or hidden while the dots were loading, before the address could be saved
+if (explore && panelParam() !== (query.get('panel') === '0' ? '&panel=0' : '')) saveUrl();
 last = performance.now();
 requestAnimationFrame(frame);
 loadHistory();

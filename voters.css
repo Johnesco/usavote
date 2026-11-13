@@ -95,4 +95,26 @@
 }
 
 #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* the control bar along the bottom (viewbar.js) is for exploring; on the tour, the player takes its place */
+.voters:not(.exploring) .viewbar { display: none; }
+.voters .viewbar { z-index: 2; }
 #labels .label { transition: opacity .3s; }
+
+/* the details panel (panel.js), down the left while exploring, as in the bar view; on the tour the caption card takes its place.
+   On phones it sits below the map, which then takes a little more than half the screen. */
+.voters-page > aside { display: none; }
+.voters-page > aside .sub b { color: var(--text); }
+.legend-dots.side { margin: 0 0 8px; flex-wrap: wrap; font-size: 13px; }
+@media (min-width: 821px) {
+  .voters-page:has(.voters.exploring):not(.panel-hidden) { display: grid; grid-template-columns: clamp(280px, 28vw, 390px) minmax(0, 1fr); height: auto; }
+  .voters-page:has(.voters.exploring):not(.panel-hidden) > aside { display: block; height: 100vh; height: 100svh; }
+  /* with the panel open, the key is in it */
+  .voters-page:not(.panel-hidden) .voters.exploring #legend { display: none; }
+}
+@media (max-width: 820px) {
+  .voters-page:has(.voters.exploring) { display: flex; flex-direction: column; height: auto; min-height: 100%; }
+  .voters-page:has(.voters.exploring) > aside { display: block; order: 1; flex: none; overflow: visible; }
+  .voters.exploring { height: calc(var(--bar, 0px) + 58svh); min-height: 380px; }
+  .voters.exploring #legend { display: none; }
+}
+.voters:not(.exploring) .panel-toggle { display: none; }

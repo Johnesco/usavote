@@ -10,7 +10,9 @@ import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
-import { BINS, BAND_LABELS, REP_C, DEM_C, LEAD_PAGE, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
+import { viewBarGroups } from './viewbar.js';
+import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -85,15 +87,15 @@ const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRE
 // files and their years). byDistrict is what was asked for; dist is the set of columns loaded for a chamber, and it's on screen
 // only once its rows are those of the race on screen.
 const DISTRICTS = STATE.data.districts || {};
-if (Object.keys(DISTRICTS).length && !$('byDistrict')) { // Texas's page has the button in its markup; other states get it here
-  let seg = $('byCounty')?.parentElement;
-  if (!seg) { // a county-only page has no "Show results" choice yet
-    seg = document.createElement('div');
-    seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Show results');
-    seg.innerHTML = `<button type="button" id="byCounty" aria-pressed="true">By county</button>`;
-    $('viewRow').append(seg);
-  }
-  seg.insertAdjacentHTML('beforeend', `<button type="button" id="byDistrict" aria-pressed="false" disabled>By district</button>`);
+// The control bar along the bottom (viewbar.js): Look, By and Color, then the rotation switch and Whole state. It takes the
+// place of the pages' own Flat / 3D pair at the bottom and the Bar view / Dot view and By county / precinct / district choices at the top.
+{
+  $('viewFlat')?.closest('.seg')?.remove();
+  $('dotLink')?.closest('.seg')?.remove();
+  $('byCounty')?.closest('.seg')?.remove();
+  if ($('viewRow') && !$('viewRow').children.length) $('viewRow').remove();
+  document.querySelector('.map-area .controls').insertAdjacentHTML('afterbegin', viewBarGroups('bar'));
+  $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
 }
 const legHead = $('legHead') || [...document.querySelectorAll('aside h2')].find(h => /share of the county vote/.test(h.textContent));
 let byDistrict = false, dist = null, nmOf = c => c.last;
@@ -202,7 +204,7 @@ function setRace(id) {
 }
 function finishRace() {
   renderTable();
-  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
+  saveUrl();
   $('dotLink').href = `${STATE.dots}?race=${race.id}`;
   if (BASE) $('method').insertAdjacentHTML('beforeend', BASE.method);
   // the same chamber in another year, on the same lines: its districts can change at once; anything else waits for syncDistricts
@@ -426,10 +428,11 @@ document.querySelector('aside').addEventListener('click', e => {
 });
 // back to the U.S. homepage or on to another state: in the bar over the map, where it's always on screen, and at the top of the text
 document.querySelector('.bar-groups').prepend(createSiteNav('results'));
+// first of all, the button that hides the details panel (panel.js)
+document.querySelector('.bar-groups').prepend(createPanelToggle(document.querySelector('.app > aside'), () => saveUrl()));
 // the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
-if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">${STATE.flights.length > 1 ? 'Guided trips' : 'A guided trip'} over the ${STATE.flights[0].about} race, separate from the results here.</p>` +
-  STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
+$('flights').innerHTML = flightsHtml();
 
 $('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
   <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`;
@@ -553,10 +556,7 @@ const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].col
 // The button fades every county from its percentage color to its vote-lead color and back (colors.js), with a link to
 // the page that explains it. Only by county: by precinct or district, the counties are a plain floor under the columns.
 let leadOn = false, leadMix = 0, maxLead = 1;
-document.querySelector('.map-area .controls')?.insertAdjacentHTML('afterbegin',
-  `<div class="seg" role="group" aria-label="Color scale"><button type="button" id="leadColor" aria-pressed="false">Vote-lead<span class="wide"> color</span></button>` +
-  `<a href="${LEAD_PAGE}" id="leadHelp" title="What is vote-lead color?" aria-label="What is vote-lead color?">?</a></div>`);
-const leadBtn = $('leadColor');
+const leadBtn = $('leadColor'), shareBtn = $('colorShare');
 const LEAD_TITLE = "Fade the counties from shading by percentage to shading by each county's lead in votes, so places where few people voted fade out";
 const leadShown = () => leadOn && !overlayCols();
 // the key under "What you're seeing": the six bands, or each party's run from pale to its biggest lead
@@ -584,17 +584,25 @@ function applyLead(plain = !!overlayCols()) {
 function setLead(on) {
   leadOn = on;
   leadBtn.setAttribute('aria-pressed', String(on));
+  shareBtn.setAttribute('aria-pressed', String(!on));
   leadLegend();
+  saveUrl();
 }
-leadBtn.onclick = () => setLead(!leadOn);
+leadBtn.onclick = () => setLead(true);
+shareBtn.onclick = () => setLead(false);
+// what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead when they apply
+function saveUrl() {
+  try { history.replaceState(null, '', `?race=${race.id}${byParam()}${(anim ? anim.to : progress) === 1 ? '&look=3d' : ''}${leadOn ? '&color=lead' : ''}${panelParam()}`); } catch {}
+}
 
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
 function restyle() {
   if (ready) setHover(null);
   const plain = !!overlayCols(); // by precinct or district, the counties underneath are a plain floor, in the gaps between the columns
   maxLead = Math.max(1, ...meshes.map(m => m.userData.total ? Math.abs(m.userData.dem - m.userData.rep) : 0));
-  leadBtn.disabled = plain;
+  leadBtn.disabled = shareBtn.disabled = plain;
   leadBtn.title = plain ? 'Vote-lead color is for the map by county' : LEAD_TITLE;
+  shareBtn.title = plain ? 'Share is for the map by county; columns by precinct or district are always shaded by share' : "Shade each county by the winner's share of its vote";
   for (const m of meshes) {
     const c = m.userData;
     c.target = Math.max(H_FLAT, H_MAX * c.total / maxTotal);
@@ -745,6 +753,7 @@ function setRaised(on) { // Flat or 3D: the columns sink or rise, and in 3D the 
   if (!focus) clearPlace();
   going = null; turning = on && !REDUCED;
   startAnim(goal, 4200 * Math.abs(goal - progress) + 1);
+  saveUrl();
 }
 flatBtn.onclick = () => setRaised(false);
 raisedBtn.onclick = () => setRaised(true);
@@ -879,7 +888,7 @@ async function setBy(on) {
   if (on && byDistrict) { byDistrict = false; dist?.cols.setHover(-1); chamberText(); } // one or the other
   if (on === byPrecinct) return;
   byPrecinct = on; showBy();
-  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
+  saveUrl();
   if (on && !columns) {
     $('placeInfo').textContent = 'Loading precincts…';
     try { await busy.showNow('columns', 'Loading precincts…'); await loadColumns(); }
@@ -967,7 +976,7 @@ async function setDistrict(on) {
   }
   if (!on) { byDistrict = false; dist?.cols.setHover(-1); }
   showBy();
-  try { history.replaceState(null, '', `?race=${race.id}${byParam()}`); } catch {}
+  saveUrl();
   chamberText();
   restyle(); showChosen(); renderPlace(); outlinePlace(place); updateMode();
   if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
@@ -1168,7 +1177,7 @@ function atParam() {
   return [o.target.x, groundShift(o.r) * (flat ? 1 : 1 + RAISED_SHIFT) - o.target.z, o.r, flat ? 0 : o.phi, flat ? 0 : o.theta].map(n => +n.toFixed(3)).join(',');
 }
 for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
-  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}&at=${atParam()}`; });
+  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}${panelParam()}&at=${atParam()}`; });
 const at = (params.get('at') || '').split(',').map(Number);
 if (at.length === 5 && at.every(Number.isFinite)) {
   const [x, y, d, tilt, heading] = at, raised = tilt > 0.05, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
@@ -1176,6 +1185,25 @@ if (at.length === 5 && at.every(Number.isFinite)) {
     target: new THREE.Vector3(x, 0, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - y) });
   updateMode();
 }
+if (params.get('look') === '3d' && !(at.length === 5 && at.every(Number.isFinite))) setRaised(true);
+if (params.get('color') === 'lead') setLead(true);
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
+// ---------- compare: two views side by side (compare.html, panel.js) ----------
+// The Compare link opens this map beside the dot view, both where this camera is now. In a frame there, the camera follows the other side's.
+if (!FRAMED) {
+  const cmp = document.createElement('a');
+  cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
+  cmp.title = 'This map beside the dot view, moving together. Each side keeps its own look, race and color';
+  document.querySelector('.bar-groups').append(cmp);
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
+    const at = atParam();
+    cmp.href = compareHref(`${STATE.results.href}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}&at=${at}`, `${STATE.dots}?race=${race.id}&at=${at}`);
+  });
+}
+followCamera(() => { const [x, y, d] = atParam().split(',').map(Number); return { x, y, d }; }, c => {
+  const o = currentPose(), raised = progress >= 0.5, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, c.d));
+  going = null;
+  setPose({ ...o, r, target: new THREE.Vector3(c.x, o.target.y, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - c.y) });
+}, () => stage.clientHeight);
 requestAnimationFrame(frame);

@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- Two views of a state side by side (stacked on phones), each a whole view page in a frame with its own look, race and color,
+     moving together. ?a= and ?b= are the two pages' addresses; compare.js keeps them up to date as either side changes. -->
+<title>Compare Views: How America Votes</title>
+<meta name="description" content="Two maps of the same state side by side, moving together: flat, 3D or one dot per voter, any race, either color." />
+<meta name="robots" content="noindex" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="compare.css" />
+</head>
+<body class="compare-page">
+<header class="compare-bar">
+  <a class="site-home" href="./" title="All states: the U.S. homepage">How America Votes</a>
+  <h1>Compare</h1>
+  <label class="sync" title="Moving either map moves the other to the same place"><input type="checkbox" id="sync" checked /> Move together</label>
+  <button type="button" class="ghost" id="swap" title="Swap the two sides">Swap ⇆</button>
+  <span class="compare-close">Keep one: <a id="keepA" href="./">Left</a> <a id="keepB" href="./">Right</a></span>
+</header>
+<main class="panes">
+  <iframe id="paneA" title="First map"></iframe>
+  <iframe id="paneB" title="Second map"></iframe>
+</main>
+<p class="compare-error" id="error" hidden>These two maps couldn't be opened. <a href="./">Go to the homepage</a>.</p>
+<script type="module" src="compare.js"></script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>
