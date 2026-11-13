@@ -35,6 +35,8 @@ const TEXAS = {
   // the guided flights over the county map, offered on the results page (the voter dot tour is offered on its own page, voters.html)
   flights: [
     { href: 'story.html', title: 'County Flythrough', about: '2026 U.S. Senate', how: 'Plays on its own, about 4 minutes' },
+    { href: 'misread.html', title: 'Misreading the Map', about: '2026 U.S. Senate', how: 'Why the flat map looks red, step by step. About 4 minutes' },
+    { href: 'relative.html', title: 'Relative Color', about: '2026 U.S. Senate', how: 'The county map shaded by votes instead of percentages, with a fade between the two' },
   ],
   tour: true,            // voters.js has a written tour of this state
   // who publishes the results, and until when they're unofficial

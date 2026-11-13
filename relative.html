@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Relative Color: Texas 2026</title>
+<meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored two ways: by each county's percentage, as usual, and by how many votes its lead was worth, so counties where few people voted fade out." />
+<link rel="canonical" href="https://johnesco.github.io/usavote/relative.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="How America Votes" />
+<meta property="og:url" content="https://johnesco.github.io/usavote/relative.html" />
+<meta property="og:title" content="Relative color: shading counties by votes, not percentages" />
+<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Relative color shades each county by the votes its lead was worth." />
+<meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="why.css" />
+<link rel="stylesheet" href="relative.css" />
+<script type="importmap">
+{ "imports": {
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body>
+<!-- relative.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
+     view, sets how far the map has faded from the usual colors (percentages) to relative color (votes). The slider and the
+     Fade button do the same by hand. -->
+<div class="why rel">
+  <a class="back" href="texas.html">← Texas results</a>
+  <header>
+    <div class="kicker">Relative color · 2026 U.S. Senate</div>
+    <h1>Shade by votes, not by percentages</h1>
+    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. <b>Relative color</b> shades each county by how many votes its lead was worth instead, so places that cast few votes fade out.</p>
+  </header>
+
+  <div class="rel-body">
+    <figure class="rel-map" id="figure">
+      <div class="rel-mode" aria-live="polite"><span id="modeName">Percentage color</span></div>
+      <svg id="map" role="img" aria-label="Map of Texas counties colored by the 2026 U.S. Senate results"></svg>
+      <div class="rel-tip" id="tip" hidden></div>
+      <div class="rel-legends">
+        <div class="rel-legend" id="legPct"></div>
+        <div class="rel-legend" id="legRel"></div>
+      </div>
+      <div class="rel-controls">
+        <span>Percentage</span>
+        <input type="range" id="mix" min="0" max="1000" value="0" aria-label="Fade from percentage color to relative color" />
+        <span>Relative</span>
+        <button id="fade">Fade ▶</button>
+      </div>
+    </figure>
+
+    <div class="rel-steps">
+      <section class="rel-step" data-mix="0">
+        <span class="n">1</span>
+        <h2>The usual map</h2>
+        <p id="s1">Each county is colored for whoever won it, and shaded by the winner's share: light for a close race, dark for a landslide.</p>
+      </section>
+
+      <section class="rel-step" data-mix="0" data-focus="tiny,big">
+        <span class="n">2</span>
+        <h2>Where it fails: a tiny landslide looks bigger than a city</h2>
+        <p id="s2">A small county that votes one way almost unanimously gets the darkest shade, darker than a big city that won by a huge number of votes.</p>
+      </section>
+
+      <section class="rel-step" data-mix="0" data-focus="dark">
+        <span class="n">3</span>
+        <h2>Where it fails: dark ink, few votes</h2>
+        <p id="s3">The darkest counties are mostly the emptiest. They cover a lot of the map but cast few of its votes.</p>
+      </section>
+
+      <section class="rel-step" data-mix="0" data-focus="close">
+        <span class="n">4</span>
+        <h2>Where it fails: a big, close county looks like nothing</h2>
+        <p id="s4">A close race gets the lightest shade, even when the county is so big that a narrow win is worth tens of thousands of votes.</p>
+      </section>
+
+      <section class="rel-step" data-mix="1">
+        <span class="n">5</span>
+        <h2>Relative color</h2>
+        <p id="s5">Now each county is shaded by its lead in votes: the winner's votes minus the runner-up's. The more votes a county added to its winner's statewide total, the darker it is.</p>
+        <p class="rel-how">The shading is on a square-root scale, the way a circle's area is scaled on a bubble map, so a county with a quarter of the biggest lead is half as dark. Without it, every county but a handful would be white.</p>
+      </section>
+
+      <section class="rel-step" data-mix="1" data-focus="tiny,big">
+        <span class="n">6</span>
+        <h2>Now the city outweighs the tiny landslide</h2>
+        <p id="s6">The small county fades out, and the city is among the darkest on the map.</p>
+      </section>
+
+      <section class="rel-step" data-mix="1" data-focus="dark">
+        <span class="n">7</span>
+        <h2>The empty counties fade</h2>
+        <p id="s7">The counties that were the darkest red now barely show, because together they added few votes.</p>
+      </section>
+
+      <section class="rel-step" data-mix="1" data-focus="none">
+        <span class="n">8</span>
+        <h2>What relative color hides</h2>
+        <p id="s8">No color scale shows everything. This one leaves out how a county split.</p>
+        <ul class="rel-list">
+          <li>A pale county may still have voted 9 to 1. It just didn't have many voters. Slide back to see its percentage.</li>
+          <li id="s8b">A big county can be dark with a modest win, because its lead is measured in votes.</li>
+          <li>Size on the map still isn't people: a big pale county and a small dark one are drawn as big as their land.</li>
+        </ul>
+        <p>So read the two together. Percentage color says how a county split; relative color says how much that split counted. Use the slider to go back and forth.</p>
+      </section>
+    </div>
+  </div>
+
+  <section class="next">
+    <h2>See it for yourself</h2>
+    <div class="cards">
+      <a class="card" href="texas.html?race=u-s-senate"><b>Texas, 3D view →</b><span>Each county rises as tall as its vote count.</span></a>
+      <a class="card" href="voters.html"><b>Texas, dot view →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
+      <a class="card" href="misread.html"><b>Misreading the Map →</b><span>Why the flat map looks red, step by step, with the dots.</span></a>
+    </div>
+  </section>
+
+  <footer>
+    <p id="src">Results: Texas Secretary of State, election night returns, unofficial until the state canvass.</p>
+    <p>County boundaries: U.S. Census Bureau, via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a>. This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>
+    <p><a href="sources.html">Sources and credits for every state →</a></p>
+  </footer>
+</div>
+<script type="module" src="relative.js"></script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

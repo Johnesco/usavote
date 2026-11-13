@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Misreading the Map: Texas 2026</title>
+<meta name="description" content="A guided flight over the 2026 U.S. Senate race in Texas, one misreading at a time: why the flat county map looks red when the Democrat won, shown with one dot per voter, placed by county, then by precinct, then by census block." />
+<link rel="canonical" href="https://johnesco.github.io/usavote/misread.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="How America Votes" />
+<meta property="og:url" content="https://johnesco.github.io/usavote/misread.html" />
+<meta property="og:title" content="Misreading the map: why Texas looked red when the Democrat won" />
+<meta property="og:description" content="Five ways the flat county map is misread, step by step, with one dot per voter." />
+<meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://johnesco.github.io/usavote/share.png" />
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="voters.css" />
+<link rel="stylesheet" href="story.css" />
+<link rel="stylesheet" href="misread.css" />
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
+  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
+} }
+</script>
+</head>
+<body class="voters-page">
+<!-- A guided flight over the dot view's map (misread.js): the flat county map first, then the same votes as dots, placed by
+     county, then by precinct, then by census block. ?scene=N opens on scene N; ?record=1 hides the controls and waits for
+     window.misread.seek(seconds), for recording a video frame by frame. -->
+<main class="voters misread">
+  <div id="stage"></div>
+  <div id="labels"></div>
+  <div id="loading">Loading map…</div>
+  <section class="caption" id="caption" aria-live="polite"></section>
+  <header class="topnav" id="topnav">
+    <nav class="nav-row" aria-label="Misreading the Map">
+      <a class="back" id="back" href="voters.html">← Dot view</a>
+      <span class="flight-badge">Misreading the Map · 2026 U.S. Senate</span>
+    </nav>
+    <div class="nav-info"><div class="legend-dots" id="legend" aria-hidden="true"></div></div>
+  </header>
+  <ol class="steps" id="steps" aria-hidden="true"></ol>
+  <div class="scalebar" id="scalebar" aria-hidden="true"><i></i><span></span></div>
+  <div class="player" id="player">
+    <button class="ghost" id="prev" aria-label="Previous scene">‹</button>
+    <button id="pause" aria-label="Pause">Pause</button>
+    <button class="ghost" id="next" aria-label="Next scene">›</button>
+    <div class="track" id="track" aria-hidden="true"><i id="fill"></i></div>
+  </div>
+</main>
+<script type="module" src="misread.js"></script>
+<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+</body>
+</html>

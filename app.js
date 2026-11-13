@@ -429,7 +429,7 @@ document.querySelector('aside').addEventListener('click', e => {
 document.querySelector('.bar-groups').prepend(createSiteNav('results'));
 // the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
-if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">A guided trip over the county map of the ${STATE.flights[0].about} race, separate from the results here.</p>` +
+if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">${STATE.flights.length > 1 ? 'Guided trips' : 'A guided trip'} over the ${STATE.flights[0].about} race, separate from the results here.</p>` +
   STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
 
 $('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
