@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Relative Color Panels</title>
-<!-- Renders the two-panel image for relative.html: the usual percentage colors on the left, relative color on the right,
+<title>Shade by Votes Panels</title>
+<!-- Renders the two-panel image for shade-by-votes.html: the usual percentage colors on the left, vote-lead color on the right,
      with an explanation. Serve the repo root over HTTP, then screenshot this page at 1800x1180, e.g. with headless Edge:
      msedge --headless --hide-scrollbars --force-device-scale-factor=2 --window-size=1800,1180 --virtual-time-budget=20000
-            --screenshot=texas-relative-color.png http://localhost:8766/scripts/relative-panels.html
-     The two color scales are the same as relative.js's; change them there and here together. -->
+            --screenshot=texas-shade-by-votes.png http://localhost:8766/scripts/shade-by-votes-panels.html
+     The two color scales come from colors.js, shared with the page and the bar view. -->
 <style>
   :root { --bg: #0e1116; --text: #e8ecf2; --muted: #9aa5b5; --accent: #f2c14e; --line: #2a3240; }
   html, body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; }
@@ -62,19 +62,20 @@
     </div>
     <div class="divider"></div>
     <div class="panel">
-      <h2>Relative color: shaded by votes</h2>
+      <h2>Vote-lead color: shaded by votes</h2>
       <p class="say" id="sayB"></p>
       <svg id="mapB" viewBox="0 0 1000 900"></svg>
       <div class="legend" id="legB"></div>
     </div>
   </div>
   <div class="sum" id="sum"></div>
-  <footer><span id="src"></span><span>johnesco.github.io/usavote/relative.html</span></footer>
+  <footer><span id="src"></span><span>johnesco.github.io/usavote/shade-by-votes.html</span></footer>
 </div>
 <script type="module">
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATE } from '../state.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, PALE, leadT, leadHex, leadGradient, leadTicks, tickLabel } from '../colors.js';
 
 const $ = id => document.getElementById(id);
 const num = n => n.toLocaleString('en-US');
@@ -95,20 +96,12 @@ const W = D.votes > R.votes ? D : R, L = W === D ? R : D;
 const won = c => c.dWon ? D : R;
 const nm = cand => `<span class="${cand === D ? 'd' : 'r'}">${cand.last}</span>`;
 
-// the two scales, as in relative.js
-const BINS = [40, 50, 60, 70, 80, 90], BAND_LABELS = ['<50%', '50–60', '60–70', '70–80', '80–90', '90+'];
-const REP_C = ['#ffb2b2', '#e27f7f', '#d75d5d', '#d72f30', '#c21b18', '#a80000'];
-const DEM_C = ['#a5b0ff', '#7996e2', '#6674de', '#584cde', '#3933e5', '#0d0596'];
-const PALE = '#ece7e1';
+// the two scales (colors.js)
 const band = c => Math.max(0, BINS.findLastIndex(b => c.share >= b));
 const ramp = c => c.dWon ? DEM_C : REP_C;
-const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const MAX_LEAD = Math.max(...counties.map(c => c.lead));
-const relT = lead => Math.sqrt(lead / MAX_LEAD);
-function relColor(c) {
-  const stops = [PALE, ...ramp(c)].map(rgb), x = relT(c.lead) * (stops.length - 1), i = Math.min(stops.length - 2, Math.floor(x)), f = x - i;
-  return `rgb(${stops[i].map((v, k) => Math.round(v + (stops[i + 1][k] - v) * f)).join(',')})`;
-}
+const relT = lead => leadT(lead, MAX_LEAD);
+const relColor = c => leadHex(c.dWon, c.lead, MAX_LEAD);
 const pctColor = c => ramp(c)[band(c)];
 
 // the counties named
@@ -145,11 +138,10 @@ const row = (cand, inner) => `<div class="row"><span class="${cand === D ? 'd' :
 $('legA').innerHTML = `<div style="margin-bottom:5px">Winner's share of the county's vote</div>` +
   [W, L].map(cand => row(cand, `<div class="bands">${(cand === D ? DEM_C : REP_C).map(c => `<i style="background:${c}"></i>`).join('')}</div>`)).join('') +
   `<div class="ticks"><span></span><div class="bandlabels">${BAND_LABELS.map(l => `<span>${l}</span>`).join('')}</div></div>`;
-const gradient = cols => `linear-gradient(90deg, ${[PALE, ...cols].map((c, i, a) => `${c} ${(100 * i / (a.length - 1)).toFixed(1)}%`).join(', ')})`;
-const TICKS = [0, 10000, 50000, 150000, MAX_LEAD];
+const gradient = leadGradient, TICKS = leadTicks(MAX_LEAD);
 $('legB').innerHTML = `<div style="margin-bottom:5px">County's lead in votes (square-root scale)</div>` +
   [W, L].map(cand => row(cand, `<div class="ramp" style="background:${gradient(cand === D ? DEM_C : REP_C)}"></div>`)).join('') +
-  `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${v ? Math.round(v / 1000) + 'K' : '0'}</span>`).join('')}</div></div>`;
+  `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
 
 // text
 $('lead').innerHTML = `${W.name} won by <b>${num(W.votes - L.votes)} votes</b>, ${pct(W.votes, TOT, 1)} to ${pct(L.votes, TOT, 1)}. ` +
@@ -160,7 +152,7 @@ $('sum').innerHTML =
   `<div><span class="n">${pct(sum(DARK, c => c.landSqMi), LAND)} of the map, ${pct(sum(DARK, c => c.total), TOT)} of the votes</span>` +
   `The ${DARK.length} counties that gave ${nm(L)} 70% or more fill the left map in dark red. On the right they fade, because together they added a lead of ${num(sum(DARK, c => c.lead))}.</div>` +
   `<div><span class="n">${num(BIG.lead)}</span>${BIG.name} County's lead alone for ${nm(won(BIG))}: ${compare(BIG.lead, sum(DARK, c => c.lead))} those ${DARK.length} counties put together.</div>` +
-  `<div><span class="n">What it hides</span>Relative color leaves out how a county split: a pale county may still have voted 9 to 1. Read the two together: one shows the split, the other how much it counted.</div>`;
+  `<div><span class="n">What it hides</span>Vote-lead color leaves out how a county split: a pale county may still have voted 9 to 1. Read the two together: one shows the split, the other how much it counted.</div>`;
 $('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}. County lines: U.S. Census Bureau, via us-atlas.`;
 document.body.classList.add('ready');
 </script>

@@ -1,4 +1,4 @@
-/* Relative color: the "why" page's look (why.css), with the map held still on the right while the steps scroll past it. */
+/* Shade by Votes: the "why" page's look (why.css), with the map held still on the right while the steps scroll past it. */
 .why.rel { max-width: 1240px; }
 .rel-body { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 40px; margin-top: 28px; }
 .rel-steps { grid-column: 1; grid-row: 1; padding-bottom: 30vh; }

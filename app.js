@@ -10,6 +10,7 @@ import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, LEAD_PAGE, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -50,10 +51,8 @@ const YEARS = [...new Set(races.map(r => r.year))].sort((a, b) => b - a); // new
 // one height scale for all races, so switching races compares like with like
 const maxTotal = Math.max(...races.flatMap(r => r.counties.map(row => row[3])));
 
-// Colors: winner's share of the county vote, in 10-point bands (same convention as the reference map)
-const BINS = [40, 50, 60, 70, 80, 90];
-const REP_C = ['#ffb2b2', '#e27f7f', '#d75d5d', '#d72f30', '#c21b18', '#a80000'];
-const DEM_C = ['#a5b0ff', '#7996e2', '#6674de', '#584cde', '#3933e5', '#0d0596'];
+// Colors (colors.js): winner's share of the county vote, in 10-point bands (same convention as the reference map), or, with
+// the Vote-lead color button on, each county's lead in votes
 const shareOfWinner = c => 100 * Math.max(c.dem, c.rep) / c.total;
 // House races only: a county where no district race had votes reported (every race there was unopposed) is gray
 const NO_RACE_C = '#3b4352';
@@ -73,9 +72,9 @@ function bar(label, parts, note = '') {
     parts.map(([cls, v, txt]) => `<span class="${cls}" style="width:${v}%">${v >= 9 ? txt : ''}</span>`).join('') +
     `</div>${note ? `<div class="bar-note">${note}</div>` : ''}</div>`;
 }
-const legLabels = ['<50%', '50–60', '60–70', '70–80', '80–90', '90+'];
-for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
-  $(id).innerHTML = cols.map((c, i) => `<div><i style="background:${c}"></i>${legLabels[i]}</div>`).join('');
+const bandLegend = () => { for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
+  $(id).innerHTML = cols.map((c, i) => `<div><i style="background:${c}"></i>${BAND_LABELS[i]}</div>`).join(''); };
+bandLegend();
 
 // what the Go to menus last chose (places.js)
 let place = null;
@@ -550,15 +549,58 @@ function layout(c, h) {
 }
 const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
 
+// ---------- vote-lead color ----------
+// The button fades every county from its percentage color to its vote-lead color and back (colors.js), with a link to
+// the page that explains it. Only by county: by precinct or district, the counties are a plain floor under the columns.
+let leadOn = false, leadMix = 0, maxLead = 1;
+document.querySelector('.map-area .controls')?.insertAdjacentHTML('afterbegin',
+  `<div class="seg" role="group" aria-label="Color scale"><button type="button" id="leadColor" aria-pressed="false">Vote-lead<span class="wide"> color</span></button>` +
+  `<a href="${LEAD_PAGE}" id="leadHelp" title="What is vote-lead color?" aria-label="What is vote-lead color?">?</a></div>`);
+const leadBtn = $('leadColor');
+const LEAD_TITLE = "Fade the counties from shading by percentage to shading by each county's lead in votes, so places where few people voted fade out";
+const leadShown = () => leadOn && !overlayCols();
+// the key under "What you're seeing": the six bands, or each party's run from pale to its biggest lead
+function leadLegend() {
+  if (!leadShown()) {
+    bandLegend();
+    if (legHead) legHead.textContent = `${WINNER[0].toUpperCase() + WINNER.slice(1)}'s share of the ${districtCols() ? 'district' : 'county'} vote`;
+    return;
+  }
+  if (legHead) legHead.textContent = `County's lead in votes`;
+  const ticks = leadTicks(maxLead);
+  for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
+    $(id).innerHTML = `<div class="lead-ramp" style="background:${leadGradient(cols)}"></div>` +
+      `<div class="lead-ticks">${ticks.map(v => `<span style="left:${(100 * leadT(v, maxLead)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div>`;
+}
+// each county's color, part way between its two colors
+function applyLead(plain = !!overlayCols()) {
+  const k = leadMix * leadMix * (3 - 2 * leadMix); // eased
+  for (const m of meshes) {
+    const c = m.userData;
+    if (plain) c.baseColor.set(NO_RACE_C); else c.baseColor.copy(c.pctColor).lerp(c.leadColor, k);
+    paint(m, c.baseColor);
+  }
+}
+function setLead(on) {
+  leadOn = on;
+  leadBtn.setAttribute('aria-pressed', String(on));
+  leadLegend();
+}
+leadBtn.onclick = () => setLead(!leadOn);
+
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
 function restyle() {
   if (ready) setHover(null);
   const plain = !!overlayCols(); // by precinct or district, the counties underneath are a plain floor, in the gaps between the columns
+  maxLead = Math.max(1, ...meshes.map(m => m.userData.total ? Math.abs(m.userData.dem - m.userData.rep) : 0));
+  leadBtn.disabled = plain;
+  leadBtn.title = plain ? 'Vote-lead color is for the map by county' : LEAD_TITLE;
   for (const m of meshes) {
     const c = m.userData;
     c.target = Math.max(H_FLAT, H_MAX * c.total / maxTotal);
-    c.baseColor = new THREE.Color(plain ? NO_RACE_C : colorFor(c));
-    paint(m, c.baseColor);
+    c.pctColor = new THREE.Color(colorFor(c));
+    c.leadColor = new THREE.Color(c.total ? leadHex(c.dem > c.rep, Math.abs(c.dem - c.rep), maxLead) : NO_RACE_C);
+    c.baseColor = new THREE.Color();
     const dWon = c.dem > c.rep;
     c.split = c.target >= SPLIT_MIN;
     c.fLower = (dWon ? c.rep : c.dem) / c.total;
@@ -567,6 +609,8 @@ function restyle() {
     paint(c.middle, new THREE.Color(plain ? NO_RACE_C : OTHER_C));
     layout(c, c.h);
   }
+  applyLead(plain);
+  leadLegend();
   // rise order: smaller counties start a touch earlier, so the big cities rise last
   [...meshes].sort((a, b) => a.userData.total - b.userData.total)
     .forEach((m, i, arr) => m.userData.delay = 0.25 * i / arr.length);
@@ -1048,6 +1092,12 @@ function frame(now) {
     const step = REDUCED ? 1 : Math.min(dt, 100) / 900;
     precinctMix = goal > precinctMix ? Math.min(goal, precinctMix + step) : Math.max(goal, precinctMix - step);
     layoutCounties();
+  }
+  if (leadMix !== (leadShown() ? 1 : 0)) { // the vote-lead fade, over about a second and a half
+    const goalL = leadShown() ? 1 : 0, step = REDUCED ? 1 : Math.min(dt, 100) / 1500;
+    leadMix = goalL > leadMix ? Math.min(goalL, leadMix + step) : Math.max(goalL, leadMix - step);
+    applyLead();
+    if (hovered) hovered.material[0].color.copy(hovered.userData.baseColor).lerp(HILITE, 0.35);
   }
   if (anim) {
     // glide from wherever the user left the camera onto the default path, then follow it

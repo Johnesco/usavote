@@ -10,9 +10,8 @@ export const H_MAX = 420, H_FLAT = 0.8;
 // Columns shorter than SPLIT_MIN (map units; the tallest column is H_MAX) are too short to read as a stack, so they stay one color.
 export const SPLIT_MIN = 4;
 export const LOSER_C = { dem: '#584cde', rep: '#d72f30' }, OTHER_C = '#5d6c82';
-export const BINS = [40, 50, 60, 70, 80, 90];
-export const REP_C = ['#ffb2b2', '#e27f7f', '#d75d5d', '#d72f30', '#c21b18', '#a80000'];
-export const DEM_C = ['#a5b0ff', '#7996e2', '#6674de', '#584cde', '#3933e5', '#0d0596'];
+import { BINS, REP_C, DEM_C } from './colors.js';
+export { BINS, REP_C, DEM_C };
 export function winnerColor(c) {
   const i = Math.max(0, BINS.findLastIndex(b => 100 * Math.max(c.dem, c.rep) / c.total >= b));
   return (c.dem > c.rep ? DEM_C : REP_C)[i];
