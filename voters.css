@@ -95,4 +95,7 @@
 }
 
 #labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+/* the control bar along the bottom (viewbar.js) is for exploring; on the tour, the player takes its place */
+.voters:not(.exploring) .viewbar { display: none; }
+.voters .viewbar { z-index: 2; }
 #labels .label { transition: opacity .3s; }

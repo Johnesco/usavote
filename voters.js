@@ -13,11 +13,22 @@ import { createSiteNav } from './sitenav.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
+import { viewBarGroups } from './viewbar.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
 // the way home and to the other states, first in the bar
 document.querySelector('.nav-row').prepend(createSiteNav('dots'));
+// the control bar along the bottom, the same as the bar view's (viewbar.js): Look, with Flat and 3D as links back to the bar view,
+// By and Color, which are for Flat and 3D, then Whole state. It takes the place of the old Bar view link in the top bar.
+{
+  const bar = document.createElement('div');
+  bar.className = 'controls viewbar';
+  bar.innerHTML = viewBarGroups('dots');
+  bar.append($('goHome'));
+  document.querySelector('main.voters').append(bar);
+  $('back')?.remove();
+}
 document.querySelector('.nav-info .how')?.insertAdjacentHTML('afterend', `<a class="src-link" href="sources.html#${STATE.slug}">Sources</a>`);
 const fmt = n => n.toLocaleString('en-US');
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
@@ -526,6 +537,15 @@ const rowOf = new Map(res.counties.map((c, i) => [c.fips, i]));
 let chosen = SENATE; // the race asked for
 let BAR_BY = '';     // the bar view's ?by=, for the way back to it
 let BAR_ANGLE = [0, 0]; // and its tilt and heading if it was in 3D: this map settles flat and north up, so it hands them back unchanged
+let BAR_COLOR = '';  // and its ?color=lead, if vote-lead color was on
+// the Flat and 3D links back to the bar view: the same race, place and zoom, and Flat looking straight down or 3D at the angle it
+// came with (or the bar view's usual tilt)
+function barLinks(r = chosen) {
+  const v = explore || lastV, base = `${STATE.results.href}?race=${r.id}${BAR_BY}${BAR_COLOR}`;
+  const at = angle => v ? `&at=${[v.x, v.y, v.d, ...angle].map(n => +n.toFixed(3)).join(',')}` : '';
+  $('viewFlat').href = base + at([0, 0]);
+  $('view3d').href = `${base}&look=3d` + at(BAR_ANGLE[0] > 0.05 ? BAR_ANGLE : [0.98, -0.22]);
+}
 // How many voters one dot stands for (?per=100). With one dot each, a far-off view is too crowded to read; fewer, bigger dots show
 // the same pattern from afar. The tour's text is about single voters, so it always plays with one dot each.
 const PERS = [1, 10, 100, 1000];
@@ -573,7 +593,7 @@ async function showRace(r) {
   $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
-  $('back').href = `${STATE.results.href}?race=${r.id}${BAR_BY}`;
+  barLinks(r);
   $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
   if (explore) try { history.replaceState(null, '', `?race=${r.id}${asked > 1 ? `&per=${asked}` : ''}`); } catch {} // (a link's own address stays as it opened)
@@ -712,11 +732,9 @@ const query = new URLSearchParams(location.search), asked = query.get('race') ||
 // the camera, x,y,distance,tilt,heading, which the Bar view link also carries back, so changing views keeps the view. The place and
 // zoom go back as they are now; the tilt and heading go back as they came.
 BAR_BY = ['precinct', 'district'].includes(query.get('by')) ? `&by=${query.get('by')}` : '';
-for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
-  $('back').addEventListener(type, () => {
-    const v = explore || lastV;
-    if (v) $('back').href = `${STATE.results.href}?race=${chosen.id}${BAR_BY}&at=${[v.x, v.y, v.d, ...BAR_ANGLE].map(n => +n.toFixed(3)).join(',')}`;
-  });
+BAR_COLOR = query.get('color') === 'lead' ? '&color=lead' : '';
+for (const id of ['viewFlat', 'view3d'])
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) $(id).addEventListener(type, () => barLinks());
 // ?scene=N (1-based) starts the tour at that scene, already arrived; ?tour=1 starts it from the beginning
 const startAt = +query.get('scene'), onTour = STATE.tour && ((startAt >= 1 && startAt <= scenes.length) || query.get('tour') === '1');
 // a race from an earlier year needs that file first; otherwise it comes in behind the map, for the race menu
