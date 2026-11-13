@@ -1,5 +1,5 @@
 // Bar view, by precinct (app.js): one column per precinct across the whole state, drawn as a single mesh so that 9,000 of them
-// stay fast. Each column is stacked the way a county's is: runner-up at the bottom, others in the middle, winner on top. The
+// stay fast. Each column is stacked the way a county's is, by votes: the most on top and the fewest at the bottom. The
 // stack is colored in the shader, from how far up the wall a pixel is, so each wall needs only one piece of geometry.
 //
 // Shapes come from data/precinct-shapes.json.gz (scripts/build_precincts.py), in map units once projected by P. Heights are set
@@ -93,7 +93,10 @@ export function createPrecinctColumns(parent, P, precincts, palette, other) {
     fragmentShader: `
       uniform vec3 uOther; varying vec3 vTop, vLow; varying vec3 vShares; varying float vLight;
       void main() {
-        vec3 c = vShares.x < vShares.y ? vLow : vShares.x < vShares.y + vShares.z ? uOther : vTop;
+        // ranked: each part stands on the parts with fewer votes (ties: runner-up, then others, then winner, from the bottom)
+        float y = vShares.x, lo = vShares.y, ot = vShares.z, w = 1. - lo - ot;
+        float sLo = (ot < lo ? ot : 0.) + (w < lo ? w : 0.), sOt = (lo <= ot ? lo : 0.) + (w < ot ? w : 0.);
+        vec3 c = y >= sLo && y < sLo + lo ? vLow : y >= sOt && y < sOt + ot ? uOther : vTop;
         gl_FragColor = vec4(c * vLight, 1.);
         #include <colorspace_fragment>
       }`,

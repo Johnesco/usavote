@@ -344,7 +344,7 @@ const scenes = [
       <div class="vs"><div><b>${flatArea}</b>of the flat map is red</div><div><b>${pct(D.votes, TOT, 1)}</b>of the voters chose ${D.last}</div></div>
       <ol class="recap">${MISREADINGS.map(m => `<li>${m}? No.</li>`).join('')}</ol>
       <p>The flat map answers “who won each piece of land?” The dots answer “where are the voters, and how did they vote?”</p>
-      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="voters.html">Explore the dot view →</a>
+      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="texas.html?look=dots">Explore the dot view →</a>
       <a href="why.html">Same election, three maps →</a></div>
       <p class="note">Results: ${res.meta.resultsSource}. Dots are placed by 2024 precinct votes (Texas Legislative Council) and 2020
       census blocks (U.S. Census Bureau). <a href="sources.html#texas">Sources</a></p>` },

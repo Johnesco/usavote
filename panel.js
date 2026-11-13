@@ -42,7 +42,7 @@ export function flightsHtml(tourHere = false) {
     (!tour ? '' : tourHere
       ? `<button type="button" class="flight" id="tourPlay"><b id="tourName">▶ ${tour.title}</b><span>${tour.how}</span></button>` +
         `<button type="button" class="ghost" id="tourRestart" hidden>Start the tour over</button>`
-      : card({ ...tour, href: `${STATE.dots}?tour=1` }));
+      : card({ ...tour, href: `${STATE.dots}&tour=1` }));
 }
 
 // ---------- compare (compare.html) ----------

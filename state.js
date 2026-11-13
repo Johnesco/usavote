@@ -31,7 +31,6 @@ const TEXAS = {
   },
   // where the state opens: any race in any year
   results: { href: 'texas.html', title: 'See the results', text: 'Any race in any year, 2008 to 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
-  dots: 'voters.html',
   // the guided flights over the county map, offered on the results page (the voter dot tour is offered on its own page, voters.html)
   flights: [
     { href: 'story.html', title: 'County Flythrough', about: '2026 U.S. Senate', how: 'Plays on its own, about 4 minutes' },
@@ -71,7 +70,6 @@ const OKLAHOMA = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'oklahoma.html', title: 'See the results', text: 'U.S. Senate and seven statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'oklahoma-voters.html',
   flights: [],
   tour: false,
   authority: 'the Oklahoma State Election Board',
@@ -99,7 +97,6 @@ const KANSAS = {
     cities: 'data/ks/cities.json',
   },
   results: { href: 'kansas.html', title: 'See the results', text: 'U.S. Senate and the other statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
-  dots: 'kansas-voters.html',
   flights: [],
   tour: false,
   authority: 'the Kansas Secretary of State',
@@ -141,7 +138,6 @@ const SOUTH_CAROLINA = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'south-carolina.html', title: 'See the results', text: 'U.S. Senate and the statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
-  dots: 'south-carolina-voters.html',
   flights: [],
   tour: false,
   authority: 'the South Carolina State Election Commission',
@@ -174,7 +170,6 @@ const OHIO = {
     cities: 'data/oh/cities.json',
   },
   results: { href: 'ohio.html', title: 'See the results', text: 'U.S. Senate, governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'ohio-voters.html',
   flights: [],
   tour: false,
   authority: 'the Ohio Secretary of State',
@@ -209,7 +204,6 @@ const IOWA = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'iowa.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'iowa-voters.html',
   flights: [],
   tour: false,
   authority: 'the Iowa Secretary of State',
@@ -239,7 +233,6 @@ const NEW_MEXICO = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'new-mexico.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'new-mexico-voters.html',
   flights: [],
   tour: false,
   authority: 'the New Mexico Secretary of State',
@@ -274,7 +267,6 @@ const IDAHO = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'idaho.html', title: 'See the results', text: "Governor and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter." },
-  dots: 'idaho-voters.html',
   flights: [],
   tour: false,
   authority: 'the Idaho Secretary of State',
@@ -304,7 +296,6 @@ const SOUTH_DAKOTA = {
     cities: 'data/sd/cities.json',
   },
   results: { href: 'south-dakota.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'south-dakota-voters.html',
   flights: [],
   tour: false,
   authority: 'the South Dakota Secretary of State',
@@ -337,7 +328,6 @@ const GEORGIA = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'georgia.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'georgia-voters.html',
   flights: [],
   tour: false,
   authority: 'the Georgia Secretary of State',
@@ -373,7 +363,6 @@ const CALIFORNIA = {
     cities: 'data/ca/cities.json',
   },
   results: { href: 'california.html', title: 'See the results', text: 'Governor and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'california-voters.html',
   flights: [],
   tour: false,
   authority: 'the California Secretary of State',
@@ -411,7 +400,6 @@ const RHODE_ISLAND = {
     districtSource: CD119_SOURCE,
   },
   results: { href: 'rhode-island.html', title: 'See the results', text: 'U.S. Senate and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'rhode-island-voters.html',
   flights: [],
   tour: false,
   authority: 'the Rhode Island elections board', // the pages add 's; the board's own name ends in "Elections"
@@ -448,7 +436,6 @@ const VERMONT = {
     cities: 'data/vt/cities.json',
   },
   results: { href: 'vermont.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'vermont-voters.html',
   flights: [],
   tour: false,
   authority: 'the Vermont Secretary of State',
@@ -479,7 +466,6 @@ const WEST_VIRGINIA = {
     cities: 'data/wv/cities.json',
   },
   results: { href: 'west-virginia.html', title: 'See the results', text: 'U.S. Senate in 2026, the one statewide race between candidates. Bar view by county, or dot view, with one dot per voter.' },
-  dots: 'west-virginia-voters.html',
   flights: [],
   tour: false,
   authority: 'the West Virginia Secretary of State',
@@ -491,4 +477,6 @@ const WEST_VIRGINIA = {
 };
 
 export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA];
+// the dot view: a Look on the state's own page (dotlook.js). Its old pages (voters.html, oklahoma-voters.html and the rest) forward there.
+for (const s of STATES) s.dots = `${s.results.href}?look=dots`;
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

@@ -17,7 +17,8 @@ export function createSiteNav(view) {
     const s = STATES.find(x => x.slug === pick.value);
     if (!s || s === STATE) return;
     pick.value = STATE.slug; // so coming back with the browser's Back button finds this page's own state chosen
-    location.href = view === 'dots' ? s.dots : s.results.href;
+    // (the same Look: the dots, if they're on screen)
+    location.href = view === 'dots' || document.body.classList.contains('look-dots') ? s.dots : s.results.href;
   };
   nav.append(home, pick);
   return nav;
