@@ -1,68 +1,22 @@
 <!doctype html>
-<html lang="en" data-state="rhode-island">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dot View: Rhode Island Election Results</title>
-<meta name="description" content="A map of Rhode Island with one dot for each voter, in the 2026 statewide races between a Democrat and a Republican, from unofficial, partial results. Go to any city or county, down to single voters." />
-<link rel="canonical" href="https://johnesco.github.io/usavote/rhode-island-voters.html" />
-<meta property="og:type" content="article" />
-<meta property="og:site_name" content="How America Votes" />
-<meta property="og:url" content="https://johnesco.github.io/usavote/rhode-island-voters.html" />
-<meta property="og:title" content="Dot view: Rhode Island, one dot per voter" />
-<meta property="og:description" content="Explore Rhode Island's 2026 election, from unofficial, partial results, with one dot for every voter." />
-<meta name="twitter:card" content="summary" />
-<link rel="stylesheet" href="style.css" />
-<link rel="stylesheet" href="voters.css" />
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
-  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
-} }
+<meta name="robots" content="noindex" />
+<link rel="canonical" href="https://johnesco.github.io/usavote/rhode-island.html" />
+<!-- The dot view is now a Look on the state's map page (rhode-island.html?look=dots). This page only forwards old links there,
+     with their race, place and tour scene. -->
+<script>
+  (function () {
+    var q = location.search ? '&' + location.search.slice(1) : '';
+    location.replace('rhode-island.html?look=dots' + q + location.hash);
+  })();
 </script>
+<meta http-equiv="refresh" content="1; url=rhode-island.html?look=dots" />
 </head>
-<body class="voters-page">
-<main class="voters exploring">
-  <div id="stage"></div>
-  <div id="labels"></div>
-  <div id="loading">Loading map…</div>
-  <section class="caption" id="caption" aria-live="polite"></section>
-  <header class="topnav" id="topnav">
-    <nav class="nav-row" aria-label="Dot view">
-      <a class="back" id="back" href="rhode-island.html">← Bar view</a>
-      <button class="ghost" id="goHome" title="Back to the whole state">Whole state</button>
-      <span class="flight-badge" id="flightBadge" style="display:none"></span>
-      <div class="nav-group"><label>Year <select id="year"></select></label><label class="grow">Race <select id="race"></select></label></div>
-      <div class="nav-group" role="group" aria-label="Go to a place">
-        <span class="nav-label">Go to</span>
-        <select id="goCity" aria-label="Go to a city"><option value="">City…</option></select>
-        <select id="goCounty" aria-label="Go to a county"><option value="">County…</option></select>
-      </div>
-      <div class="nav-group nav-flight" style="display:none">
-        <span class="nav-label">Guided flight</span>
-        <button id="tourPlay"></button>
-        <button class="ghost" id="tourRestart" hidden>Start over</button>
-      </div>
-    </nav>
-    <div class="nav-info">
-      <span id="raceCount"></span>
-      <span id="placeInfo" aria-live="polite"></span>
-      <span class="nav-note"><span id="raceStatus" aria-live="polite">Drag to move. Scroll, pinch or double-click to zoom.</span> Spots and colors are estimated. Results are unofficial and partial.</span>
-      <details class="how"><summary>How?</summary><p>Each county's total for the race is real, added up from its cities and towns, though unofficial and partial until the Board of Elections certifies it. Governor isn't here: an independent finished second. Its voters are placed by where adults lived in 2020, with the same mix of parties everywhere in the county. So the dots show how many people voted and roughly where, but not which neighborhoods lean which way. Zoomed far out, dots stacked on the same pixel are left out, since only the top one could show; closer in, every voter's dot is drawn.</p><p>Dots stay off land where the 2020 Census counted no people or homes.</p></details>
-      <div class="legend-dots" id="legend" aria-hidden="true"></div>
-    </div>
-  </header>
-  <div class="scalebar" id="scalebar" aria-hidden="true"><i></i><span></span></div>
-  <div class="player" id="player">
-    <button class="ghost" id="prev" aria-label="Previous scene">‹</button>
-    <button id="pause" aria-label="Pause">Pause</button>
-    <button class="ghost" id="next" aria-label="Next scene">›</button>
-    <div class="track" id="track" aria-hidden="true"><i id="fill"></i></div>
-    <button class="ghost" id="explore" title="Pause the tour and move around the map yourself">Explore</button>
-  </div>
-</main>
-<script type="module" src="voters.js"></script>
-<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<body>
+<p>The dot view has moved: <a href="rhode-island.html?look=dots">Rhode Island, one dot for each voter</a>.</p>
 </body>
 </html>

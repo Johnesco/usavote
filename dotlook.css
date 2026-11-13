@@ -1,0 +1,80 @@
+/* Dots, the third Look on every state map (dotlook.js): its layer over the map, the tour's caption card and player, and what the
+   page shows or hides with it. app.js marks the body .look-dots while Dots is on screen and .touring while its tour plays. */
+.dot-layer { position: absolute; inset: 0; background: var(--bg); }
+.dot-layer[hidden] { display: none; }
+#dotStage { position: absolute; inset: 0; }
+#dotStage canvas { display: block; touch-action: none; cursor: grab; }
+#dotStage canvas.dragging { cursor: grabbing; }
+#dotLabels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; transition: opacity .4s; }
+#dotLabels .label { transition: opacity .3s; }
+.dot-layer.exploring #dotLabels { opacity: 0; }
+.dot-layer.exploring #caption, .dot-layer.exploring #player { display: none; }
+#dotLoading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; pointer-events: none; }
+
+/* the key, top left of the map */
+.legend-dots { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--muted); }
+.legend-dots i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.legend-dots.overlay { position: absolute; top: 12px; left: 14px; z-index: 1; background: rgba(21,26,34,.8); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 12px; pointer-events: none; }
+.scalebar { position: absolute; right: 16px; bottom: 80px; font-size: 12px; color: var(--muted); text-align: right; transition: opacity .3s; pointer-events: none; }
+.scalebar i { display: block; height: 6px; border: 1.5px solid var(--muted); border-top: 0; margin: 0 0 3px auto; }
+
+/* the tour's caption card */
+.caption { position: absolute; left: 24px; top: 50%; transform: translateY(-50%); width: 380px; max-width: calc(100% - 32px);
+  background: rgba(21,26,34,.9); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; backdrop-filter: blur(6px);
+  transition: opacity .5s; }
+.caption.fade { opacity: 0; }
+.caption .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); font-weight: 650; margin-bottom: 6px; }
+.caption h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 10px; }
+.caption h2 { text-transform: none; color: var(--text); font-weight: 700; font-size: 21px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 8px; }
+.caption p { margin: 0 0 8px; font-size: 15px; }
+.caption p:last-child { margin-bottom: 0; }
+.caption .big { font-size: 38px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.05; color: var(--accent); margin: 2px 0 6px; }
+.caption .big small { display: block; font-size: 13px; font-weight: 500; letter-spacing: 0; color: var(--muted); margin-top: 3px; }
+.caption .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+.caption .vs div { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 12.5px; color: var(--muted); }
+.caption .vs b { display: block; font-size: 20px; color: var(--text); }
+.caption .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.caption .links a { font-size: 14px; color: var(--accent); }
+.caption .d { color: #8fa8ff; font-weight: 650; } .caption .r { color: #ff8b8b; font-weight: 650; } .caption .o { color: #c2cad6; font-weight: 650; }
+.caption .note { font-size: 12.5px; color: var(--muted); }
+
+/* the tour's player (player.js) */
+.player { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; z-index: 2;
+  background: rgba(21,26,34,.88); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px 7px 8px; backdrop-filter: blur(6px); }
+.player button { min-width: 80px; }
+.player button.ghost { min-width: 0; padding: 6px 13px; font-size: 18px; line-height: 1; }
+.track { position: relative; width: 200px; height: 4px; background: var(--line); border-radius: 2px; cursor: pointer; touch-action: none; }
+.track::before { content: ""; position: absolute; inset: -12px 0; }
+.track:focus-visible { outline: 2px solid var(--accent); outline-offset: 8px; }
+.track i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; pointer-events: none; }
+.track .marks b { position: absolute; top: -3px; width: 2px; height: 10px; margin-left: -1px; background: var(--muted); border-radius: 1px; pointer-events: none; }
+.scene-count { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; min-width: 38px; }
+.player #explore { font-size: 14px; padding: 6px 12px; }
+
+/* what each Look has: the panel's parts and the bar's "1 dot =" */
+body:not(.look-dots) .dots-only, body.look-dots .bars-only { display: none !important; }
+#raceCount b { color: var(--text); }
+.dots-how p { margin: 0 0 8px; }
+/* with Dots, the columns' labels, tip and rotation are put away; By and Color stay in the bar, turned off */
+body.look-dots :is(#labels, #tip, #turnWrap, #aloneWrap, #loading, .map-area > .city-layer) { display: none !important; }
+.controls [aria-disabled] { opacity: .45; cursor: not-allowed; }
+.controls { z-index: 2; }
+
+/* the tour: the map and its player have the screen */
+body.touring .app > aside, body.touring .controls, body.touring #picker, body.touring #goRow, body.touring .info-row { display: none !important; }
+body.touring .app { grid-template-columns: minmax(0, 1fr); }
+body.touring .panel-toggle { display: none; }
+
+@media (max-width: 820px) {
+  .caption { left: 12px; right: 12px; top: auto; bottom: 74px; transform: none; width: auto; max-width: none; padding: 14px 16px; }
+  .caption h1 { font-size: 24px; }
+  .caption h2 { font-size: 18px; }
+  .caption p { font-size: 14px; }
+  .caption .big { font-size: 30px; }
+  .scalebar { top: 44px; bottom: auto; }
+  .legend-dots.overlay { left: 8px; top: 8px; font-size: 11.5px; }
+  .player { width: calc(100% - 24px); max-width: 440px; }
+  .track { flex: 1; width: auto; min-width: 80px; }
+  body.touring .map-area { height: calc(100svh - var(--top, 0px)); }
+}

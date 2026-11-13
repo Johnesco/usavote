@@ -124,7 +124,7 @@ Nothing is computed on a server. Each page fetches its files and works everythin
 - Projection: d3 equal-area conic, parallels 27.5° and 35°, centered on 99.5° W, fitted to ±500 map units.
 - Color: the county winner's share of all votes, in 10-point bands.
 - Height: total votes on a linear scale shared by all races, with the tallest column at 420 map units.
-- Stacking: runner-up at the bottom, others in the middle, winner on top.
+- Stacking: by votes, the most on top and the fewest at the bottom (usually the winner on top). The guided flights' columns (`map3d.js`) keep the fixed order: runner-up, others, winner.
 - City names (`cities.js`): about 100,000 people and up when the whole state shows, and smaller places as you zoom in. At most 30 show at once.
 - Controls: **Flat** or **3D**. In 3D the map turns slowly (0.08 radians a second, the County Flythrough's closing pace) in every bar view, until the reader takes hold of it or switches **Rotation** off; then drag moves, right-drag or two fingers turn, and scroll zooms.
 - Bar view and dot view hand each other the camera in the link (`?at=x,y,distance,tilt,heading`), so switching keeps the place and zoom. The dot view always settles flat and north up, so it hands a 3D bar view's tilt and heading back unchanged.

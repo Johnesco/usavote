@@ -4,69 +4,19 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Dot View: Texas Election Results</title>
-<meta name="description" content="A map of Texas with one dot for each voter, in any race. Go to any city, county or precinct, down to single voters, or play the Texas Population Density Tour." />
-<link rel="canonical" href="https://johnesco.github.io/usavote/voters.html" />
-<meta property="og:type" content="article" />
-<meta property="og:site_name" content="How America Votes" />
-<meta property="og:url" content="https://johnesco.github.io/usavote/voters.html" />
-<meta property="og:title" content="Dot view: 9.9 million Texans, one dot each" />
-<meta property="og:description" content="Explore Texas with one dot for every voter, from Loving County's 67 voters to Dallas County's 783,714, or play the Texas Population Density Tour." />
-<meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:image" content="https://johnesco.github.io/usavote/share.png" />
-<link rel="stylesheet" href="style.css" />
-<link rel="stylesheet" href="voters.css" />
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
-  "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm"
-} }
+<meta name="robots" content="noindex" />
+<link rel="canonical" href="https://johnesco.github.io/usavote/texas.html" />
+<!-- The dot view is now a Look on the state's map page (texas.html?look=dots). This page only forwards old links there,
+     with their race, place and tour scene. -->
+<script>
+  (function () {
+    var q = location.search ? '&' + location.search.slice(1) : '';
+    location.replace('texas.html?look=dots' + q + location.hash);
+  })();
 </script>
+<meta http-equiv="refresh" content="1; url=texas.html?look=dots" />
 </head>
-<body class="voters-page">
-<main class="voters exploring">
-  <div id="stage"></div>
-  <div id="labels"></div>
-  <div id="loading">Loading map…</div>
-  <section class="caption" id="caption" aria-live="polite"></section>
-  <header class="topnav" id="topnav">
-    <nav class="nav-row" aria-label="Dot view">
-      <a class="back" id="back" href="texas.html">← Bar view</a>
-      <button class="ghost" id="goHome" title="Back to the whole state">Whole state</button>
-      <span class="flight-badge" id="flightBadge">Texas Population Density Tour · 2026 U.S. Senate</span>
-      <div class="nav-group"><label>Year <select id="year"></select></label><label class="grow">Race <select id="race"></select></label></div>
-      <div class="nav-group" role="group" aria-label="Go to a place">
-        <span class="nav-label">Go to</span>
-        <select id="goCity" aria-label="Go to a city"><option value="">City…</option></select>
-        <select id="goCounty" aria-label="Go to a county"><option value="">County…</option></select>
-        <select id="goPrecinct" aria-label="Go to a precinct in the county" title="Pick a county first" disabled><option value="">Precinct…</option></select>
-      </div>
-      <div class="nav-group nav-flight">
-        <span class="nav-label">Guided flight</span>
-        <button id="tourPlay">▶ Texas Population Density Tour</button>
-        <button class="ghost" id="tourRestart" hidden>Start over</button>
-        <a class="flight-link" href="misread.html" title="Why the flat county map looks red, one misreading at a time, with these dots placed by county, then precinct, then block">▶ Misreading the Map</a>
-      </div>
-    </nav>
-    <div class="nav-info">
-      <span id="raceCount"></span>
-      <span id="placeInfo" aria-live="polite"></span>
-      <span class="nav-note"><span id="raceStatus" aria-live="polite">Drag to move. Scroll, pinch or double-click to zoom.</span> Spots and colors are estimated.</span>
-      <details class="how"><summary>How?</summary><p>Each county's total for the race is real. Its voters are placed by how each party's 2024 Senate vote was spread across the county's precincts, then by where adults lived in 2020. Zoomed far out, dots stacked on the same pixel are left out, since only the top one could show; closer in, every voter's dot is drawn.</p></details>
-      <div class="legend-dots" id="legend" aria-hidden="true"></div>
-    </div>
-  </header>
-  <div class="scalebar" id="scalebar" aria-hidden="true"><i></i><span></span></div>
-  <div class="player" id="player">
-    <button class="ghost" id="prev" aria-label="Previous scene">‹</button>
-    <button id="pause" aria-label="Pause">Pause</button>
-    <button class="ghost" id="next" aria-label="Next scene">›</button>
-    <div class="track" id="track" aria-hidden="true"><i id="fill"></i></div>
-    <button class="ghost" id="explore" title="Pause the tour and move around the map yourself">Explore</button>
-  </div>
-</main>
-<script type="module" src="voters.js"></script>
-<script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+<body>
+<p>The dot view has moved: <a href="texas.html?look=dots">Texas, one dot for each voter</a>.</p>
 </body>
 </html>

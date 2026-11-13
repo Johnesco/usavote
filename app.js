@@ -10,7 +10,9 @@ import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
-import { viewBarGroups } from './viewbar.js';
+import { viewBarGroups, NOT_DOTS_BY, NOT_DOTS_COLOR, PERS } from './viewbar.js';
+import { startDots, LAYER_HTML } from './dotlook.js';
+import { DOTS_HOW } from './dots-how.js';
 import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
@@ -80,6 +82,7 @@ bandLegend();
 
 // what the Go to menus last chose (places.js)
 let place = null;
+let pressed = null, tipPinned = false; // a press on the map that may be a click; a tapped county's card kept on screen (pinTip)
 let byPrecinct = false, columns = null; // bar view by precinct: columns draws them once they have loaded
 let precinctRows = [], precinctOf = new Map(); // one row per precinct on the map, for the race on screen; which row a precinct from the menus is
 const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRECINCTS = BASE?.raceId; // the one race with results by precinct here; the rest are estimated from it
@@ -94,9 +97,18 @@ const DISTRICTS = STATE.data.districts || {};
   $('dotLink')?.closest('.seg')?.remove();
   $('byCounty')?.closest('.seg')?.remove();
   if ($('viewRow') && !$('viewRow').children.length) $('viewRow').remove();
-  document.querySelector('.map-area .controls').insertAdjacentHTML('afterbegin', viewBarGroups('bar'));
+  document.querySelector('.map-area .controls').insertAdjacentHTML('afterbegin', viewBarGroups());
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
+  // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
+  $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
+  document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dotlook.css" />');
 }
+// Dots (dotlook.js): started the first time it's chosen, then kept, hidden while Flat or 3D is on screen
+let dotsOn = false;     // Dots is the Look on screen (or on its way)
+let dots = null;        // the dot look, once its first dots are placed
+let dotsStart = null;   // its start, under way
+let perAsked = 1;       // "1 dot =": voters a dot stands for
+let barAngle = null;    // the 3D tilt and heading the map had when Dots was chosen, to go back to
 const legHead = $('legHead') || [...document.querySelectorAll('aside h2')].find(h => /share of the county vote/.test(h.textContent));
 let byDistrict = false, dist = null, nmOf = c => c.last;
 const districtSets = new Map(), districtThere = new Map(); // a chamber's columns, once made; whether its file is there
@@ -196,16 +208,17 @@ function setRace(id) {
     <p><b>Votes:</b> ${STATE.votesCounted ?? 'the total votes cast in the selected race in each county, counting every candidate including write-ins.'}
     These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, ${STATE.reporting?.(meta, fmt) ?? `with all precincts reporting in all ${counties.length} counties`}.
     They are unofficial until ${STATE.unofficialUntil}. For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
-    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, ${OTHER_VOTES} in gray, and the ${WINNER}'s votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
+    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by votes, the most on top and the fewest at the bottom: the ${WINNER}'s votes in the county's color, the runner-up's in that party's color and ${OTHER_VOTES} in gray. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows the county ${WINNER}'s share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including ${OTHER_VOTES}.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
     <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
   finishRace();
 }
 function finishRace() {
+  if (tipPinned) pinTip(false);
   renderTable();
   saveUrl();
-  $('dotLink').href = `${STATE.dots}?race=${race.id}`;
+  dots?.setRace(race.id);
   if (BASE) $('method').insertAdjacentHTML('beforeend', BASE.method);
   // the same chamber in another year, on the same lines: its districts can change at once; anything else waits for syncDistricts
   if (byDistrict && dist && districtEntry(race) === dist.entry) setDistrictRows();
@@ -351,7 +364,7 @@ function renderHistory(minor, nm) {
     Source for this race: <a href="${race.sourceUrl}" target="_blank" rel="noopener">${race.source}</a>.
     ${race.unofficial ? `These 2026 figures are election-night returns as of ${meta.resultsUpdated}, unofficial until the state canvass.` : ''}
     For every race, each county's candidate votes add up to its total, and the counties add up to the statewide totals the Secretary of State published.</p>
-    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race and year). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by how the county voted: the runner-up's votes at the bottom in that party's color, third-party and write-in votes in gray, and the winner's votes on top in the county's color. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
+    <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race and year). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by votes, the most on top and the fewest at the bottom: the winner's votes in the county's color, the runner-up's in that party's color and third-party and write-in votes in gray. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Color</b> shows which candidate carried the county and their share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including third-party and write-in votes.</p>
     <p><b>Land area</b> is the Census Bureau's 2024 land area for each county (water excluded). The shapes are the Census Bureau's 2017 simplified county boundaries; the same 254 counties are used for every year.</p>
     <p>The data files and the scripts that build them are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
@@ -432,7 +445,18 @@ document.querySelector('.bar-groups').prepend(createSiteNav('results'));
 document.querySelector('.bar-groups').prepend(createPanelToggle(document.querySelector('.app > aside'), () => saveUrl()));
 // the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
-$('flights').innerHTML = flightsHtml();
+$('flights').innerHTML = flightsHtml(true);
+$('flights').insertAdjacentHTML('afterend', `<section class="dots-only" id="dotInfo">
+  <h2>One dot for each voter</h2>
+  <p id="raceCount">Placing the dots…</p>
+  <p class="sources">Spots and colors are estimated.</p>
+  <h2>How the dots are placed</h2>
+  <div class="sources dots-how">${DOTS_HOW[STATE.slug] || ''}</div>
+</section>`);
+// what describes the columns and their colors, which Dots doesn't have: the key, What you're seeing and Method, with their headings
+for (const id of ['scale', 'raiseText', 'harris', 'legRTitle', 'legR', 'legDTitle', 'legD', 'method']) $(id)?.classList.add('bars-only');
+for (const id of ['scale', 'method']) { const h = $(id)?.previousElementSibling; if (h?.tagName === 'H2') h.classList.add('bars-only'); }
+legHead?.classList.add('bars-only');
 
 $('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
   <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`;
@@ -458,8 +482,8 @@ mapGroup.rotation.x = -Math.PI / 2; // shapes are drawn in XY and extruded along
 scene.add(mapGroup);
 
 const H_MAX = 420, H_FLAT = 0.8;
-// A raised column is stacked by how the county voted: the runner-up's votes at the bottom, third-party and write-in
-// votes (gray) in the middle, and the winner's votes on top in the county's color. Columns shorter than SPLIT_MIN
+// A raised column is stacked by votes, the most on top and the fewest at the bottom: the winner's votes in the county's color,
+// the runner-up's in that party's color and third-party and write-in votes in gray. Columns shorter than SPLIT_MIN
 // (map units; the tallest column is H_MAX) are too short to read as stacks, so they stay one solid color.
 const SPLIT_MIN = 4;
 const LOSER_C = { dem: '#584cde', rep: '#d72f30' }, OTHER_C = '#5d6c82';
@@ -545,10 +569,11 @@ function layout(c, h) {
     c.mesh.position.z = 0; c.mesh.scale.z = h;
     return;
   }
-  const a = h * c.fLower, b = h * c.fMiddle;
-  c.lower.visible = a > 0; c.lower.scale.z = Math.max(a, 1e-4);
-  c.middle.visible = b > 0; c.middle.position.z = a; c.middle.scale.z = Math.max(b, 1e-4);
-  c.mesh.position.z = a + b; c.mesh.scale.z = Math.max(h - a - b, 1e-4);
+  // ranked: each part stands on the parts with fewer votes (ties: runner-up, then others, then winner, from the bottom)
+  const a = h * c.fLower, b = h * c.fMiddle, w = h - a - b;
+  c.lower.visible = a > 0; c.lower.position.z = (b < a ? b : 0) + (w < a ? w : 0); c.lower.scale.z = Math.max(a, 1e-4);
+  c.middle.visible = b > 0; c.middle.position.z = (a <= b ? a : 0) + (w < b ? w : 0); c.middle.scale.z = Math.max(b, 1e-4);
+  c.mesh.position.z = (a <= w ? a : 0) + (b <= w ? b : 0); c.mesh.scale.z = Math.max(w, 1e-4);
 }
 const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
 
@@ -592,7 +617,10 @@ leadBtn.onclick = () => setLead(true);
 shareBtn.onclick = () => setLead(false);
 // what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead when they apply
 function saveUrl() {
-  try { history.replaceState(null, '', `?race=${race.id}${byParam()}${(anim ? anim.to : progress) === 1 ? '&look=3d' : ''}${leadOn ? '&color=lead' : ''}${panelParam()}`); } catch {}
+  if (dotsOn && dots?.touring()) return; // on the tour, its player keeps ?scene= (player.js)
+  try { // (in a try: at start-up the race is saved before the camera's state exists)
+    const look = dotsOn ? `&look=dots${perAsked > 1 ? `&per=${perAsked}` : ''}` : (anim ? anim.to : progress) === 1 ? '&look=3d' : '';
+    history.replaceState(null, '', `?race=${race.id}${byParam()}${look}${leadOn ? '&color=lead' : ''}${panelParam()}`); } catch {}
 }
 
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
@@ -687,6 +715,32 @@ let turning = false;
 // What a plain drag, or one finger, does in 3D: move the map, or turn and tilt it. The switch beside Rotation chooses; a right-drag,
 // a Shift-drag or two fingers does the other. It's added here so every state's page has it without its own markup.
 let dragTurns = false;
+// In 3D, by county: the county chosen in Go to, standing alone, with every other column sunk flat
+$('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="aloneWrap" hidden><button type="button" id="alone" aria-pressed="false">County alone</button></div>`);
+let alone = false; // asked for; it shows while a county is chosen and the map is by county
+const aloneCounty = () => alone && !overlayCols() && place?.c || null;
+$('alone').onclick = () => { alone = !alone; if (aloneCounty()) frameColumn(aloneCounty()); updateMode(); };
+// fly to see a county's whole column, from its foot to its top, at the camera's tilt and heading now, in the clear part of the screen
+function frameColumn(c) {
+  if (anim) { applyProgress(anim.to); anim = null; }
+  if (progress !== 1) return;
+  const from = currentPose(), { phi, theta } = from, H = c.target;
+  const halfW = Math.max(c.box.x1 - c.box.x0, c.box.y1 - c.box.y0) / 2;
+  // on screen, the column's height is foreshortened by the tilt, and its footprint's depth by the rest
+  // the clear part of the screen: below room for the county's label, above the control bar as tall as it is now (it wraps on narrow screens)
+  const w = stage.clientWidth, h = stage.clientHeight, t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const bar = document.querySelector('.map-area .controls').getBoundingClientRect(), box = stage.getBoundingClientRect();
+  const top = 40, bottom = Math.max(16, box.bottom - bar.top + 16);
+  const usableH = Math.max(80, h - top - bottom), usableW = Math.max(80, w - 32);
+  const halfH = (H * Math.sin(phi) + 2 * halfW * Math.cos(phi)) / 2;
+  const r = 1.2 * Math.max(2.5, halfW * h / (t * usableW), halfH * h / (t * usableH));
+  const shift = ((bottom - top) / 2) * (2 * r * t / h);
+  // aim at the middle of the column, lowered along the screen's up so it sits centered between the top strip and the control bar
+  const up = new THREE.Vector3(-Math.cos(phi) * Math.sin(theta), Math.sin(phi), -Math.cos(phi) * Math.cos(theta));
+  const target = new THREE.Vector3(c.cx, H / 2, -c.cy).addScaledVector(up, -shift);
+  going = { from, to: { r, phi, theta, target }, start: performance.now(), dur: REDUCED ? 1 : 1500 };
+  updateMode();
+}
 $('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" role="group" aria-label="What dragging the map does" hidden>
   <button type="button" id="dragMove" aria-pressed="true" title="Dragging slides the map. Right-drag or Shift-drag turns it.">Drag moves</button>
   <button type="button" id="dragTurn" aria-pressed="false" title="Dragging turns and tilts the map. Right-drag or Shift-drag slides it.">Drag turns</button></div>`);
@@ -699,15 +753,15 @@ function layoutCounties() {
   for (const m of meshes) {
     const u = m.userData;
     const k = ease(clamp01((progress - 0.3 - u.delay) / 0.45));
-    layout(u, H_FLAT + (u.target - H_FLAT) * k * up);
+    layout(u, H_FLAT + (u.target - H_FLAT) * k * up * ease(u.solo ?? 1));
   }
 }
 function applyProgress(p, pose = null) {
   progress = p;
   setPose(pose || canonicalPose(p));
   layoutCounties();
-  flatBtn.setAttribute('aria-pressed', String(p <= 0.5));
-  raisedBtn.setAttribute('aria-pressed', String(p > 0.5));
+  flatBtn.setAttribute('aria-pressed', String(!dotsOn && p <= 0.5));
+  raisedBtn.setAttribute('aria-pressed', String(!dotsOn && p > 0.5));
 }
 // Drag moves the map and scroll or pinch zooms. In 3D the Drag moves / Drag turns switch can make a drag turn and tilt it instead; a
 // right-drag, a Shift-drag (OrbitControls swaps the two when Shift, Ctrl or ⌘ is held) or two fingers does whichever a plain drag doesn't.
@@ -722,15 +776,23 @@ function updateMode() {
   controls.touches.TWO = raised && !drag ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN;
   $('turnWrap').hidden = !raised;
   $('dragMode').hidden = !raised;
+  $('aloneWrap').hidden = !raised;
+  const canAlone = !!place?.c && !overlayCols();
+  $('alone').disabled = !canAlone;
+  $('alone').setAttribute('aria-pressed', String(alone && canAlone));
+  $('alone').title = overlayCols() ? 'County alone is for the map by county'
+    : !place?.c ? 'Choose a county in Go to, then press this to see its column alone'
+    : alone ? `Raise every county again` : `See ${place.c.name} County's column alone, with every other county flat`;
   $('dragMove').setAttribute('aria-pressed', String(!drag));
   $('dragTurn').setAttribute('aria-pressed', String(drag));
   turnBtn.setAttribute('aria-pressed', String(turning));
   turnBtn.textContent = turning ? 'Rotation on' : 'Rotation off';
   const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
   hintEl.textContent = anim ? `Hover over a ${what}`
-    : raised ? `${turning ? 'Turning slowly · ' : ''}${TOUCH ? (drag ? 'One finger turns · two move' : 'One finger moves · two turn') : (drag ? 'Drag to turn · right-drag to move' : 'Drag to move · right-drag to turn')} · ${TOUCH ? 'pinch' : 'scroll'} to zoom${TOUCH ? '' : ` · hover over a ${what}`}`
-    : flat ? `Drag to pan · scroll to zoom · hover over a ${what}`
+    : raised ? `${turning ? 'Turning slowly · ' : ''}${TOUCH ? (drag ? 'One finger turns · two move' : 'One finger moves · two turn') : (drag ? 'Drag to turn · right-drag to move' : 'Drag to move · right-drag to turn')} · ${TOUCH ? 'pinch' : 'scroll'} to zoom · ${TOUCH ? 'tap' : 'hover over or click'} a ${what}`
+    : flat ? `${TOUCH ? 'One finger moves · pinch' : 'Drag to pan · scroll'} to zoom · ${TOUCH ? 'tap' : 'hover over or click'} a ${what}`
     : `Hover over a ${what}`;
+  if (dotsOn) hintEl.textContent = DOT_HINT;
 }
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -755,12 +817,86 @@ function setRaised(on) { // Flat or 3D: the columns sink or rise, and in 3D the 
   startAnim(goal, 4200 * Math.abs(goal - progress) + 1);
   saveUrl();
 }
-flatBtn.onclick = () => setRaised(false);
-raisedBtn.onclick = () => setRaised(true);
+flatBtn.onclick = () => setLook('flat');
+raisedBtn.onclick = () => setLook('3d');
+$('dotLink').onclick = () => setLook('dots');
 turnBtn.onclick = () => { turning = !turning; updateMode(); };
 $('dragMove').onclick = () => { dragTurns = false; updateMode(); };
 $('dragTurn').onclick = () => { dragTurns = true; updateMode(); };
-document.getElementById('reset').onclick = () => { clearPlace(); startAnim(progress, 700); };
+document.getElementById('reset').onclick = () => { clearPlace(); if (dotsOn) dots?.home(); else startAnim(progress, 700); };
+
+// ---------- Dots: the dot look (dotlook.js), on this page ----------
+// It draws over this map in its own layer and takes the camera from it and gives it back, so changing the Look keeps the place.
+// By and Color are for the columns: with Dots they're turned off, with the reason as their title.
+const DOT_HINT = 'Drag to move · scroll, pinch or double-click to zoom · spots and colors are estimated';
+const NOT_DOTS = ['byCounty', 'byPrecinct', 'byDistrict', 'colorShare', 'leadColor'];
+const byTitles = new Map(); // the By buttons' own titles, while Dots has replaced them
+document.querySelector('.map-area .controls').addEventListener('click', e => { // (capture: before the buttons' own handlers)
+  if (dotsOn && e.target.closest(NOT_DOTS.map(id => '#' + id).join())) { e.stopPropagation(); e.preventDefault(); }
+}, true);
+function markLook() {
+  document.body.classList.toggle('look-dots', dotsOn);
+  $('dotLink').setAttribute('aria-pressed', String(dotsOn));
+  const goal = anim ? anim.to : progress;
+  flatBtn.setAttribute('aria-pressed', String(!dotsOn && goal <= 0.5));
+  raisedBtn.setAttribute('aria-pressed', String(!dotsOn && goal > 0.5));
+  for (const id of NOT_DOTS) {
+    const b = $(id); if (!b) continue;
+    b.toggleAttribute('aria-disabled', dotsOn);
+    if (dotsOn) { if (id.startsWith('by')) byTitles.set(id, b.title); b.title = id.startsWith('by') ? NOT_DOTS_BY : NOT_DOTS_COLOR; }
+    else if (id.startsWith('by')) b.title = byTitles.get(id) ?? '';
+  }
+  if (!dotsOn) restyle(); // (the Share and Vote lead titles)
+  updateMode();
+}
+// look: 'flat', '3d' or 'dots'. o, for Dots: at, a camera to start from (?at=); tour, to play the tour; scene, to play it from scene N.
+async function setLook(look, o = {}) {
+  if (tipPinned) pinTip(false);
+  if (look !== 'dots') {
+    if (!dotsOn) { setRaised(look === '3d'); return; }
+    dotsOn = false;
+    const v = dots?.view();
+    dots?.show(false); $('dotLayer').hidden = true;
+    document.body.classList.remove('touring');
+    if (v) { // the dots' place and zoom, flat, or in 3D at the angle the map had
+      const [tilt, heading] = look === '3d' ? barAngle || [DEFAULT_TILT.phi, DEFAULT_TILT.theta] : [0, 0];
+      turning = false;
+      applyAt([v.x, v.y, v.d, tilt, heading]);
+    } else setRaised(look === '3d'); // (left before the dots were placed: the map is where it was)
+    outlinePlace(place); showChosen();
+    markLook(); saveUrl();
+    return;
+  }
+  if (!dotsOn) {
+    const [x, y, d, tilt, heading] = atParam().split(',').map(Number);
+    if (tilt > 0.05) barAngle = [tilt, heading];
+    o.at ??= [x, y, d, tilt, heading];
+    anim = null; going = null; turning = false;
+    dotsOn = true; markLook();
+    $('dotLayer').hidden = false; // (shown first, so the dots can measure the map)
+    if (dots) dots.setView(o.at);
+  }
+  if (!dots) {
+    dotsStart ??= startDots({ race: race.id, per: perAsked, at: o.at, scene: o.scene, tour: o.tour,
+      onTour: on => { document.body.classList.toggle('touring', on && dotsOn); if (!on) saveUrl(); },
+      onBars: () => setLook('flat'),
+      onRace: id => { if (id !== race.id) chooseRace(id); },
+    }).then(d => { dots = d; d.setRace(race.id); return d; });
+    await dotsStart;
+    if (!dotsOn) { dots.show(false); return; } // Flat or 3D was chosen while the dots were being placed
+    dots.show(true);
+    if (place && !dots.touring()) dots.choosePlace(place, false);
+  } else {
+    dots.show(true);
+    if (!o.scene && !o.tour) dots.choosePlace(place, false); // the place chosen in Flat or 3D, or none
+    if (o.scene) dots.playTour(o.scene - 1); else if (o.tour) dots.playTour();
+  }
+  document.body.classList.toggle('touring', dots.touring());
+  saveUrl();
+}
+$('per').onchange = e => { perAsked = +e.target.value; dots?.setPer(perAsked); saveUrl(); };
+$('tourPlay')?.addEventListener('click', () => setLook('dots', { tour: true }));
+$('tourRestart')?.addEventListener('click', () => setLook('dots', { scene: 1 }));
 
 // ---------- go to a city, county or precinct ----------
 // The camera keeps its angle: flat stays flat, and raised keeps its tilt, looking at the top of whatever is there. The
@@ -791,6 +927,7 @@ function focusLift() {
 }
 const riseK = () => ease(clamp01((progress - 0.3) / 0.45));
 function flyTo(view) {
+  if (anim) { applyProgress(anim.to); anim = null; } // chosen while the columns rise or sink: finish that at once, not halfway
   const { x, y } = view, from = currentPose(), flat = progress === 0, fit = viewOf(view);
   // raised, stand far enough back to see the top of a precinct's column along with its neighbors
   const r = flat || !focus ? fit.r : focus.kind === 'precinct' ? Math.max(fit.r * 2, focusLift() * 1.6) : fit.r * 1.25;
@@ -816,14 +953,16 @@ const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: 
     return list?.byFips.get(c.fips)?.vtds || [];
   },
   onChoose: async p => {
+    if (tipPinned) pinTip(false);
     place = p; focus = p?.c ? { view: p.view, kind: p.kind, c: p.c, v: p.v } : null;
+    if (dotsOn) { dots?.choosePlace(p); return; }
     if (p?.kind === 'precinct' && !byPrecinct) await setBy(true); // a precinct is best seen by precinct
     if (place !== p) return;
     showChosen(); renderPlace(); outlinePlace(p);
-    if (p) flyTo(p.view);
+    if (p && aloneCounty() === p.c && (anim ? anim.to : progress) === 1) frameColumn(p.c); else if (p) flyTo(p.view);
   } });
 // the camera is going back to the whole state
-function clearPlace() { going = null; focus = null; menus.clear(); place = null; showChosen(); renderPlace(); outlinePlace(null); }
+function clearPlace() { alone = false; going = null; focus = null; menus.clear(); place = null; showChosen(); renderPlace(); outlinePlace(null); }
 
 // ---------- bar view, by county or by precinct ----------
 // Every precinct stands at once, on one height scale that never changes: the tallest in the state's precinct-level race is PRECINCT_H
@@ -1079,9 +1218,38 @@ function placeTip(e, r) {
 const stopGoing = () => { if (going || turning) { going = null; turning = false; updateMode(); } };
 renderer.domElement.addEventListener('pointerdown', stopGoing);
 renderer.domElement.addEventListener('wheel', stopGoing, { passive: true });
-renderer.domElement.addEventListener('pointermove', onPointer);
-renderer.domElement.addEventListener('pointerdown', onPointer);
-renderer.domElement.addEventListener('pointerleave', () => { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); });
+// A click or tap (a press that doesn't move) on a county chooses it, as Go to's County menu does, and the camera goes there. By precinct
+// or district, it shows what was tapped without choosing. A touch screen has no hover, so there the card of numbers the mouse shows
+// stays pinned in the map's top corner, until it's tapped, the map is pressed again, or another place, race or Look is chosen.
+function pinTip(on) {
+  tipPinned = on;
+  tip.classList.toggle('pinned', on);
+  if (!on) { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); }
+}
+tip.addEventListener('click', () => pinTip(false));
+function chooseCounty(c) {
+  const sel = $('goCounty');
+  if (sel.value === c.fips) { if (place?.kind === 'county') flyTo(place.view); return; } // already chosen: go back to it
+  sel.value = c.fips; sel.dispatchEvent(new Event('change'));
+}
+renderer.domElement.addEventListener('pointermove', e => {
+  if (tipPinned) { if (e.pointerType !== 'mouse') return; pinTip(false); }
+  onPointer(e);
+});
+renderer.domElement.addEventListener('pointerdown', e => {
+  if (tipPinned) pinTip(false);
+  pressed = e.isPrimary ? { x: e.clientX, y: e.clientY, t: performance.now() } : null; // (two fingers: a pinch)
+  onPointer(e);
+});
+renderer.domElement.addEventListener('pointerup', e => {
+  const p = pressed; pressed = null;
+  if (!p || e.button !== 0 || Math.hypot(e.clientX - p.x, e.clientY - p.y) > 6 || performance.now() - p.t > 700) return; // a drag, not a click
+  onPointer(e);
+  const c = !overlayCols() && hovered?.userData, touch = e.pointerType !== 'mouse';
+  if (c) chooseCounty(c); // (which unpins the card, so it's pinned after)
+  if (touch && tip.style.display === 'block') { if (c) setHover(c.mesh); pinTip(true); }
+});
+renderer.domElement.addEventListener('pointerleave', () => { if (!tipPinned) pinTip(false); });
 
 // ---------- loop ----------
 const v = new THREE.Vector3(), labelRay = new THREE.Raycaster();
@@ -1094,6 +1262,7 @@ function anchorVisible(c, world) {
 }
 let lastFrame = 0, lastOver = null;
 function frame(now) {
+  if (dotsOn && dots) { lastFrame = now; requestAnimationFrame(frame); return; } // the dots cover this map
   // by county or by precinct: one set of columns goes down as the other comes up
   const over = overlayCols(), goal = over ? 1 : 0, dt = now - lastFrame; lastFrame = now;
   if (over) lastOver = over; // going back to counties, it stays up while it sinks
@@ -1101,6 +1270,15 @@ function frame(now) {
     const step = REDUCED ? 1 : Math.min(dt, 100) / 900;
     precinctMix = goal > precinctMix ? Math.min(goal, precinctMix + step) : Math.max(goal, precinctMix - step);
     layoutCounties();
+  }
+  { // County alone: the others sink, or rise again
+    const only = aloneCounty(), step = REDUCED ? 1 : Math.min(dt, 100) / 800;
+    let moved = false;
+    for (const m of meshes) {
+      const u = m.userData, goalS = !only || u === only ? 1 : 0, s0 = u.solo ?? 1;
+      if (s0 !== goalS) { u.solo = goalS > s0 ? Math.min(goalS, s0 + step) : Math.max(goalS, s0 - step); moved = true; }
+    }
+    if (moved) layoutCounties();
   }
   if (leadMix !== (leadShown() ? 1 : 0)) { // the vote-lead fade, over about a second and a half
     const goalL = leadShown() ? 1 : 0, step = REDUCED ? 1 : Math.min(dt, 100) / 1500;
@@ -1151,7 +1329,7 @@ function frame(now) {
   const placed = [];
   for (const { c, el } of labeled) { // largest first; hide a label that would overlap one already shown
     v.set(c.cx, c.cy, c.h).applyMatrix4(mapGroup.matrixWorld);
-    const hidden = k > 0 && !anchorVisible(c, v);
+    const hidden = k > 0 && (!anchorVisible(c, v) || (c.solo ?? 1) < 0.5);
     v.project(camera);
     const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h, bw = el.offsetWidth, bh = el.offsetHeight;
     const box = [x - bw / 2, y - bh * 1.2, x + bw / 2, y - bh * 0.2];
@@ -1176,34 +1354,46 @@ function atParam() {
   const o = currentPose(), flat = progress < 0.5; // the camera aims south of what's centered in the clear part of the screen
   return [o.target.x, groundShift(o.r) * (flat ? 1 : 1 + RAISED_SHIFT) - o.target.z, o.r, flat ? 0 : o.phi, flat ? 0 : o.theta].map(n => +n.toFixed(3)).join(',');
 }
-for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
-  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}${panelParam()}&at=${atParam()}`; });
-const at = (params.get('at') || '').split(',').map(Number);
-if (at.length === 5 && at.every(Number.isFinite)) {
-  const [x, y, d, tilt, heading] = at, raised = tilt > 0.05, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
+// a camera as ?at= carries it, x,y,distance,tilt,heading: flat, or raised at that tilt and heading
+function applyAt([x, y, d, tilt, heading]) {
+  const raised = tilt > 0.05, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
+  anim = null; going = null;
   applyProgress(raised ? 1 : 0, { r, phi: raised ? Math.min(tilt, controls.maxPolarAngle) : TOP.phi, theta: raised ? heading : TOP.theta,
     target: new THREE.Vector3(x, 0, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - y) });
   updateMode();
 }
-if (params.get('look') === '3d' && !(at.length === 5 && at.every(Number.isFinite))) setRaised(true);
+const at = (params.get('at') || '').split(',').map(Number), atOk = at.length === 5 && at.every(Number.isFinite);
+const dotsAsked = params.get('look') === 'dots', sceneAsked = +params.get('scene') || 0, tourAsked = params.get('tour') === '1';
+if (atOk && !dotsAsked) applyAt(at);
+if (params.get('look') === '3d' && !atOk) setRaised(true);
 if (params.get('color') === 'lead') setLead(true);
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
+// ?look=dots, or the dot tour (?tour=1, ?scene=N), with ?per= for "1 dot ="
+if (PERS.includes(+params.get('per'))) $('per').value = perAsked = +params.get('per');
+if (dotsAsked || (STATE.tour && (tourAsked || sceneAsked))) setLook('dots', { at: atOk ? at : undefined, tour: tourAsked, scene: sceneAsked });
 // ---------- compare: two views side by side (compare.html, panel.js) ----------
 // The Compare link opens this map beside the dot view, both where this camera is now. In a frame there, the camera follows the other side's.
 if (!FRAMED) {
   const cmp = document.createElement('a');
   cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
-  cmp.title = 'This map beside the dot view, moving together. Each side keeps its own look, race and color';
+  cmp.title = 'This map beside another Look of it (the dots, or with Dots the flat map), moving together. Each side keeps its own look, race and color';
   document.querySelector('.bar-groups').append(cmp);
   for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
-    const at = atParam();
-    cmp.href = compareHref(`${STATE.results.href}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}&at=${at}`, `${STATE.dots}?race=${race.id}&at=${at}`);
+    const v = dotsOn && dots?.view(), at = v ? [v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',') : atParam();
+    const flatAt = at.split(',').slice(0, 3).concat([0, 0]).join(',');
+    const barsUrl = `${STATE.results.href}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}`;
+    const dotsUrl = `${STATE.dots}&race=${race.id}${perAsked > 1 ? `&per=${perAsked}` : ''}`;
+    cmp.href = dotsOn ? compareHref(`${dotsUrl}&at=${at}`, `${barsUrl}&at=${flatAt}`) : compareHref(`${barsUrl}&at=${at}`, `${dotsUrl}&at=${at}`);
   });
 }
-followCamera(() => { const [x, y, d] = atParam().split(',').map(Number); return { x, y, d }; }, c => {
+followCamera(() => {
+  if (dotsOn) { const v = dots?.view(); return v && { x: v.x, y: v.y, d: v.d }; }
+  const [x, y, d] = atParam().split(',').map(Number); return { x, y, d };
+}, c => {
+  if (dotsOn) { dots?.follow(c); return; }
   const o = currentPose(), raised = progress >= 0.5, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, c.d));
   going = null;
   setPose({ ...o, r, target: new THREE.Vector3(c.x, o.target.y, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - c.y) });
-}, () => stage.clientHeight);
+}, () => dotsOn && dots ? dots.height() : stage.clientHeight);
 requestAnimationFrame(frame);
