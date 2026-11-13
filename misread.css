@@ -1,0 +1,23 @@
+/* Misreading the Map: the page, caption and player come from voters.css and story.css. This adds the list of misreadings
+   down the right side, and the key for the flat map. */
+.caption { transition: none; }
+.caption:empty { display: none; }
+.caption ol.recap { margin: 6px 0 10px; padding-left: 20px; font-size: 14px; }
+.caption ol.recap li { margin-bottom: 3px; }
+.caption .myth { font-size: 17px; font-style: italic; color: var(--text); border-left: 3px solid var(--accent); padding-left: 10px; margin: 2px 0 10px; }
+.legend-dots .sq { border-radius: 2px; }
+
+.steps { position: absolute; right: 16px; top: calc(var(--bar, 0px) + 14px); list-style: none; margin: 0; padding: 10px 12px;
+  background: rgba(21,26,34,.85); border: 1px solid var(--line); border-radius: 10px; font-size: 12px; color: var(--muted);
+  width: 230px; transition: opacity .4s; }
+.steps li { display: grid; grid-template-columns: 18px 1fr; gap: 6px; padding: 3px 0; opacity: .45; transition: opacity .4s, color .4s; }
+.steps li b { color: var(--muted); }
+.steps li.done { opacity: .8; }
+.steps li.now { opacity: 1; color: var(--text); }
+.steps li.now b { color: var(--accent); }
+
+.misread.recording .player { display: none; }
+.misread.recording #stage canvas { cursor: none; }
+@media (max-width: 1100px) {
+  .steps { display: none; }
+}
