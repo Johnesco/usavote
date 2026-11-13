@@ -209,3 +209,15 @@ body:not(.panel-hidden) .panel-toggle { display: none; }
 /* the dot tour's card in the dot view is a button that plays it */
 button.flight { width: 100%; text-align: left; font: inherit; white-space: normal; }
 button.flight + .ghost { margin: -2px 0 8px; font-size: 13px; padding: 5px 12px; }
+/* Compare ⇆, last in the top strip of both views: this map beside the other view (compare.html) */
+.compare-link { font-size: 12.5px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 11px; text-decoration: none; white-space: nowrap; }
+.compare-link:hover, .compare-link:focus-visible { background: var(--accent); color: #111; }
+/* a view inside compare.html (panel.js marks it .framed): no panel, no ways out (the compare page has them), and the map fills the frame */
+.framed aside, .framed .panel-toggle, .framed .compare-link, .framed .site-home { display: none !important; }
+.framed .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100vh; }
+.framed .map-area { flex: 1; height: auto; min-height: 0; }
+.framed .voters.exploring { height: 100vh; min-height: 0; }
+.bar-groups > .compare-link, .nav-row > .compare-link { margin-left: auto; }
+@media (max-height: 520px) {
+  .framed #goRow, .framed .info-row, .framed #topnav .nav-group[aria-label="Go to a place"], .framed .nav-info > :not(#legend) { display: none; }
+}

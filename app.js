@@ -11,7 +11,7 @@ import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
 import { viewBarGroups } from './viewbar.js';
-import { createPanelToggle, panelParam, flightsHtml } from './panel.js';
+import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
@@ -1189,4 +1189,21 @@ if (params.get('look') === '3d' && !(at.length === 5 && at.every(Number.isFinite
 if (params.get('color') === 'lead') setLead(true);
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
+// ---------- compare: two views side by side (compare.html, panel.js) ----------
+// The Compare link opens this map beside the dot view, both where this camera is now. In a frame there, the camera follows the other side's.
+if (!FRAMED) {
+  const cmp = document.createElement('a');
+  cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
+  cmp.title = 'This map beside the dot view, moving together. Each side keeps its own look, race and color';
+  document.querySelector('.bar-groups').append(cmp);
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
+    const at = atParam();
+    cmp.href = compareHref(`${STATE.results.href}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}&at=${at}`, `${STATE.dots}?race=${race.id}&at=${at}`);
+  });
+}
+followCamera(() => { const [x, y, d] = atParam().split(',').map(Number); return { x, y, d }; }, c => {
+  const o = currentPose(), raised = progress >= 0.5, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, c.d));
+  going = null;
+  setPose({ ...o, r, target: new THREE.Vector3(c.x, o.target.y, groundShift(r) * (raised ? 1 + RAISED_SHIFT : 1) - c.y) });
+}, () => stage.clientHeight);
 requestAnimationFrame(frame);

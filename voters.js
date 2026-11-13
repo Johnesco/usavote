@@ -14,7 +14,7 @@ import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
 import { viewBarGroups } from './viewbar.js';
-import { createPanelToggle, panelParam, flightsHtml } from './panel.js';
+import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
 import { sourceItems } from './sourcelist.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
@@ -792,6 +792,27 @@ if (onTour) {
   off.x = free.ox; off.y = free.oy;
 }
 updateButton();
+// ---------- compare: two views side by side (compare.html, panel.js) ----------
+// The Compare link opens this map beside the flat bar view, both where this camera is now. In a frame there, the camera follows the other side's.
+if (!FRAMED) {
+  const cmp = document.createElement('a');
+  cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
+  cmp.title = 'This map beside the flat county map, moving together. Each side keeps its own look, race and color';
+  document.querySelector('.nav-row').append(cmp);
+  for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
+    const v = explore || lastV;
+    barLinks();
+    cmp.href = compareHref(`${STATE.dots}?race=${chosen.id}${shownPer > 1 ? `&per=${shownPer}` : ''}${v ? `&at=${[v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',')}` : ''}`,
+      $('viewFlat').getAttribute('href'));
+  });
+}
+followCamera(() => explore && { x: explore.x, y: explore.y, d: explore.d }, c => {
+  if (!explore) return;
+  explore.home = false; going = null;
+  explore.x = Math.max(-650, Math.min(650, c.x)); explore.y = Math.max(-650, Math.min(650, c.y));
+  explore.d = Math.max(milesView({ x: 0, y: 0 }, 0.08).d, Math.min(homeView().d * 1.6, c.d));
+  needsDraw = true;
+}, () => H);
 // the panel shown or hidden while the dots were loading, before the address could be saved
 if (explore && panelParam() !== (query.get('panel') === '0' ? '&panel=0' : '')) saveUrl();
 last = performance.now();
