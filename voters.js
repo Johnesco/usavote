@@ -14,6 +14,8 @@ import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlaceMenus, describePlace } from './places.js';
 import { viewBarGroups } from './viewbar.js';
+import { createPanelToggle, panelParam, flightsHtml } from './panel.js';
+import { sourceItems } from './sourcelist.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -29,7 +31,26 @@ document.querySelector('.nav-row').prepend(createSiteNav('dots'));
   document.querySelector('main.voters').append(bar);
   $('back')?.remove();
 }
-document.querySelector('.nav-info .how')?.insertAdjacentHTML('afterend', `<a class="src-link" href="sources.html#${STATE.slug}">Sources</a>`);
+// the details panel down the left (panel.js), as in the bar view: the race and its count, the key, how the dots are placed, the
+// guided flights and the sources. It takes the guided flights, the count and How? from the top strip, which keeps the menus.
+{
+  const panel = document.createElement('aside');
+  panel.id = 'panel';
+  panel.innerHTML = `<a class="back" href="./">← All states</a>
+    <div class="kicker">${STATE.name} · one dot for each voter</div>
+    <h1 id="panelTitle">${STATE.name} voters</h1>
+    <p class="sub" id="raceCount">Loading…</p>
+    <div class="legend-dots side" id="legendSide"></div>
+    <h2>How the dots are placed</h2>
+    ${[...document.querySelectorAll('.how p')].map(p => p.outerHTML).join('')}
+    <div class="flights">${flightsHtml(true)}</div>
+    <h2>Sources</h2>
+    <div class="sources" id="sources"></div>
+    <p class="sources">This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>`;
+  document.body.prepend(panel);
+  document.querySelectorAll('.how, .nav-flight, #raceCount:not(#panel *)').forEach(el => el.remove());
+  document.querySelector('.nav-row').prepend(createPanelToggle(panel, () => saveUrl()));
+}
 const fmt = n => n.toLocaleString('en-US');
 const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
 const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
@@ -38,6 +59,9 @@ const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.statu
 let res, us;
 try { [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]); }
 catch (e) { $('loading').textContent = 'Could not load the map data. Please reload the page.'; $('loading').classList.add('failed'); throw e; }
+const showSources = histMeta => { $('sources').innerHTML = `<ol>${sourceItems(STATE, res.meta, histMeta).map(s => `<li>${s}</li>`).join('')}</ol>
+  <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`; };
+showSources();
 
 // ---------- data: the 2026 U.S. Senate race, by county (the tour is written around it) ----------
 const race = res.races.find(r => r.id === (STATE.defaultRace ?? 'u-s-senate'));
@@ -435,7 +459,8 @@ function updateButton() {
   $('pause').textContent = label; $('pause').setAttribute('aria-label', label);
   // a tour left part way can be picked up again from the top bar
   const partWay = toured && t < END;
-  $('tourPlay').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
+  if (!$('tourPlay')) return;
+  $('tourName').textContent = partWay ? '▶ Back to the tour' : `▶ ${TOUR}`;
   $('tourRestart').hidden = !partWay;
 }
 $('pause').onclick = () => { if (t >= END) jump(0); else { playing = !playing; updateButton(); } };
@@ -541,7 +566,7 @@ let BAR_COLOR = '';  // and its ?color=lead, if vote-lead color was on
 // the Flat and 3D links back to the bar view: the same race, place and zoom, and Flat looking straight down or 3D at the angle it
 // came with (or the bar view's usual tilt)
 function barLinks(r = chosen) {
-  const v = explore || lastV, base = `${STATE.results.href}?race=${r.id}${BAR_BY}${BAR_COLOR}`;
+  const v = explore || lastV, base = `${STATE.results.href}?race=${r.id}${BAR_BY}${BAR_COLOR}${panelParam()}`;
   const at = angle => v ? `&at=${[v.x, v.y, v.d, ...angle].map(n => +n.toFixed(3)).join(',')}` : '';
   $('viewFlat').href = base + at([0, 0]);
   $('view3d').href = `${base}&look=3d` + at(BAR_ANGLE[0] > 0.05 ? BAR_ANGLE : [0.98, -0.22]);
@@ -550,8 +575,9 @@ function barLinks(r = chosen) {
 // the same pattern from afar. The tour's text is about single voters, so it always plays with one dot each.
 const PERS = [1, 10, 100, 1000];
 let per = 1, shownPer = 1;
-$('race').closest('.nav-group').insertAdjacentHTML('afterend', `<div class="nav-group"><label title="How many voters each dot stands for">1 dot =
-  <select id="per">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></label></div>`);
+// in the control bar under the map, before Whole state
+$('goHome').insertAdjacentHTML('beforebegin', `<div class="vb-group"><label class="vb-label keep" for="per">1 dot =</label>
+  <select id="per" title="How many voters each dot stands for">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></div>`);
 $('per').onchange = e => { per = +e.target.value; showRace(chosen); };
 let shown = null;    // the race the dots show (they stay up until the next race's dots are ready)
 function fillRaces() {
@@ -565,7 +591,7 @@ function fillRaces() {
 }
 let historyLoad = null;
 const loadHistory = () => historyLoad ??= !STATE.data.history ? Promise.resolve() : getJSON(STATE.data.history)
-  .then(h => { RACES.push(...h.races); fillRaces(); })
+  .then(h => { RACES.push(...h.races); fillRaces(); showSources(h.meta); })
   .catch(e => console.error('Earlier years did not load', e));
 const raceWithId = id => RACES.find(r => r.id === id) || RACES.find(r => r.year === 2026 && `2026-${r.id}` === id);
 // this race's votes in each county, placed the same way as the Senate race's
@@ -594,9 +620,15 @@ async function showRace(r) {
     .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
   // back to the map, on the same race
   barLinks(r);
-  $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
+  if ($('tourPlay')) $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
   renderPlace();
-  if (explore) try { history.replaceState(null, '', `?race=${r.id}${asked > 1 ? `&per=${asked}` : ''}`); } catch {} // (a link's own address stays as it opened)
+  $('panelTitle').textContent = `${r.year} ${r.label}`;
+  $('legendSide').innerHTML = $('legend').innerHTML;
+  saveUrl();
+}
+// what's on screen, in the address (only once the reader is exploring: a link's own address stays as it opened)
+function saveUrl() {
+  if (explore) try { history.replaceState(null, '', `?race=${chosen.id}${shownPer > 1 ? `&per=${shownPer}` : ''}${panelParam()}`); } catch {}
 }
 $('race').onchange = e => { const r = raceWithId(e.target.value); if (r) showRace(r); };
 // a new year keeps the same office if that year had it, otherwise opens its first race
@@ -604,8 +636,8 @@ $('year').onchange = e => {
   const inYear = RACES.filter(r => r.year === +e.target.value);
   showRace(inYear.find(r => r.label === chosen.label) || inYear[0]);
 };
-$('tourPlay').onclick = () => playFrom(toured && t < END ? sceneAt(t) : 0);
-$('tourRestart').onclick = () => playFrom(0);
+if ($('tourPlay')) $('tourPlay').onclick = () => playFrom(toured && t < END ? sceneAt(t) : 0);
+if ($('tourRestart')) $('tourRestart').onclick = () => playFrom(0);
 
 // ---------- go to a city, county or precinct ----------
 // A flight here is quicker than the tour's: the reader asked for this place, and is waiting for it.
@@ -760,6 +792,8 @@ if (onTour) {
   off.x = free.ox; off.y = free.oy;
 }
 updateButton();
+// the panel shown or hidden while the dots were loading, before the address could be saved
+if (explore && panelParam() !== (query.get('panel') === '0' ? '&panel=0' : '')) saveUrl();
 last = performance.now();
 requestAnimationFrame(frame);
 loadHistory();

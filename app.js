@@ -11,6 +11,7 @@ import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
 import { viewBarGroups } from './viewbar.js';
+import { createPanelToggle, panelParam, flightsHtml } from './panel.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
@@ -427,10 +428,11 @@ document.querySelector('aside').addEventListener('click', e => {
 });
 // back to the U.S. homepage or on to another state: in the bar over the map, where it's always on screen, and at the top of the text
 document.querySelector('.bar-groups').prepend(createSiteNav('results'));
+// first of all, the button that hides the details panel (panel.js)
+document.querySelector('.bar-groups').prepend(createPanelToggle(document.querySelector('.app > aside'), () => saveUrl()));
 // the guided flights over the county map
 $('views').innerHTML = `<a class="back" href="./">← All states</a>`;
-if (STATE.flights.length) $('flights').innerHTML = `<h2>Guided flights</h2><p class="flights-note">${STATE.flights.length > 1 ? 'Guided trips' : 'A guided trip'} over the ${STATE.flights[0].about} race, separate from the results here.</p>` +
-  STATE.flights.map(f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`).join('');
+$('flights').innerHTML = flightsHtml();
 
 $('sources').innerHTML = `<ol>${sourceItems(STATE, meta, hist?.meta).map(s => `<li>${s}</li>`).join('')}</ol>
   <p><a href="sources.html#${STATE.slug}">Sources and credits for every state →</a></p>`;
@@ -590,7 +592,7 @@ leadBtn.onclick = () => setLead(true);
 shareBtn.onclick = () => setLead(false);
 // what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead when they apply
 function saveUrl() {
-  try { history.replaceState(null, '', `?race=${race.id}${byParam()}${(anim ? anim.to : progress) === 1 ? '&look=3d' : ''}${leadOn ? '&color=lead' : ''}`); } catch {}
+  try { history.replaceState(null, '', `?race=${race.id}${byParam()}${(anim ? anim.to : progress) === 1 ? '&look=3d' : ''}${leadOn ? '&color=lead' : ''}${panelParam()}`); } catch {}
 }
 
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
@@ -1175,7 +1177,7 @@ function atParam() {
   return [o.target.x, groundShift(o.r) * (flat ? 1 : 1 + RAISED_SHIFT) - o.target.z, o.r, flat ? 0 : o.phi, flat ? 0 : o.theta].map(n => +n.toFixed(3)).join(',');
 }
 for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu'])
-  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}&at=${atParam()}`; });
+  $('dotLink').addEventListener(type, () => { $('dotLink').href = `${STATE.dots}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}${panelParam()}&at=${atParam()}`; });
 const at = (params.get('at') || '').split(',').map(Number);
 if (at.length === 5 && at.every(Number.isFinite)) {
   const [x, y, d, tilt, heading] = at, raised = tilt > 0.05, r = Math.min(controls.maxDistance, Math.max(controls.minDistance, d));
