@@ -170,6 +170,7 @@ function fadeTo(target, seconds) {
   fromMode = k < 0.5 ? fromMode : mode; // (the legend that shows most now fades out)
   for (const c of shapes) c.from = c.now.slice();
   mode = target; k = 0;
+  for (const b of document.querySelectorAll('.rel-controls button')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); // (at once, before the first frame)
   if (REDUCED) { k = 1; draw(); anim = null; return; }
   const dur = seconds * 1000, start = performance.now();
   const step = now => {

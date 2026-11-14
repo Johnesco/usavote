@@ -101,7 +101,8 @@ const DISTRICTS = STATE.data.districts || {};
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
   // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
   $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
-  document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dotlook.css" />');
+  // (through the import map, for the version stamp: scripts/stamp.mjs)
+  document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${import.meta.resolve('./dotlook.css')}" />`);
 }
 // Dots (dotlook.js): started the first time it's chosen, then kept, hidden while Flat or 3D is on screen
 let dotsOn = false;     // Dots is the Look on screen (or on its way)

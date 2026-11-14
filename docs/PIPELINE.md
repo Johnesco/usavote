@@ -146,6 +146,8 @@ The random numbers are seeded, so a given race draws the same dots each time (se
 
 **Publishing:** GitHub Pages serves the `main` branch as it is. Only what's in the repo goes out, so keep raw data out.
 
+**Version stamps:** after changing any `.js` or `.css` file, run `node scripts/stamp.mjs` before committing (`--check` only reports). GitHub Pages lets a browser keep a file for about 10 minutes, so without stamps a returning reader could get a new page with an old script and see a broken map (this happened on 2026-11-14: the Shade by Votes page came up black because a cached script looked for the slider the new page no longer had). The script adds `?v=<hash of the file>` to every page's script and stylesheet links, and gives each page an import map from `./x.js` to `./x.js?v=…` for every script and style, so imports between scripts, the dot worker and `dotlook.css` (both loaded by `import.meta.resolve`) are stamped too. Only files git tracks go in the maps. Pages in `scripts/` are left alone. It can't help a reader whose browser kept an old page whose scripts it has since dropped; that clears within the 10 minutes.
+
 ## 5. Rules to keep
 
 These came out of decisions made along the way. Keep them in any state.
