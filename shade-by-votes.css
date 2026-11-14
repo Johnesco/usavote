@@ -45,10 +45,17 @@
 .rel-legend .ticks .pos span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .rel-legend .bandlabels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; text-align: center; }
 
-.rel-controls { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
-.rel-controls input { flex: 1; accent-color: var(--accent); }
-.rel-controls button { font: inherit; font-weight: 650; color: #111; background: var(--accent); border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
-.rel-controls button:hover, .rel-controls button:focus-visible { filter: brightness(1.1); }
+/* Share + size: six bands across, votes cast down, the vote numbers to the left */
+.rel-legend .mixgrid { display: grid; grid-template-columns: 34px repeat(6, 1fr); gap: 2px; align-items: center; text-align: center; }
+.rel-legend .mixgrid > span:nth-child(7n+1) { text-align: right; padding-right: 4px; white-space: nowrap; font-size: 10.5px; }
+.rel-legend .mixgrid i { display: block; height: 8px; border-radius: 2px; }
+
+/* the three colors, as on the state maps */
+.rel-controls { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.rel-controls > span { font-weight: 600; margin-right: 4px; }
+.rel-controls button { font: inherit; font-weight: 650; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+.rel-controls button[aria-pressed="true"] { color: #111; background: var(--accent); border-color: var(--accent); }
+.rel-controls button:hover, .rel-controls button:focus-visible { filter: brightness(1.15); }
 
 @media (max-width: 860px) {
   .rel-body { grid-template-columns: 1fr; gap: 0; }

@@ -4,13 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Shade by Votes: Texas 2026</title>
-<meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored two ways: by each county's percentage, as usual, and by how many votes its lead was worth, so counties where few people voted fade out." />
+<meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored three ways: by each county's vote share, as usual; by how many votes its lead was worth; and by its share, faded where few people voted." />
 <link rel="canonical" href="https://johnesco.github.io/usavote/shade-by-votes.html" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="How America Votes" />
 <meta property="og:url" content="https://johnesco.github.io/usavote/shade-by-votes.html" />
-<meta property="og:title" content="Shade by votes: vote-lead color for county maps" />
-<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote-lead color shades each county by the votes its lead was worth." />
+<meta property="og:title" content="Shade by votes: three ways to color a county map" />
+<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Share + size shade each county by how much its votes counted." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="stylesheet" href="style.css" />
@@ -25,87 +25,118 @@
 </head>
 <body>
 <!-- shade-by-votes.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
-     view, sets how far the map has faded from the usual colors (percentages) to vote-lead color (votes). The slider and the
-     Fade button do the same by hand. -->
+     view, fades the map to one of the three colors the state maps have under Color: Vote share, Vote lead or Share + size.
+     The three buttons under the map do the same by hand. -->
 <div class="why rel">
   <a class="back" href="texas.html">← Texas results</a>
   <header>
-    <div class="kicker">Vote-lead color · 2026 U.S. Senate</div>
+    <div class="kicker">Three ways to color a county map · 2026 U.S. Senate</div>
     <h1>Shade by votes, not by percentages</h1>
-    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. <b>Vote-lead color</b> shades each county by how many votes its lead was worth instead, so places that cast few votes fade out.</p>
+    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. Every state map on this site has three choices under <b>Color</b>: <b>Vote share</b>, the usual map; <b>Vote lead</b>, shaded by how many votes each county's lead was worth; and <b>Share + size</b>, the usual colors faded where few people voted. Here is what each one shows, and what each one hides.</p>
   </header>
 
   <div class="rel-body">
     <figure class="rel-map" id="figure">
-      <div class="rel-mode" aria-live="polite"><span id="modeName">Percentage color</span></div>
+      <div class="rel-mode" aria-live="polite"><span id="modeName">Vote share</span></div>
       <svg id="map" role="img" aria-label="Map of Texas counties colored by the 2026 U.S. Senate results"></svg>
       <div class="rel-tip" id="tip" hidden></div>
       <div class="rel-legends">
         <div class="rel-legend" id="legPct"></div>
         <div class="rel-legend" id="legRel"></div>
+        <div class="rel-legend" id="legMix"></div>
       </div>
-      <div class="rel-controls">
-        <span>Percentage</span>
-        <input type="range" id="mix" min="0" max="1000" value="0" aria-label="Fade from percentage color to vote-lead color" />
-        <span>Vote lead</span>
-        <button id="fade">Fade ▶</button>
+      <div class="rel-controls" role="group" aria-label="Color">
+        <span>Color</span>
+        <button type="button" data-mode="share" aria-pressed="true">Vote share</button>
+        <button type="button" data-mode="lead" aria-pressed="false">Vote lead</button>
+        <button type="button" data-mode="mix" aria-pressed="false">Share + size</button>
       </div>
     </figure>
 
     <div class="rel-steps">
-      <section class="rel-step" data-mix="0">
+      <section class="rel-step" data-mode="share">
         <span class="n">1</span>
-        <h2>The usual map</h2>
+        <h2>Vote share: the usual map</h2>
         <p id="s1">Each county is colored for whoever won it, and shaded by the winner's share: light for a close race, dark for a landslide.</p>
       </section>
 
-      <section class="rel-step" data-mix="0" data-focus="tiny,big">
+      <section class="rel-step" data-mode="share" data-focus="tiny,big">
         <span class="n">2</span>
         <h2>Where it fails: a tiny landslide looks bigger than a city</h2>
         <p id="s2">A small county that votes one way almost unanimously gets the darkest shade, darker than a big city that won by a huge number of votes.</p>
       </section>
 
-      <section class="rel-step" data-mix="0" data-focus="dark">
+      <section class="rel-step" data-mode="share" data-focus="dark">
         <span class="n">3</span>
         <h2>Where it fails: dark ink, few votes</h2>
         <p id="s3">The darkest counties are mostly the emptiest. They cover a lot of the map but cast few of its votes.</p>
       </section>
 
-      <section class="rel-step" data-mix="0" data-focus="close">
+      <section class="rel-step" data-mode="share" data-focus="close">
         <span class="n">4</span>
         <h2>Where it fails: a big, close county looks like nothing</h2>
         <p id="s4">A close race gets the lightest shade, even when the county is so big that a narrow win is worth tens of thousands of votes.</p>
       </section>
 
-      <section class="rel-step" data-mix="1">
+      <section class="rel-step" data-mode="lead">
         <span class="n">5</span>
-        <h2>Vote-lead color</h2>
+        <h2>Vote lead</h2>
         <p id="s5">Now each county is shaded by its lead in votes: the winner's votes minus the runner-up's. The more votes a county added to its winner's statewide total, the darker it is.</p>
         <p class="rel-how">The shading is on a square-root scale, the way a circle's area is scaled on a bubble map, so a county with a quarter of the biggest lead is half as dark. Without it, every county but a handful would be white.</p>
       </section>
 
-      <section class="rel-step" data-mix="1" data-focus="tiny,big">
+      <section class="rel-step" data-mode="lead" data-focus="tiny,big">
         <span class="n">6</span>
         <h2>Now the city outweighs the tiny landslide</h2>
         <p id="s6">The small county fades out, and the city is among the darkest on the map.</p>
       </section>
 
-      <section class="rel-step" data-mix="1" data-focus="dark">
+      <section class="rel-step" data-mode="lead" data-focus="dark">
         <span class="n">7</span>
         <h2>The empty counties fade</h2>
         <p id="s7">The counties that were the darkest red now barely show, because together they added few votes.</p>
       </section>
 
-      <section class="rel-step" data-mix="1" data-focus="none">
+      <section class="rel-step" data-mode="lead" data-focus="none">
         <span class="n">8</span>
-        <h2>What vote-lead color hides</h2>
+        <h2>What Vote lead hides</h2>
         <p id="s8">No color scale shows everything. This one leaves out how a county split.</p>
         <ul class="rel-list">
-          <li>A pale county may still have voted 9 to 1. It just didn't have many voters. Slide back to see its percentage.</li>
+          <li>A pale county may still have voted 9 to 1. It just didn't have many voters. Press Vote share to see its percentage.</li>
           <li id="s8b">A big county can be dark with a modest win, because its lead is measured in votes.</li>
           <li>Size on the map still isn't people: a big pale county and a small dark one are drawn as big as their land.</li>
         </ul>
-        <p>So read the two together. Percentage color says how a county split; vote-lead color says how much that split counted. Use the slider to go back and forth.</p>
+        <p>Vote share says how a county split; Vote lead says how much that split counted. The third color tries to show both at once.</p>
+      </section>
+
+      <section class="rel-step" data-mode="mix">
+        <span class="n">9</span>
+        <h2>Share + size</h2>
+        <p id="s9">Each county keeps its Vote share color, so you can still see how it split, but fades toward gray the fewer votes it cast.</p>
+        <p class="rel-how">Two choices keep this honest. It fades toward a neutral gray, not the dark page, so a faded county never looks like a dark landslide shade. And it never fades all the way: even the smallest county keeps a fifth of its color, so you can still tell who won it. The fade is on a square-root scale, like Vote lead's. Read it with the key: share across, votes cast down.</p>
+      </section>
+
+      <section class="rel-step" data-mode="mix" data-focus="tiny,big">
+        <span class="n">10</span>
+        <h2>The tiny landslide keeps its color, but faintly</h2>
+        <p id="s10">The small county still shows its lopsided vote, but faded; the city shows at full strength.</p>
+      </section>
+
+      <section class="rel-step" data-mode="mix" data-focus="close">
+        <span class="n">11</span>
+        <h2>The big, close county shows as close, and as big</h2>
+        <p id="s11">A close race in a big county keeps its light color at full strength: a narrow win, among a lot of voters.</p>
+      </section>
+
+      <section class="rel-step" data-mode="mix" data-focus="none">
+        <span class="n">12</span>
+        <h2>Which one to use</h2>
+        <ul class="rel-list">
+          <li><b>Vote share</b> shows how each county split. It hides how many people voted, so empty land looks as decisive as a city.</li>
+          <li><b>Vote lead</b> shows how many votes each county added to its winner's total. It hides how a county split.</li>
+          <li><b>Share + size</b> shows the split and the size together, in one color. That is more to read: a lighter color means a closer race and a grayer one a smaller county, so check the key.</li>
+        </ul>
+        <p>On the state maps, Share + size is for the flat map. In 3D, each column's height already shows the votes cast, so the colors go back to Vote share. Hover over any county, here or on a state map, for its exact numbers.</p>
       </section>
     </div>
   </div>
@@ -113,7 +144,7 @@
   <section class="next">
     <h2>See it for yourself</h2>
     <div class="cards">
-      <a class="card" href="texas.html?race=u-s-senate"><b>Texas, 3D view →</b><span>Each county rises as tall as its vote count.</span></a>
+      <a class="card" href="texas.html?race=u-s-senate&amp;color=mix"><b>Try all three on Texas →</b><span>Every state map has Vote share, Vote lead and Share + size under Color.</span></a>
       <a class="card" href="voters.html"><b>Texas, dot view →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
       <a class="card" href="misread.html"><b>Misreading the Map →</b><span>Why the flat map looks red, step by step, with the dots.</span></a>
     </div>

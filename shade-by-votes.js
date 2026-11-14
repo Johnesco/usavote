@@ -1,16 +1,17 @@
-// Shade by Votes: the 2026 U.S. Senate race in Texas, county by county, in two color scales, and a fade between them.
+// Shade by Votes: the 2026 U.S. Senate race in Texas, county by county, in the three colors the state maps have (app.js),
+// with a fade from one to another.
 //
-// Percentage color is the usual one, the same as the bar view's (app.js): the winner's color, shaded by the winner's share
-// of the county's vote in 10-point bands. Vote-lead color keeps the winner's color but shades by the county's lead in
-// votes (winner minus runner-up), on a square-root scale up to the biggest lead in the state, so counties where few
-// people voted fade to pale whatever their percentage. The page fades each county's color from one to the other.
+// Vote share is the usual one: the winner's color, shaded by the winner's share of the county's vote in 10-point bands.
+// Vote lead keeps the winner's color but shades by the county's lead in votes (winner minus runner-up), on a square-root
+// scale up to the biggest lead in the state, so counties where few people voted fade to pale whatever their percentage.
+// Share + size keeps the Vote share color but fades it toward a neutral gray by how few votes the county cast (colors.js).
 //
-// Each step in the text names how far the map has faded (data-mix, 0 = percentage, 1 = vote lead) and which counties to
-// point at (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
+// Each step in the text names which color the map shows (data-mode: share, lead or mix) and which counties to point at
+// (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATE } from './state.js';
-import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -35,16 +36,19 @@ const wonBy = (c, cand) => (c.dWon ? D : R) === cand;
 const party = cand => cand === D ? 'd' : 'r';
 const name = cand => `<span class="${party(cand)}">${cand.last}</span>`;
 
-// ---------- the two color scales (colors.js) ----------
+// ---------- the three color scales (colors.js) ----------
 const band = c => Math.max(0, BINS.findLastIndex(b => c.share >= b));
 const rgb = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const ramp = c => c.dWon ? DEM_C : REP_C;
-const pctColor = c => rgb(ramp(c)[band(c)]);
-const MAX_LEAD = Math.max(...counties.map(c => c.lead));
+const MAX_LEAD = Math.max(...counties.map(c => c.lead)), MAX_TOTAL = Math.max(...counties.map(c => c.total));
 const relT = lead => leadT(lead, MAX_LEAD);
-const relColor = c => leadRGB(c.dWon, c.lead, MAX_LEAD);
-for (const c of counties) { c.colA = pctColor(c); c.colB = relColor(c); }
-const mixColor = (c, m) => `rgb(${c.colA.map((v, k) => Math.round(v + (c.colB[k] - v) * m)).join(',')})`;
+for (const c of counties) {
+  const hex = ramp(c)[band(c)];
+  c.col = { share: rgb(hex), lead: leadRGB(c.dWon, c.lead, MAX_LEAD), mix: mixRGB(hex, c.total, MAX_TOTAL) };
+  c.now = c.col.share; // the color on screen, which a fade starts from
+}
+const MODE_NAMES = { share: 'Vote share', lead: 'Vote lead', mix: 'Share + size' };
+const kept = c => `${Math.round(100 * mixT(c.total, MAX_TOTAL))}%`; // how much of its color a county keeps with Share + size
 
 // ---------- the counties the text points at ----------
 const BIG = [...counties].sort((a, b) => b.total - a.total)[0];
@@ -82,6 +86,14 @@ fill('s6', `${TINY.name} County's lead of ${num(TINY.lead)} is ${pct(TINY.lead, 
 fill('s7', `The ${DARK.length} counties that were the darkest red now barely show. In all, <b>${SMALL.length} counties</b> had a lead under ${num(SMALL_LEAD)} votes. ` +
   `They cover <b>${pct(sum(SMALL, c => c.landSqMi), LAND)} of Texas</b>, and they all look pale.`);
 fill('s8b', `${CLOSE_BIG.name} County, at ${pct(Math.max(CLOSE_BIG.dem, CLOSE_BIG.rep), CLOSE_BIG.total)}, now shows clearly, because a modest win among ${short(CLOSE_BIG.total)} voters is a lead of ${num(CLOSE_BIG.lead)}.`);
+fill('s9', `Each county keeps its Vote share color, so you can still see how it split, but fades toward gray the fewer votes it cast, ` +
+  `against the biggest county, ${BIG.name}, with ${short(BIG.total)} voters. <b>Light means close; gray means few voters.</b>`);
+fill('s10', `<b>${TINY.name} County</b> still shows its ${pct(Math.max(TINY.dem, TINY.rep), TINY.total)} for ${name(TINY.dWon ? D : R)}, the darkest shade, ` +
+  `but with ${num(TINY.total)} voters it keeps only ${kept(TINY)} of that color. <b>${BIG.name} County</b> keeps all of its own.` +
+  `<span class="big">${kept(TINY)} vs. ${kept(BIG)}</span>Unlike Vote lead, the small county doesn't vanish: you can still see it went one way.`);
+fill('s11', `<b>${CLOSE_BIG.name} County</b> keeps its light color, ${pct(Math.max(CLOSE_BIG.dem, CLOSE_BIG.rep), CLOSE_BIG.total)} for ${name(CLOSE_BIG.dWon ? D : R)}, ` +
+  `at ${kept(CLOSE_BIG)} strength, because ${short(CLOSE_BIG.total)} people voted there. Light and strong is a close race in a big place; ` +
+  `gray is a small place, whatever its split.`);
 $('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}.`;
 
 // ---------- legends ----------
@@ -93,6 +105,14 @@ const gradient = leadGradient, TICKS = leadTicks(MAX_LEAD);
 $('legRel').innerHTML = `<div class="t">County's lead in votes</div>` +
   [W, L].map(cand => legRow(cand, `<div class="ramp" style="background:${gradient(cand === D ? DEM_C : REP_C)}"></div>`)).join('') +
   `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
+// Share + size: each party's six bands across, votes cast down
+const MIX_ROWS = mixRows(MAX_TOTAL);
+$('legMix').innerHTML = `<div class="t">Winner's share across, faded by votes cast down</div>` +
+  [W, L].map(cand => legRow(cand, `<div class="mixgrid">${MIX_ROWS.map((v, r) =>
+    `<span>${r === MIX_ROWS.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
+    (cand === D ? DEM_C : REP_C).map(col => `<i style="background:rgb(${mixRGB(col, v, MAX_TOTAL).map(Math.round).join(',')})"></i>`).join('')).join('')}</div>`)).join('') +
+  `<div class="ticks"><span></span><div class="mixgrid"><span></span>${BAND_LABELS.map(l => `<span>${l}</span>`).join('')}</div></div>`;
+const LEGENDS = { share: $('legPct'), lead: $('legRel'), mix: $('legMix') };
 
 // ---------- the map ----------
 const VW = 1000, VH = 900;
@@ -113,13 +133,17 @@ const shapes = tx.features.map(f => {
 });
 
 // ---------- drawing: the fade, and the counties in focus ----------
-let mix = 0, focus = [];
+// A fade goes from the colors on screen (c.now, and the legend that was showing) to the chosen mode's, k from 0 to 1.
+let mode = 'share', fromMode = 'share', k = 1, focus = [];
 function drawColors() {
-  for (const c of shapes) c.node.style.fill = mixColor(c, mix);
-  $('legPct').style.opacity = String(1 - mix);
-  $('legRel').style.opacity = String(mix);
-  $('modeName').textContent = mix < 0.02 ? 'Percentage color' : mix > 0.98 ? 'Vote-lead color' : 'Fading…';
-  $('mix').value = String(Math.round(mix * 1000));
+  for (const c of shapes) {
+    const a = c.from ?? c.now, b = c.col[mode];
+    c.now = a.map((v, i) => v + (b[i] - v) * k);
+    c.node.style.fill = `rgb(${c.now.map(Math.round).join(',')})`;
+  }
+  for (const [m, leg] of Object.entries(LEGENDS)) leg.style.opacity = String(m === mode ? k : m === fromMode ? 1 - k : 0);
+  $('modeName').textContent = k > 0.98 ? MODE_NAMES[mode] : 'Fading…';
+  for (const b of document.querySelectorAll('.rel-controls button')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
 }
 function drawFocus() {
   const set = new Set(focus);
@@ -136,26 +160,26 @@ function drawFocus() {
 }
 function draw() { drawColors(); }
 
-// one animation at a time, from wherever the map is now
+// one fade at a time, from whatever the map shows now
 let anim = null;
 const ease = x => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function fadeTo(target, seconds) {
+  if (target === mode && !anim) return;
   if (anim) cancelAnimationFrame(anim.id);
-  const from = mix, dist = Math.abs(target - from);
-  if (dist < 0.001) { anim = null; mix = target; draw(); updateButton(); return; }
-  const dur = seconds * 1000 * Math.max(0.35, dist), start = performance.now();
+  fromMode = k < 0.5 ? fromMode : mode; // (the legend that shows most now fades out)
+  for (const c of shapes) c.from = c.now.slice();
+  mode = target; k = 0;
+  if (REDUCED) { k = 1; draw(); anim = null; return; }
+  const dur = seconds * 1000, start = performance.now();
   const step = now => {
-    const k = Math.min(1, (now - start) / dur);
-    mix = from + (target - from) * ease(k); draw();
-    if (k < 1) anim.id = requestAnimationFrame(step); else { anim = null; updateButton(); }
+    const t = Math.min(1, (now - start) / dur);
+    k = ease(t); draw();
+    if (t < 1) anim.id = requestAnimationFrame(step); else anim = null;
   };
-  anim = { id: requestAnimationFrame(step), target };
-  updateButton();
+  anim = { id: requestAnimationFrame(step) };
 }
-const updateButton = () => { const goingTo = anim ? anim.target : mix; $('fade').textContent = goingTo > 0.5 ? '◀ Fade back' : 'Fade ▶'; };
-
-$('mix').addEventListener('input', e => { if (anim) { cancelAnimationFrame(anim.id); anim = null; } mix = e.target.value / 1000; draw(); updateButton(); });
-$('fade').addEventListener('click', () => fadeTo((anim ? anim.target : mix) > 0.5 ? 0 : 1, 3));
+for (const b of document.querySelectorAll('.rel-controls button')) b.addEventListener('click', () => fadeTo(b.dataset.mode, 1.6));
 
 // ---------- the steps: whichever crosses the reading line sets the map ----------
 const steps = [...document.querySelectorAll('.rel-step')];
@@ -171,7 +195,7 @@ function onScroll() {
   const s = steps[i];
   focus = (s.dataset.focus ?? '').split(',').flatMap(k => FOCUS[k] ?? []);
   drawFocus();
-  fadeTo(Number(s.dataset.mix), 2.4);
+  fadeTo(s.dataset.mode, 2.4);
 }
 addEventListener('scroll', onScroll, { passive: true });
 addEventListener('resize', onScroll);
