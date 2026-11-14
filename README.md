@@ -219,7 +219,7 @@ python scripts/build_infographic.py 4
 columns, every figure computed from the data (`?race=<id>` for another race). With the local server running:
 
 ```bash
-chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1802,684 --virtual-time-budget=20000 --screenshot=texas-looks-red-panels-split.png http://localhost:8765/scripts/panels.html
+chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1802,684 --virtual-time-budget=20000 --screenshot=texas-looks-red-panels-split.png http://localhost:8770/scripts/panels.html
 ```
 
 ## Data and method
@@ -284,10 +284,10 @@ Both pages share [`style.css`](style.css) and [`app.js`](app.js); `<body data-pa
 The page loads its data with `fetch`, so it has to be served over HTTP:
 
 ```bash
-python -m http.server 8765
+python -m http.server 8770
 ```
 
-Then open http://localhost:8765.
+Then open http://localhost:8770.
 
 Built with [three.js](https://threejs.org) r160, [d3-geo](https://github.com/d3/d3-geo) 3.1.1 and
 [topojson-client](https://github.com/topojson/topojson-client) 3.1.0.
