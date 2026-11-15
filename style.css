@@ -42,6 +42,12 @@
   .legend .lead-ticks span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
   .legend .lead-ticks span:first-child { transform: none; }
   .legend .lead-ticks span:last-child { transform: translateX(-100%); }
+  /* with Share + size on: the split across (all Republican to all Democratic), votes cast down, each cell in the color a
+     county like that gets */
+  .legend .mix-grid { grid-column: 1 / -1; display: grid; grid-template-columns: auto repeat(7, 1fr); gap: 2px; align-items: center; }
+  .legend .mix-grid i { height: 12px; margin: 0; }
+  .legend .mix-votes { text-align: right; padding-right: 4px; white-space: nowrap; }
+  .legend .mix-note { grid-column: 1 / -1; text-align: left; margin-top: 6px; }
   /* the control bar along the bottom of every map (viewbar.js): Look, By and Color, each with a small label */
   .controls { flex-wrap: wrap; justify-content: center; row-gap: 6px; border-radius: 22px; width: max-content; }
   .vb-group { display: flex; align-items: center; gap: 6px; }

@@ -14,7 +14,7 @@ import { viewBarGroups, NOT_DOTS_BY, NOT_DOTS_COLOR, PERS } from './viewbar.js';
 import { startDots, LAYER_HTML } from './dotlook.js';
 import { DOTS_HOW } from './dots-how.js';
 import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
-import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel } from './colors.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel, mixHex, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -55,8 +55,8 @@ const YEARS = [...new Set(races.map(r => r.year))].sort((a, b) => b - a); // new
 // one height scale for all races, so switching races compares like with like
 const maxTotal = Math.max(...races.flatMap(r => r.counties.map(row => row[3])));
 
-// Colors (colors.js): winner's share of the county vote, in 10-point bands (same convention as the reference map), or, with
-// the Vote-lead color button on, each county's lead in votes
+// Colors (colors.js): winner's share of the county vote, in 10-point bands (same convention as the reference map); with
+// Vote lead, each county's lead in votes; with Share + size, the two parties' votes mixed blue to purple to red, see-through where few were cast
 const shareOfWinner = c => 100 * Math.max(c.dem, c.rep) / c.total;
 // House races only: a county where no district race had votes reported (every race there was unopposed) is gray
 const NO_RACE_C = '#3b4352';
@@ -101,7 +101,8 @@ const DISTRICTS = STATE.data.districts || {};
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
   // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
   $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
-  document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="dotlook.css" />');
+  // (through the import map, for the version stamp: scripts/stamp.mjs)
+  document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${import.meta.resolve('./dotlook.css')}" />`);
 }
 // Dots (dotlook.js): started the first time it's chosen, then kept, hidden while Flat or 3D is on screen
 let dotsOn = false;     // Dots is the Look on screen (or on its way)
@@ -577,50 +578,103 @@ function layout(c, h) {
 }
 const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
 
-// ---------- vote-lead color ----------
-// The button fades every county from its percentage color to its vote-lead color and back (colors.js), with a link to
-// the page that explains it. Only by county: by precinct or district, the counties are a plain floor under the columns.
-let leadOn = false, leadMix = 0, maxLead = 1;
-const leadBtn = $('leadColor'), shareBtn = $('colorShare');
-const LEAD_TITLE = "Fade the counties from shading by percentage to shading by each county's lead in votes, so places where few people voted fade out";
-const leadShown = () => leadOn && !overlayCols();
-// the key under "What you're seeing": the six bands, or each party's run from pale to its biggest lead
-function leadLegend() {
-  if (!leadShown()) {
+// ---------- color: Vote share, Vote lead, Share + size ----------
+// Each county fades from the color it shows to the chosen one (colors.js). Vote lead has a ? link to the page that explains
+// it. Only by county: by precinct or district, the counties are a plain floor under the columns. Share + size is for Flat:
+// in 3D a column's height already shows the votes cast, so there the map shows Vote share until it's flat again.
+let colorMode = 'share', shownMode = null, fadeT = 1, maxLead = 1, raceMaxTotal = 1;
+const COLOR_BTNS = { share: $('colorShare'), lead: $('leadColor'), mix: $('mixColor') };
+const leadBtn = COLOR_BTNS.lead, shareBtn = COLOR_BTNS.share, mixBtn = COLOR_BTNS.mix;
+const COLOR_TITLES = {
+  share: "Shade each county by the winner's share of its vote",
+  lead: 'Shade each county by its lead in votes, so places where few people voted fade out',
+  mix: "Mix each county's Democratic and Republican votes, blue through purple to red, drawn fainter the fewer votes it cast. For the flat map",
+};
+// (in a try: the first restyle runs before the camera's state exists, and the map is flat then)
+const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } catch { return false; } };
+// what the counties show now: 'plain' (by precinct or district), or the chosen color, with Share + size as Vote share in 3D
+const shownColor = () => overlayCols() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
+const targetOf = (c, m) => m === 'plain' ? c.plainColor : m === 'lead' ? c.leadColor : m === 'mix' ? c.mixColor : c.pctColor;
+// the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Share + size,
+// one grid of the split across and votes cast down
+function colorLegend() {
+  const m = shownMode ?? shownColor();
+  if (m === 'share' || m === 'plain') {
+    showPartyTitles(true);
     bandLegend();
     if (legHead) legHead.textContent = `${WINNER[0].toUpperCase() + WINNER.slice(1)}'s share of the ${districtCols() ? 'district' : 'county'} vote`;
     return;
   }
-  if (legHead) legHead.textContent = `County's lead in votes`;
-  const ticks = leadTicks(maxLead);
-  for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
-    $(id).innerHTML = `<div class="lead-ramp" style="background:${leadGradient(cols)}"></div>` +
-      `<div class="lead-ticks">${ticks.map(v => `<span style="left:${(100 * leadT(v, maxLead)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div>`;
+  if (m === 'lead') {
+    showPartyTitles(true);
+    if (legHead) legHead.textContent = `County's lead in votes`;
+    const ticks = leadTicks(maxLead);
+    for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
+      $(id).innerHTML = `<div class="lead-ramp" style="background:${leadGradient(cols)}"></div>` +
+        `<div class="lead-ticks">${ticks.map(v => `<span style="left:${(100 * leadT(v, maxLead)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div>`;
+    return;
+  }
+  // one grid for both parties, since the hue already says which way a county went: the split across, votes cast down
+  if (legHead) legHead.textContent = `Democratic and Republican votes mixed, solid by votes cast`;
+  showPartyTitles(false);
+  const rows = mixRows(raceMaxTotal);
+  $('legR').innerHTML = `<div class="mix-grid">` +
+    rows.map((v, r) => `<span class="mix-votes">${r === rows.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
+      MIX_SPLITS.map(s => `<i style="background:${mixHex(s, 1 - s, v, raceMaxTotal)}"></i>`).join('')).join('') +
+    `<span class="mix-votes">votes</span>${MIX_SPLIT_LABELS.map(l => `<span>${l}</span>`).join('')}</div>` +
+    `<div class="mix-note">Share of the Democratic and Republican votes; other candidates are left out.</div>`;
+  $('legD').innerHTML = '';
 }
-// each county's color, part way between its two colors
-function applyLead(plain = !!overlayCols()) {
-  const k = leadMix * leadMix * (3 - 2 * leadMix); // eased
+// the "… won the county" line over each party's key: hidden for Share + size, whose one key covers both
+function showPartyTitles(on) { for (const id of ['legRTitle', 'legDTitle']) { const t = $(id); if (t) t.hidden = !on; } }
+// paint every county part way from the color it had to the one it's going to
+function paintColors() {
+  const k = fadeT * fadeT * (3 - 2 * fadeT); // eased
   for (const m of meshes) {
     const c = m.userData;
-    if (plain) c.baseColor.set(NO_RACE_C); else c.baseColor.copy(c.pctColor).lerp(c.leadColor, k);
+    c.baseColor.copy(c.fromColor).lerp(targetOf(c, shownMode), k);
     paint(m, c.baseColor);
   }
 }
-function setLead(on) {
-  leadOn = on;
-  leadBtn.setAttribute('aria-pressed', String(on));
-  shareBtn.setAttribute('aria-pressed', String(!on));
-  leadLegend();
+// start fading to what should show now; instant for a new race or map, or with reduced motion
+function showColor(instant = false) {
+  const m = shownColor();
+  if (m === shownMode && !instant) return;
+  for (const mesh of meshes) mesh.userData.fromColor = instant ? targetOf(mesh.userData, m) : mesh.userData.baseColor.clone();
+  shownMode = m; fadeT = instant || REDUCED ? 1 : 0;
+  paintColors(); colorLegend(); colorButtons();
+}
+// the buttons: which is on, which can be pressed, and why not
+function colorButtons() {
+  const plain = !!overlayCols(), raised = raisedGoal();
+  for (const [m, b] of Object.entries(COLOR_BTNS)) {
+    if (!b) continue;
+    b.setAttribute('aria-pressed', String(colorMode === m && !(m === 'mix' && raised && !plain)));
+    b.disabled = plain || (m === 'mix' && raised);
+    if (dotsOn) continue; // (Dots gives them its own title)
+    b.title = plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
+      : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Share + size is for the flat map"
+      : COLOR_TITLES[m];
+  }
+  // Share + size chosen, then 3D: the map shows Vote share, so that's the button that looks on
+  if (colorMode === 'mix' && raised && !plain) shareBtn.setAttribute('aria-pressed', 'true');
+}
+function setColor(m) {
+  colorMode = m;
+  if (shownMode !== null) showColor();
+  colorButtons();
   saveUrl();
 }
-leadBtn.onclick = () => setLead(true);
-shareBtn.onclick = () => setLead(false);
-// what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead when they apply
+shareBtn.onclick = () => setColor('share');
+leadBtn.onclick = () => setColor('lead');
+if (mixBtn) mixBtn.onclick = () => setColor('mix');
+const colorParam = () => colorMode === 'share' ? '' : `&color=${colorMode}`;
+// what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead or mix when they apply
 function saveUrl() {
   if (dotsOn && dots?.touring()) return; // on the tour, its player keeps ?scene= (player.js)
   try { // (in a try: at start-up the race is saved before the camera's state exists)
     const look = dotsOn ? `&look=dots${perAsked > 1 ? `&per=${perAsked}` : ''}` : (anim ? anim.to : progress) === 1 ? '&look=3d' : '';
-    history.replaceState(null, '', `?race=${race.id}${byParam()}${look}${leadOn ? '&color=lead' : ''}${panelParam()}`); } catch {}
+    history.replaceState(null, '', `?race=${race.id}${byParam()}${look}${colorParam()}${panelParam()}`); } catch {}
 }
 
 // apply the selected race to the 3D map: colors, column heights, rise order and labels
@@ -628,15 +682,15 @@ function restyle() {
   if (ready) setHover(null);
   const plain = !!overlayCols(); // by precinct or district, the counties underneath are a plain floor, in the gaps between the columns
   maxLead = Math.max(1, ...meshes.map(m => m.userData.total ? Math.abs(m.userData.dem - m.userData.rep) : 0));
-  leadBtn.disabled = shareBtn.disabled = plain;
-  leadBtn.title = plain ? 'Vote-lead color is for the map by county' : LEAD_TITLE;
-  shareBtn.title = plain ? 'Share is for the map by county; columns by precinct or district are always shaded by share' : "Shade each county by the winner's share of its vote";
+  raceMaxTotal = Math.max(1, ...meshes.map(m => m.userData.total || 0));
   for (const m of meshes) {
     const c = m.userData;
     c.target = Math.max(H_FLAT, H_MAX * c.total / maxTotal);
     c.pctColor = new THREE.Color(colorFor(c));
     c.leadColor = new THREE.Color(c.total ? leadHex(c.dem > c.rep, Math.abs(c.dem - c.rep), maxLead) : NO_RACE_C);
-    c.baseColor = new THREE.Color();
+    c.mixColor = new THREE.Color(c.total && c.dem + c.rep ? mixHex(c.dem, c.rep, c.total, raceMaxTotal) : NO_RACE_C);
+    c.plainColor = new THREE.Color(NO_RACE_C);
+    c.baseColor ??= new THREE.Color();
     const dWon = c.dem > c.rep;
     c.split = c.target >= SPLIT_MIN;
     c.fLower = (dWon ? c.rep : c.dem) / c.total;
@@ -645,8 +699,7 @@ function restyle() {
     paint(c.middle, new THREE.Color(plain ? NO_RACE_C : OTHER_C));
     layout(c, c.h);
   }
-  applyLead(plain);
-  leadLegend();
+  showColor(true);
   // rise order: smaller counties start a touch earlier, so the big cities rise last
   [...meshes].sort((a, b) => a.userData.total - b.userData.total)
     .forEach((m, i, arr) => m.userData.delay = 0.25 * i / arr.length);
@@ -793,6 +846,7 @@ function updateMode() {
     : flat ? `${TOUCH ? 'One finger moves · pinch' : 'Drag to pan · scroll'} to zoom · ${TOUCH ? 'tap' : 'hover over or click'} a ${what}`
     : `Hover over a ${what}`;
   if (dotsOn) hintEl.textContent = DOT_HINT;
+  colorButtons();
 }
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
@@ -829,7 +883,7 @@ document.getElementById('reset').onclick = () => { clearPlace(); if (dotsOn) dot
 // It draws over this map in its own layer and takes the camera from it and gives it back, so changing the Look keeps the place.
 // By and Color are for the columns: with Dots they're turned off, with the reason as their title.
 const DOT_HINT = 'Drag to move · scroll, pinch or double-click to zoom · spots and colors are estimated';
-const NOT_DOTS = ['byCounty', 'byPrecinct', 'byDistrict', 'colorShare', 'leadColor'];
+const NOT_DOTS = ['byCounty', 'byPrecinct', 'byDistrict', 'colorShare', 'leadColor', 'mixColor'];
 const byTitles = new Map(); // the By buttons' own titles, while Dots has replaced them
 document.querySelector('.map-area .controls').addEventListener('click', e => { // (capture: before the buttons' own handlers)
   if (dotsOn && e.target.closest(NOT_DOTS.map(id => '#' + id).join())) { e.stopPropagation(); e.preventDefault(); }
@@ -846,7 +900,7 @@ function markLook() {
     if (dotsOn) { if (id.startsWith('by')) byTitles.set(id, b.title); b.title = id.startsWith('by') ? NOT_DOTS_BY : NOT_DOTS_COLOR; }
     else if (id.startsWith('by')) b.title = byTitles.get(id) ?? '';
   }
-  if (!dotsOn) restyle(); // (the Share and Vote lead titles)
+  if (!dotsOn) restyle(); // (the color buttons' titles)
   updateMode();
 }
 // look: 'flat', '3d' or 'dots'. o, for Dots: at, a camera to start from (?at=); tour, to play the tour; scene, to play it from scene N.
@@ -1280,10 +1334,10 @@ function frame(now) {
     }
     if (moved) layoutCounties();
   }
-  if (leadMix !== (leadShown() ? 1 : 0)) { // the vote-lead fade, over about a second and a half
-    const goalL = leadShown() ? 1 : 0, step = REDUCED ? 1 : Math.min(dt, 100) / 1500;
-    leadMix = goalL > leadMix ? Math.min(goalL, leadMix + step) : Math.max(goalL, leadMix - step);
-    applyLead();
+  if (meshes.length && shownMode !== null && shownMode !== shownColor()) showColor(); // (Share + size, to 3D and back)
+  if (fadeT < 1) { // the color fade, over about a second and a half
+    fadeT = REDUCED ? 1 : Math.min(1, fadeT + Math.min(dt, 100) / 1500);
+    paintColors();
     if (hovered) hovered.material[0].color.copy(hovered.userData.baseColor).lerp(HILITE, 0.35);
   }
   if (anim) {
@@ -1366,7 +1420,7 @@ const at = (params.get('at') || '').split(',').map(Number), atOk = at.length ===
 const dotsAsked = params.get('look') === 'dots', sceneAsked = +params.get('scene') || 0, tourAsked = params.get('tour') === '1';
 if (atOk && !dotsAsked) applyAt(at);
 if (params.get('look') === '3d' && !atOk) setRaised(true);
-if (params.get('color') === 'lead') setLead(true);
+if (['lead', 'mix'].includes(params.get('color'))) setColor(params.get('color'));
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
 // ?look=dots, or the dot tour (?tour=1, ?scene=N), with ?per= for "1 dot ="
@@ -1382,7 +1436,7 @@ if (!FRAMED) {
   for (const type of ['pointerdown', 'keydown', 'click', 'contextmenu']) cmp.addEventListener(type, () => {
     const v = dotsOn && dots?.view(), at = v ? [v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',') : atParam();
     const flatAt = at.split(',').slice(0, 3).concat([0, 0]).join(',');
-    const barsUrl = `${STATE.results.href}?race=${race.id}${byParam()}${leadOn ? '&color=lead' : ''}`;
+    const barsUrl = `${STATE.results.href}?race=${race.id}${byParam()}${colorParam()}`;
     const dotsUrl = `${STATE.dots}&race=${race.id}${perAsked > 1 ? `&per=${perAsked}` : ''}`;
     cmp.href = dotsOn ? compareHref(`${dotsUrl}&at=${at}`, `${barsUrl}&at=${flatAt}`) : compareHref(`${barsUrl}&at=${at}`, `${dotsUrl}&at=${at}`);
   });

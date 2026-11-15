@@ -219,7 +219,7 @@ python scripts/build_infographic.py 4
 columns, every figure computed from the data (`?race=<id>` for another race). With the local server running:
 
 ```bash
-chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1802,684 --virtual-time-budget=20000 --screenshot=texas-looks-red-panels-split.png http://localhost:8765/scripts/panels.html
+chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 --window-size=1802,684 --virtual-time-budget=20000 --screenshot=texas-looks-red-panels-split.png http://localhost:8770/scripts/panels.html
 ```
 
 ## Data and method
@@ -239,7 +239,12 @@ template for doing the same in another state.
   [us-atlas](https://github.com/topojson/us-atlas) v3.0.1 (`counties-10m.json`).
 - **Column height** is proportional to the total votes cast in the selected race, counting every candidate including
   write-ins, on a linear scale (one scale shared by all races). Counties with very few votes get a thin minimum height so they stay visible.
-- **Color** is the county winner's share of all votes cast there, in 10-point bands.
+- **Color** has three choices on every state map ([`colors.js`](colors.js)), explained on [Shade by Votes](shade-by-votes.html):
+  **Vote share** (the default) is the county winner's share of all votes cast there, in 10-point bands. **Vote lead**
+  shades by the county's lead in votes, on a square-root scale up to the race's biggest lead. **Share + size**, for the flat
+  map only, mixes the Democratic and Republican votes from blue through purple to red, all equally light (OKLCH), and draws
+  each county see-through over the map, the more so the fewer votes it cast (square root, at least 40% solid). `?color=lead`
+  and `?color=mix` open the second and third.
 
 The raw snapshots are kept locally in `data/raw/`, not in this repo, except for the hand-read extracts linked on this page. They
 are in the repo's history up to this change, and the sources are listed below. [`scripts/build_data.py`](scripts/build_data.py) rebuilds
@@ -284,10 +289,10 @@ Both pages share [`style.css`](style.css) and [`app.js`](app.js); `<body data-pa
 The page loads its data with `fetch`, so it has to be served over HTTP:
 
 ```bash
-python -m http.server 8765
+python -m http.server 8770
 ```
 
-Then open http://localhost:8765.
+Then open http://localhost:8770.
 
 Built with [three.js](https://threejs.org) r160, [d3-geo](https://github.com/d3/d3-geo) 3.1.1 and
 [topojson-client](https://github.com/topojson/topojson-client) 3.1.0.

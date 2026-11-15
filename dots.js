@@ -182,7 +182,8 @@ export function createDots({ depthTest = true } = {}) {
     for (const s of stretches) { s.geometry.dispose(); group.remove(s); } // (disposing them also frees the shared buffer)
     stretches.length = 0; attr = tiles = null;
   }
-  const worker = new Worker(new URL('./dots-worker.js', import.meta.url));
+  // (import.meta.resolve goes through the page's import map, so the worker gets the same version stamp as the scripts: scripts/stamp.mjs)
+  const worker = new Worker(import.meta.resolve('./dots-worker.js'));
   let job = 0, done = null;
   worker.onmessage = ({ data: { buf, table, counts, job: j, tiles: t } }) => {
     if (j !== job) return; // a newer request came in while this one was being placed

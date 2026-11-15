@@ -7,3 +7,5 @@
 3. If they're silent, unclear or limiting, keep the data and everything built from it local and git-ignored, and ask the owner before publishing.
 
 Record what was read in the state's `docs/records/<state>.md`. The rules and past decisions are in `docs/PIPELINE.md`, Parts 5 and 8.
+
+**After changing any `.js` or `.css` file, run `node scripts/stamp.mjs` before committing.** It updates the version stamps in every page, so browsers can't mix cached old scripts with new pages (`docs/PIPELINE.md`, Part 4).
