@@ -4,14 +4,15 @@
 // Vote share is the usual one: the winner's color, shaded by the winner's share of the county's vote in 10-point bands.
 // Vote lead keeps the winner's color but shades by the county's lead in votes (winner minus runner-up), on a square-root
 // scale up to the biggest lead in the state, so counties where few people voted fade to pale whatever their percentage.
-// Share + size keeps the Vote share color but fades it toward a neutral gray by how few votes the county cast (colors.js).
+// Share + size mixes the county's Democratic and Republican votes, blue through purple to red, all equally light, and draws
+// it see-through over the dark background, the more so the fewer votes it cast (colors.js).
 //
 // Each step in the text names which color the map shows (data-mode: share, lead or mix) and which counties to point at
 // (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATE } from './state.js';
-import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows } from './colors.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
@@ -44,11 +45,14 @@ const MAX_LEAD = Math.max(...counties.map(c => c.lead)), MAX_TOTAL = Math.max(..
 const relT = lead => leadT(lead, MAX_LEAD);
 for (const c of counties) {
   const hex = ramp(c)[band(c)];
-  c.col = { share: rgb(hex), lead: leadRGB(c.dWon, c.lead, MAX_LEAD), mix: mixRGB(hex, c.total, MAX_TOTAL) };
+  c.col = { share: rgb(hex), lead: leadRGB(c.dWon, c.lead, MAX_LEAD), mix: mixRGB(c.dem, c.rep, c.total, MAX_TOTAL) };
   c.now = c.col.share; // the color on screen, which a fade starts from
 }
 const MODE_NAMES = { share: 'Vote share', lead: 'Vote lead', mix: 'Share + size' };
-const kept = c => `${Math.round(100 * mixT(c.total, MAX_TOTAL))}%`; // how much of its color a county keeps with Share + size
+const solid = c => `${Math.round(100 * mixT(c.total, MAX_TOTAL))}%`; // how solid a county is drawn with Share + size
+const dShare = c => c.dem / (c.dem + c.rep); // the Democrat's share of the two-party vote, which sets the hue
+const hueName = c => { const s = dShare(c); return s >= 0.8 ? 'nearly pure blue' : s >= 0.6 ? 'a blue purple' : s > 0.4 ? 'purple' : s > 0.2 ? 'a red purple' : 'nearly pure red'; };
+const twoParty = c => `${pct(Math.max(c.dem, c.rep), c.dem + c.rep)} ${c.dWon ? 'Democratic' : 'Republican'} of the two-party vote`;
 
 // ---------- the counties the text points at ----------
 const BIG = [...counties].sort((a, b) => b.total - a.total)[0];
@@ -86,14 +90,14 @@ fill('s6', `${TINY.name} County's lead of ${num(TINY.lead)} is ${pct(TINY.lead, 
 fill('s7', `The ${DARK.length} counties that were the darkest red now barely show. In all, <b>${SMALL.length} counties</b> had a lead under ${num(SMALL_LEAD)} votes. ` +
   `They cover <b>${pct(sum(SMALL, c => c.landSqMi), LAND)} of Texas</b>, and they all look pale.`);
 fill('s8b', `${CLOSE_BIG.name} County, at ${pct(Math.max(CLOSE_BIG.dem, CLOSE_BIG.rep), CLOSE_BIG.total)}, now shows clearly, because a modest win among ${short(CLOSE_BIG.total)} voters is a lead of ${num(CLOSE_BIG.lead)}.`);
-fill('s9', `Each county keeps its Vote share color, so you can still see how it split, but fades toward gray the fewer votes it cast, ` +
-  `against the biggest county, ${BIG.name}, with ${short(BIG.total)} voters. <b>Light means close; gray means few voters.</b>`);
-fill('s10', `<b>${TINY.name} County</b> still shows its ${pct(Math.max(TINY.dem, TINY.rep), TINY.total)} for ${name(TINY.dWon ? D : R)}, the darkest shade, ` +
-  `but with ${num(TINY.total)} voters it keeps only ${kept(TINY)} of that color. <b>${BIG.name} County</b> keeps all of its own.` +
-  `<span class="big">${kept(TINY)} vs. ${kept(BIG)}</span>Unlike Vote lead, the small county doesn't vanish: you can still see it went one way.`);
-fill('s11', `<b>${CLOSE_BIG.name} County</b> keeps its light color, ${pct(Math.max(CLOSE_BIG.dem, CLOSE_BIG.rep), CLOSE_BIG.total)} for ${name(CLOSE_BIG.dWon ? D : R)}, ` +
-  `at ${kept(CLOSE_BIG)} strength, because ${short(CLOSE_BIG.total)} people voted there. Light and strong is a close race in a big place; ` +
-  `gray is a small place, whatever its split.`);
+fill('s9', `Each county mixes its ${name(D)} and ${name(R)} votes into one color: all blue, all red, or purple in between, the closer to even the more purple. ` +
+  `Then it's drawn see-through over the dark map, the more so the fewer votes it cast, against the biggest county, ${BIG.name}, with ${short(BIG.total)} voters. ` +
+  `<b>The color says how a county split; how solid it is says how many voted.</b>`);
+fill('s10', `<b>${TINY.name} County</b> went ${twoParty(TINY)}, so it's ${hueName(TINY)}, but with ${num(TINY.total)} voters it's drawn only ${solid(TINY)} solid: ` +
+  `you can still see which way it went, faintly. <b>${BIG.name} County</b>, ${twoParty(BIG)}, is ${hueName(BIG)} at full strength.` +
+  `<span class="big">${solid(TINY)} vs. ${solid(BIG)}</span>Unlike Vote lead, the small county doesn't vanish; unlike Vote share, it doesn't outshine the city.`);
+fill('s11', `<b>${CLOSE_BIG.name} County</b> went ${twoParty(CLOSE_BIG)}, so it's ${hueName(CLOSE_BIG)}, drawn ${solid(CLOSE_BIG)} solid because ${short(CLOSE_BIG.total)} people voted there. ` +
+  `Bright purple is a close race in a big place; faint purple is a close race in a small one.`);
 $('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}.`;
 
 // ---------- legends ----------
@@ -105,13 +109,12 @@ const gradient = leadGradient, TICKS = leadTicks(MAX_LEAD);
 $('legRel').innerHTML = `<div class="t">County's lead in votes</div>` +
   [W, L].map(cand => legRow(cand, `<div class="ramp" style="background:${gradient(cand === D ? DEM_C : REP_C)}"></div>`)).join('') +
   `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
-// Share + size: each party's six bands across, votes cast down
+// Share + size: one grid for both parties, the split across, votes cast down
 const MIX_ROWS = mixRows(MAX_TOTAL);
-$('legMix').innerHTML = `<div class="t">Winner's share across, faded by votes cast down</div>` +
-  [W, L].map(cand => legRow(cand, `<div class="mixgrid">${MIX_ROWS.map((v, r) =>
-    `<span>${r === MIX_ROWS.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
-    (cand === D ? DEM_C : REP_C).map(col => `<i style="background:rgb(${mixRGB(col, v, MAX_TOTAL).map(Math.round).join(',')})"></i>`).join('')).join('')}</div>`)).join('') +
-  `<div class="ticks"><span></span><div class="mixgrid"><span></span>${BAND_LABELS.map(l => `<span>${l}</span>`).join('')}</div></div>`;
+$('legMix').innerHTML = `<div class="t">Democratic and Republican votes mixed across, solid by votes cast down</div>` +
+  `<div class="mixgrid">${MIX_ROWS.map((v, r) => `<span>${r === MIX_ROWS.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
+    MIX_SPLITS.map(s => `<i style="background:rgb(${mixRGB(s, 1 - s, v, MAX_TOTAL).map(Math.round).join(',')})"></i>`).join('')).join('')}` +
+  `<span></span>${MIX_SPLIT_LABELS.map(l => `<span>${l}</span>`).join('')}</div>`;
 const LEGENDS = { share: $('legPct'), lead: $('legRel'), mix: $('legMix') };
 
 // ---------- the map ----------

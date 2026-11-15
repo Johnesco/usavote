@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Shade by Votes: Texas 2026</title>
-<meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored three ways: by each county's vote share, as usual; by how many votes its lead was worth; and by its share, faded where few people voted." />
+<meta name="description" content="The 2026 U.S. Senate race in Texas, county by county, colored three ways: by each county's vote share, as usual; by how many votes its lead was worth; and by its two parties' votes mixed, blue through purple to red, faint where few people voted." />
 <link rel="canonical" href="https://johnesco.github.io/usavote/shade-by-votes.html" />
 <meta property="og:type" content="article" />
 <meta property="og:site_name" content="How America Votes" />
@@ -13,17 +13,17 @@
 <meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Share + size shade each county by how much its votes counted." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="stylesheet" href="style.css?v=f05fba284e" />
+<link rel="stylesheet" href="style.css?v=2f6432c56b" />
 <link rel="stylesheet" href="why.css?v=84d3af7c23" />
-<link rel="stylesheet" href="shade-by-votes.css?v=f28fea6f37" />
+<link rel="stylesheet" href="shade-by-votes.css?v=59840f0685" />
 <script type="importmap">
 { "imports": {
   "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
   "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm",
-  "./app.js": "./app.js?v=701f803054",
+  "./app.js": "./app.js?v=31f162b221",
   "./busy.js": "./busy.js?v=386b779ab5",
   "./cities.js": "./cities.js?v=0d0b35869f",
-  "./colors.js": "./colors.js?v=a2e0eaf6dc",
+  "./colors.js": "./colors.js?v=aa4506d203",
   "./compare.js": "./compare.js?v=cfa356cffb",
   "./dotlook.js": "./dotlook.js?v=eab62b3c17",
   "./dots-how.js": "./dots-how.js?v=b74bd31cba",
@@ -36,7 +36,7 @@
   "./places.js": "./places.js?v=2217ad7edf",
   "./player.js": "./player.js?v=33f4dcaf4f",
   "./precinct-columns.js": "./precinct-columns.js?v=3caca92010",
-  "./shade-by-votes.js": "./shade-by-votes.js?v=445e27db6b",
+  "./shade-by-votes.js": "./shade-by-votes.js?v=5c36452b5e",
   "./sitenav.js": "./sitenav.js?v=d974a71f19",
   "./sourcelist.js": "./sourcelist.js?v=c4c50946ba",
   "./sources.js": "./sources.js?v=92870ad746",
@@ -48,10 +48,10 @@
   "./dotlook.css": "./dotlook.css?v=42a9e67880",
   "./home.css": "./home.css?v=ca96dd3b5d",
   "./misread.css": "./misread.css?v=868557b106",
-  "./shade-by-votes.css": "./shade-by-votes.css?v=f28fea6f37",
+  "./shade-by-votes.css": "./shade-by-votes.css?v=59840f0685",
   "./sources.css": "./sources.css?v=341f141015",
   "./story.css": "./story.css?v=f8a6f945af",
-  "./style.css": "./style.css?v=f05fba284e",
+  "./style.css": "./style.css?v=2f6432c56b",
   "./voters.css": "./voters.css?v=e749a5f2d0",
   "./why.css": "./why.css?v=84d3af7c23"
 } }
@@ -66,7 +66,7 @@
   <header>
     <div class="kicker">Three ways to color a county map · 2026 U.S. Senate</div>
     <h1>Shade by votes, not by percentages</h1>
-    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. Every state map on this site has three choices under <b>Color</b>: <b>Vote share</b>, the usual map; <b>Vote lead</b>, shaded by how many votes each county's lead was worth; and <b>Share + size</b>, the usual colors faded where few people voted. Here is what each one shows, and what each one hides.</p>
+    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. Every state map on this site has three choices under <b>Color</b>: <b>Vote share</b>, the usual map; <b>Vote lead</b>, shaded by how many votes each county's lead was worth; and <b>Share + size</b>, each county's Democratic and Republican votes mixed from blue through purple to red, drawn fainter where few people voted. Here is what each one shows, and what each one hides.</p>
   </header>
 
   <div class="rel-body">
@@ -146,20 +146,20 @@
       <section class="rel-step" data-mode="mix">
         <span class="n">9</span>
         <h2>Share + size</h2>
-        <p id="s9">Each county keeps its Vote share color, so you can still see how it split, but fades toward gray the fewer votes it cast.</p>
-        <p class="rel-how">Two choices keep this honest. It fades toward a neutral gray, not the dark page, so a faded county never looks like a dark landslide shade. And it never fades all the way: even the smallest county keeps a fifth of its color, so you can still tell who won it. The fade is on a square-root scale, like Vote lead's. Read it with the key: share across, votes cast down.</p>
+        <p id="s9">Each county mixes its Democratic and Republican votes into one color, blue through purple to red, and is drawn fainter the fewer votes it cast.</p>
+        <p class="rel-how">Three choices keep this honest. The colors from blue through purple to red are all equally light and equally strong (they're picked in OKLCH, a color space made to match how people see), so an even county is a clear purple rather than a muddy one, and no split looks darker or louder than another. That leaves darkness free to mean one thing only: few voters. And no county fades away entirely: the smallest is still 40% solid, so you can still see its color. How solid a county is goes on a square-root scale, like Vote lead's. Other candidates' votes are left out of the mix. Read it with the key: the split across, votes cast down.</p>
       </section>
 
       <section class="rel-step" data-mode="mix" data-focus="tiny,big">
         <span class="n">10</span>
         <h2>The tiny landslide keeps its color, but faintly</h2>
-        <p id="s10">The small county still shows its lopsided vote, but faded; the city shows at full strength.</p>
+        <p id="s10">The small county still shows which way it went, but faintly; the city shows at full strength.</p>
       </section>
 
       <section class="rel-step" data-mode="mix" data-focus="close">
         <span class="n">11</span>
         <h2>The big, close county shows as close, and as big</h2>
-        <p id="s11">A close race in a big county keeps its light color at full strength: a narrow win, among a lot of voters.</p>
+        <p id="s11">A close race in a big county is purple at nearly full strength: a narrow win, among a lot of voters.</p>
       </section>
 
       <section class="rel-step" data-mode="mix" data-focus="none">
@@ -168,7 +168,7 @@
         <ul class="rel-list">
           <li><b>Vote share</b> shows how each county split. It hides how many people voted, so empty land looks as decisive as a city.</li>
           <li><b>Vote lead</b> shows how many votes each county added to its winner's total. It hides how a county split.</li>
-          <li><b>Share + size</b> shows the split and the size together, in one color. That is more to read: a lighter color means a closer race and a grayer one a smaller county, so check the key.</li>
+          <li><b>Share + size</b> shows the split as a color, from blue through purple to red, and the size as how solid that color is. It leaves out other candidates, and it is more to read, so check the key.</li>
         </ul>
         <p>On the state maps, Share + size is for the flat map. In 3D, each column's height already shows the votes cast, so the colors go back to Vote share. Hover over any county, here or on a state map, for its exact numbers.</p>
       </section>
@@ -190,7 +190,7 @@
     <p><a href="sources.html">Sources and credits for every state →</a></p>
   </footer>
 </div>
-<script type="module" src="shade-by-votes.js?v=445e27db6b"></script>
+<script type="module" src="shade-by-votes.js?v=5c36452b5e"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

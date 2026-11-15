@@ -14,7 +14,7 @@ import { viewBarGroups, NOT_DOTS_BY, NOT_DOTS_COLOR, PERS } from './viewbar.js';
 import { startDots, LAYER_HTML } from './dotlook.js';
 import { DOTS_HOW } from './dots-how.js';
 import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
-import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel, mixHex, mixRows } from './colors.js';
+import { BINS, BAND_LABELS, REP_C, DEM_C, leadHex, leadT, leadGradient, leadTicks, tickLabel, mixHex, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 
@@ -56,7 +56,7 @@ const YEARS = [...new Set(races.map(r => r.year))].sort((a, b) => b - a); // new
 const maxTotal = Math.max(...races.flatMap(r => r.counties.map(row => row[3])));
 
 // Colors (colors.js): winner's share of the county vote, in 10-point bands (same convention as the reference map); with
-// Vote lead, each county's lead in votes; with Share + size, the share faded toward gray where few votes were cast
+// Vote lead, each county's lead in votes; with Share + size, the two parties' votes mixed blue to purple to red, see-through where few were cast
 const shareOfWinner = c => 100 * Math.max(c.dem, c.rep) / c.total;
 // House races only: a county where no district race had votes reported (every race there was unopposed) is gray
 const NO_RACE_C = '#3b4352';
@@ -588,7 +588,7 @@ const leadBtn = COLOR_BTNS.lead, shareBtn = COLOR_BTNS.share, mixBtn = COLOR_BTN
 const COLOR_TITLES = {
   share: "Shade each county by the winner's share of its vote",
   lead: 'Shade each county by its lead in votes, so places where few people voted fade out',
-  mix: "Shade each county by the winner's share, faded toward gray where few votes were cast. For the flat map",
+  mix: "Mix each county's Democratic and Republican votes, blue through purple to red, drawn fainter the fewer votes it cast. For the flat map",
 };
 // (in a try: the first restyle runs before the camera's state exists, and the map is flat then)
 const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } catch { return false; } };
@@ -596,15 +596,17 @@ const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } cat
 const shownColor = () => overlayCols() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
 const targetOf = (c, m) => m === 'plain' ? c.plainColor : m === 'lead' ? c.leadColor : m === 'mix' ? c.mixColor : c.pctColor;
 // the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Share + size,
-// each party's bands across and votes cast down
+// one grid of the split across and votes cast down
 function colorLegend() {
   const m = shownMode ?? shownColor();
   if (m === 'share' || m === 'plain') {
+    showPartyTitles(true);
     bandLegend();
     if (legHead) legHead.textContent = `${WINNER[0].toUpperCase() + WINNER.slice(1)}'s share of the ${districtCols() ? 'district' : 'county'} vote`;
     return;
   }
   if (m === 'lead') {
+    showPartyTitles(true);
     if (legHead) legHead.textContent = `County's lead in votes`;
     const ticks = leadTicks(maxLead);
     for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
@@ -612,14 +614,19 @@ function colorLegend() {
         `<div class="lead-ticks">${ticks.map(v => `<span style="left:${(100 * leadT(v, maxLead)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div>`;
     return;
   }
-  if (legHead) legHead.textContent = `${WINNER[0].toUpperCase() + WINNER.slice(1)}'s share across, faded by votes cast`;
+  // one grid for both parties, since the hue already says which way a county went: the split across, votes cast down
+  if (legHead) legHead.textContent = `Democratic and Republican votes mixed, solid by votes cast`;
+  showPartyTitles(false);
   const rows = mixRows(raceMaxTotal);
-  for (const [id, cols] of [['legR', REP_C], ['legD', DEM_C]])
-    $(id).innerHTML = `<div class="mix-grid">` +
-      rows.map((v, r) => `<span class="mix-votes">${r === rows.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
-        cols.map(c => `<i style="background:${mixHex(c, v, raceMaxTotal)}"></i>`).join('')).join('') +
-      `<span class="mix-votes">votes</span>${BAND_LABELS.map(l => `<span>${l}</span>`).join('')}</div>`;
+  $('legR').innerHTML = `<div class="mix-grid">` +
+    rows.map((v, r) => `<span class="mix-votes">${r === rows.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
+      MIX_SPLITS.map(s => `<i style="background:${mixHex(s, 1 - s, v, raceMaxTotal)}"></i>`).join('')).join('') +
+    `<span class="mix-votes">votes</span>${MIX_SPLIT_LABELS.map(l => `<span>${l}</span>`).join('')}</div>` +
+    `<div class="mix-note">Share of the Democratic and Republican votes; other candidates are left out.</div>`;
+  $('legD').innerHTML = '';
 }
+// the "… won the county" line over each party's key: hidden for Share + size, whose one key covers both
+function showPartyTitles(on) { for (const id of ['legRTitle', 'legDTitle']) { const t = $(id); if (t) t.hidden = !on; } }
 // paint every county part way from the color it had to the one it's going to
 function paintColors() {
   const k = fadeT * fadeT * (3 - 2 * fadeT); // eased
@@ -681,7 +688,7 @@ function restyle() {
     c.target = Math.max(H_FLAT, H_MAX * c.total / maxTotal);
     c.pctColor = new THREE.Color(colorFor(c));
     c.leadColor = new THREE.Color(c.total ? leadHex(c.dem > c.rep, Math.abs(c.dem - c.rep), maxLead) : NO_RACE_C);
-    c.mixColor = new THREE.Color(c.total ? mixHex(colorFor(c), c.total, raceMaxTotal) : NO_RACE_C);
+    c.mixColor = new THREE.Color(c.total && c.dem + c.rep ? mixHex(c.dem, c.rep, c.total, raceMaxTotal) : NO_RACE_C);
     c.plainColor = new THREE.Color(NO_RACE_C);
     c.baseColor ??= new THREE.Color();
     const dWon = c.dem > c.rep;
