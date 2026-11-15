@@ -36,7 +36,7 @@
 .caption .vs b { display: block; font-size: 20px; color: var(--text); }
 .caption .links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .caption .links a { font-size: 14px; color: var(--accent); }
-.caption .d { color: #8fa8ff; font-weight: 650; } .caption .r { color: #ff8b8b; font-weight: 650; } .caption .o { color: #c2cad6; font-weight: 650; }
+.caption .d { color: var(--dem-ink); font-weight: 650; } .caption .r { color: var(--rep-ink); font-weight: 650; } .caption .o { color: #c2cad6; font-weight: 650; }
 .caption .note { font-size: 12.5px; color: var(--muted); }
 
 /* the tour's player (player.js) */

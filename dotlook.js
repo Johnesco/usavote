@@ -26,7 +26,7 @@ const $ = id => document.getElementById(id);
 export const LAYER_HTML = `<div class="dot-layer exploring" id="dotLayer" hidden>
   <div id="dotStage"></div>
   <div id="dotLabels"></div>
-  <div class="legend-dots overlay" id="legend" aria-hidden="true"></div>
+  <div class="legend-dots overlay" id="legend"></div>
   <div id="dotLoading">Loading dots…</div>
   <section class="caption" id="caption" aria-live="polite"></section>
   <div class="scalebar" id="scalebar" aria-hidden="true"><i></i><span></span></div>
@@ -132,6 +132,10 @@ export async function startDots(opts) {
   $('dotLoading').textContent = STATE.data.precinctShapes ? 'Loading precincts…' : 'Loading…';
   let PC = null;
   try { PC = await loadPrecincts(P, STATE.data.precincts, STATE.data.land); } catch (e) { console.error('Precincts did not load; dots spread evenly', e); }
+  // Whether a county's dots follow how its precincts voted. A county-only file has one entry per county, so its dots share
+  // one mix of parties across the whole county; the legend says so (dots-how.js has the long version).
+  const BY_NEIGHBORHOOD = !!PC && [...PC.byFips.values()].some(pc => pc.vtds.length > 1);
+  const DOT_CAVEAT = BY_NEIGHBORHOOD ? 'Spots and colors are estimated' : 'Colors are mixed evenly across each county, not by neighborhood';
   if (PC) for (const c of ordered) {
     const pc = PC.byFips.get(c.fips); if (!pc) continue;
     c.units = precinctUnits(pc, c);
@@ -329,7 +333,7 @@ export async function startDots(opts) {
         <h2>Same state, same election, one vote each</h2>
         <p>${EMPTY.name} County's ${fmt(EMPTY.total)} voters and ${CROWDED.name} County's ${fmt(CROWDED.total)} each cast a vote that counted the
         same. Statewide, ${D.last} won by <b class="hl">${fmt(D.votes - R.votes)}</b> votes, ${(100 * D.votes / TOT).toFixed(1)}% to ${(100 * R.votes / TOT).toFixed(1)}%.</p>
-        <div class="links"><a href="#" id="again">↺ Watch again</a><a href="#" id="toMap">Explore the dot view →</a><a href="#" id="toBars">Bar view →</a></div>` },
+        <div class="links"><a href="#" id="again">↺ Watch again</a><a href="#" id="toMap">Explore Dots →</a><a href="#" id="toBars">Flat map →</a></div>` },
   ];
   const TOUR = `${STATE.name} Population Density Tour`;
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -592,7 +596,8 @@ export async function startDots(opts) {
     const dName = r.chamber ? 'Democrats' : d.last, rName = r.chamber ? 'Republicans' : e.last;
     $('raceCount').innerHTML = `<b>${fmt(tot)} voters</b>, ${asked === 1 ? 'one dot each' : `one dot per ${fmt(asked)} (${fmt(n)} dots)`} · ${dName} ${(100 * dem / tot).toFixed(1)}%, ${rName} ${(100 * rep / tot).toFixed(1)}%`;
     $('legend').innerHTML = [[DOT_C.dem, r.chamber ? dName : `${dName} (D)`], [DOT_C.rep, r.chamber ? rName : `${rName} (R)`], [DOT_C.other, 'Other']]
-      .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
+      .map(([c, n]) => `<span><i style="background:${c}"></i>${n}</span>`).join('') +
+      `<span style="flex-basis:100%">${DOT_CAVEAT}</span>`;
     if ($('tourPlay')) $('tourPlay').title = `A guided flight, about ${Math.round(END / 60)} minutes, on the 2026 U.S. Senate race${r === SENATE ? '' : ', so the dots change to that race'}`;
     renderPlace();
   }

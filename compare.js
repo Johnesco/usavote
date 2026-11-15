@@ -15,11 +15,26 @@ if (!start.every(ok)) {
   panes.forEach((f, i) => { f.src = start[i]; });
   // where each side is now, as an address relative to this page
   const here = f => { try { const l = f.contentWindow.location; return l.pathname.split('/').pop() + l.search; } catch { return null; } };
+  // what a side shows, from its address and its page's race title: '3D · 2026 U.S. Senate'
+  const LOOKS = { '3d': '3D', dots: 'Dots' };
+  const shows = (f, u) => {
+    const p = new URLSearchParams(u.split('?')[1] || '');
+    let race = '';
+    try { race = f.contentDocument.getElementById('title')?.textContent.trim() || ''; } catch {}
+    if (/election results$/i.test(race)) race = ''; // (the page's own heading, before its race is set)
+    return [LOOKS[p.get('look')] || 'Flat', race || p.get('race')].filter(Boolean).join(' · ');
+  };
   let swapped = false;
   const save = () => {
-    const [a, b] = (swapped ? [...panes].reverse() : panes).map(here);
+    const order = swapped ? [...panes].reverse() : panes, [a, b] = order.map(here);
     if (!ok(a) || !ok(b)) return;
     $('keepA').href = a; $('keepB').href = b;
+    // the links and frames say what each side shows, so they read right side by side, stacked or swapped
+    [a, b].forEach((u, i) => {
+      const s = shows(order[i], u), keep = $(i ? 'keepB' : 'keepA');
+      if (keep.textContent !== `Keep ${s}`) keep.textContent = `Keep ${s}`; // (only on a change: this runs every second)
+      if (order[i].title !== `Map: ${s}`) order[i].title = `Map: ${s}`;
+    });
     const url = `?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`;
     if (url !== location.search) try { history.replaceState(null, '', url); } catch {}
   };

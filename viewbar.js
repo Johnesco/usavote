@@ -13,6 +13,11 @@ export const NOT_DOTS_COLOR = 'Dots are colored by party. Vote share, Vote lead 
 export const PERS = [1, 10, 100, 1000]; // voters a dot can stand for
 
 const fmt = n => n.toLocaleString('en-US');
+// The ? link says which map it came from (?from=texas.html?race=...), so that page can lead back to it. The address changes as
+// the reader picks a race, Look or color, so it's read again just before the link is followed.
+const helpHref = () => `${LEAD_PAGE}?from=${encodeURIComponent(location.pathname.split('/').pop() + location.search)}`;
+for (const ev of ['pointerdown', 'click', 'keydown', 'contextmenu'])
+  document.addEventListener(ev, e => { const a = e.target.closest?.('#leadHelp'); if (a) a.href = helpHref(); }, true);
 
 // The bar's groups, to put in a .controls box.
 export function viewBarGroups() {
@@ -27,7 +32,7 @@ export function viewBarGroups() {
   const color = `<button type="button" id="colorShare" aria-pressed="true">Vote share</button>` +
     `<button type="button" id="leadColor" aria-pressed="false">Vote lead</button>` +
     `<button type="button" id="mixColor" aria-pressed="false">Share + size</button>` +
-    `<a href="${LEAD_PAGE}" id="leadHelp" title="What do the three colors show?" aria-label="What do the three colors show?">?</a>`;
+    `<a href="${helpHref()}" id="leadHelp" title="What do the three colors show?" aria-label="What do the three colors show?">?</a>`;
   const per = `<div class="vb-group dots-only"><label class="vb-label keep" for="per">1 dot =</label>
     <select id="per" title="How many voters each dot stands for">${PERS.map(n => `<option value="${n}">${fmt(n)} voter${n > 1 ? 's' : ''}</option>`).join('')}</select></div>`;
   return group('Look', look) + group('By', by) + group('Color', color) + per;

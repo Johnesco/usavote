@@ -11,7 +11,7 @@
 // (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
-import { STATE } from './state.js';
+import { STATE, STATES } from './state.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
@@ -21,6 +21,24 @@ const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + ' million' : num(n);
 const pct = (a, b, d = 0) => (100 * a / b).toFixed(d) + '%';
 const sum = (list, f) => list.reduce((s, c) => s + f(c), 0);
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+
+// Came from another state's map by its Color ? link (viewbar.js, ?from=ohio.html?race=...): lead back there, and offer the
+// three colors on that map. Only a state's own page is taken, so the link can't be sent anywhere else.
+{
+  const from = new URLSearchParams(location.search).get('from');
+  let u = null;
+  try { u = from && new URL(from, location.href); } catch {}
+  const back = u && u.origin === location.origin && STATES.find(s => s.results.href === u.pathname.split('/').pop());
+  if (back) {
+    $('back').href = back.results.href + u.search;
+    $('back').textContent = `← ${back.name} results`;
+    // the three colors show on the Flat map by county, so keep only the race (not 3D, Dots or By precinct or district)
+    const p = new URLSearchParams(); const race = new URLSearchParams(u.search).get('race');
+    if (race) p.set('race', race); p.set('color', 'mix');
+    $('tryAll').href = `${back.results.href}?${p}`;
+    $('tryAllName').textContent = `Try all three on ${back.name} →`;
+  }
+}
 
 const [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]);
 const race = res.races.find(r => r.id === 'u-s-senate');

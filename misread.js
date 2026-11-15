@@ -337,14 +337,14 @@ const scenes = [
       <p>From this high up, about <b>${fmt(Math.round(HARRIS.density / px))}</b> ${HARRIS.name} County voters share each pixel, and a
       pixel can only show one dot. Out west, a voter can have a pixel or more to themselves.</p>
       <p>So the crowded, bluer cities shrink to small bright points, and the thinly spread, redder countryside covers more of the
-      screen. It's the flat map's mistake again, in a smaller dose. That's why the dot view is made for zooming in.</p>`; } },
+      screen. It's the flat map's mistake again, in a smaller dose. That's why Dots is made for zooming in.</p>`; } },
 
   { fly: 0, hold: Infinity, fill: 0, dots: 'block', view: () => stateView(), html: () => `
       <div class="kicker">Same election, two maps</div>
       <div class="vs"><div><b>${flatArea}</b>of the flat map is red</div><div><b>${pct(D.votes, TOT, 1)}</b>of the voters chose ${D.last}</div></div>
       <ol class="recap">${MISREADINGS.map(m => `<li>${m}? No.</li>`).join('')}</ol>
       <p>The flat map answers “who won each piece of land?” The dots answer “where are the voters, and how did they vote?”</p>
-      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="texas.html?look=dots">Explore the dot view →</a>
+      <div class="links"><a href="#" id="again">↺ Watch again</a><a href="texas.html?race=u-s-senate&look=dots">Explore Texas in Dots →</a>
       <a href="why.html">Same election, three maps →</a></div>
       <p class="note">Results: ${res.meta.resultsSource}. Dots are placed by 2024 precinct votes (Texas Legislative Council) and 2020
       census blocks (U.S. Census Bureau). <a href="sources.html#texas">Sources</a></p>` },
