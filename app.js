@@ -58,7 +58,7 @@ const YEARS = [...new Set(races.map(r => r.year))].sort((a, b) => b - a); // new
 const maxTotal = Math.max(...races.flatMap(r => r.counties.map(row => row[3])));
 
 // Colors (colors.js): winner's share of the county vote, in 10-point bands (same convention as the reference map); with
-// Vote lead, each county's lead in votes; with Share + size, the two parties' votes mixed blue to purple to red, see-through where few were cast
+// Vote lead, each county's lead in votes; with Vote mix, the two parties' votes mixed blue to purple to red, see-through where few were cast
 const shareOfWinner = c => 100 * Math.max(c.dem, c.rep) / c.total;
 // House races only: a county where no district race had votes reported (every race there was unopposed) is gray
 const NO_RACE_C = '#3b4352';
@@ -597,9 +597,9 @@ function layout(c, h) {
 }
 const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
 
-// ---------- color: Vote share, Vote lead, Share + size ----------
+// ---------- color: Vote share, Vote lead, Vote mix ----------
 // Each county fades from the color it shows to the chosen one (colors.js). Vote lead has a ? link to the page that explains
-// it. Only by county: by precinct or district, the counties are a plain floor under the columns. Share + size is for Flat:
+// it. Only by county: by precinct or district, the counties are a plain floor under the columns. Vote mix is for Flat:
 // in 3D a column's height already shows the votes cast, so there the map shows Vote share until it's flat again.
 let colorMode = 'share', shownMode = null, fadeT = 1, maxLead = 1, raceMaxTotal = 1;
 const COLOR_BTNS = { share: $('colorShare'), lead: $('leadColor'), mix: $('mixColor') };
@@ -611,10 +611,10 @@ const COLOR_TITLES = {
 };
 // (in a try: the first restyle runs before the camera's state exists, and the map is flat then)
 const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } catch { return false; } };
-// what the counties show now: 'plain' (by precinct or district), or the chosen color, with Share + size as Vote share in 3D
+// what the counties show now: 'plain' (by precinct or district), or the chosen color, with Vote mix as Vote share in 3D
 const shownColor = () => overlayCols() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
 const targetOf = (c, m) => m === 'plain' ? c.plainColor : m === 'lead' ? c.leadColor : m === 'mix' ? c.mixColor : c.pctColor;
-// the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Share + size,
+// the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Vote mix,
 // one grid of the split across and votes cast down
 // the key's heading for Vote share, which precinct and district columns always show
 function shareHead() { return `Vote share: ${winnerWord()}'s share of the ${districtCols() ? 'district' : overlayCols() ? 'precinct' : 'county'} vote`; }
@@ -622,13 +622,13 @@ function shareHead() { return `Vote share: ${winnerWord()}'s share of the ${dist
 function colorText(m) {
   const who = race.chamber ? 'leading party' : `county ${winnerWord()}`;
   if (m === 'plain') return `<b>Color:</b> by ${districtCols() ? 'district' : 'precinct'}, each column is shaded by its ${winnerWord()}'s share of all votes cast in it, ` +
-    `in 10-point bands, and the counties under them are a plain gray floor. Vote lead and Share + size are for the map by county.`;
+    `in 10-point bands, and the counties under them are a plain gray floor. Vote lead and Vote mix are for the map by county.`;
   if (m === 'lead') return `<b>Color (Vote lead)</b> shows each county's lead in votes: the ${who}'s votes minus the runner-up's. ` +
     `The deepest color is the biggest lead of any county in this race, so a county where few people voted stays pale, however lopsided its vote.`;
-  if (m === 'mix') return `<b>Color (Share + size)</b> mixes each county's Democratic and Republican votes, blue through purple to red, by the Democrat's ` +
+  if (m === 'mix') return `<b>Color (Vote mix)</b> mixes each county's Democratic and Republican votes, blue through purple to red, by the Democrat's ` +
     `share of the two; other candidates are left out. A county is drawn fainter the fewer votes it cast, and solid at the most any county cast in this race.`;
   return `<b>Color (Vote share)</b> shows the ${who}'s share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including ${OTHER_VOTES}.` +
-    (colorMode === 'mix' ? ` Share + size is for the flat map: in 3D, each column's height already shows the votes cast.` : '');
+    (colorMode === 'mix' ? ` Vote mix is for the flat map: in 3D, each column's height already shows the votes cast.` : '');
 }
 function colorLegend() {
   const m = shownMode ?? shownColor();
@@ -649,7 +649,7 @@ function colorLegend() {
     return;
   }
   // one grid for both parties, since the hue already says which way a county went: the split across, votes cast down
-  if (legHead) legHead.textContent = `Share + size: Democratic and Republican votes mixed, solid by votes cast`;
+  if (legHead) legHead.textContent = `Vote mix: Democratic and Republican votes mixed, solid by votes cast`;
   showPartyTitles(false);
   const rows = mixRows(raceMaxTotal);
   $('legR').innerHTML = `<div class="mix-grid">` +
@@ -659,7 +659,7 @@ function colorLegend() {
     `<div class="mix-note">Share of the Democratic and Republican votes; other candidates are left out.</div>`;
   $('legD').innerHTML = '';
 }
-// the "… won the county" line over each party's key: hidden for Share + size, whose one key covers both
+// the "… won the county" line over each party's key: hidden for Vote mix, whose one key covers both
 function showPartyTitles(on) { for (const id of ['legRTitle', 'legDTitle']) { const t = $(id); if (t) t.hidden = !on; } }
 // paint every county part way from the color it had to the one it's going to
 function paintColors() {
@@ -688,10 +688,10 @@ function colorButtons() {
     b.disabled = plain || (m === 'mix' && raised);
     if (dotsOn) continue; // (Dots gives them its own title)
     b.title = plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
-      : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Share + size is for the flat map"
+      : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Vote mix is for the flat map"
       : COLOR_TITLES[m];
   }
-  // Share + size chosen, then 3D: the map shows Vote share, so that's the button that looks on
+  // Vote mix chosen, then 3D: the map shows Vote share, so that's the button that looks on
   if (colorMode === 'mix' && raised && !plain) shareBtn.setAttribute('aria-pressed', 'true');
 }
 function setColor(m) {
@@ -1375,7 +1375,7 @@ function frame(now) {
     }
     if (moved) layoutCounties();
   }
-  if (meshes.length && shownMode !== null && shownMode !== shownColor()) showColor(); // (Share + size, to 3D and back)
+  if (meshes.length && shownMode !== null && shownMode !== shownColor()) showColor(); // (Vote mix, to 3D and back)
   if (fadeT < 1) { // the color fade, over about a second and a half
     fadeT = REDUCED ? 1 : Math.min(1, fadeT + Math.min(dt, 100) / 1500);
     paintColors();

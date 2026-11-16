@@ -11,25 +11,25 @@
 <meta property="og:site_name" content="How America Votes" />
 <meta property="og:url" content="https://johnesco.github.io/usavote/shade-by-votes.html" />
 <meta property="og:title" content="Shade by votes: three ways to color a county map" />
-<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Share + size shade each county by how much its votes counted." />
+<meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Vote mix shade each county by how much its votes counted." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="stylesheet" href="style.css?v=e50fc72886" />
+<link rel="stylesheet" href="style.css?v=07e35652f7" />
 <link rel="stylesheet" href="why.css?v=bab7c8166c" />
-<link rel="stylesheet" href="shade-by-votes.css?v=59840f0685" />
+<link rel="stylesheet" href="shade-by-votes.css?v=17a9ccdb7a" />
 <script type="importmap">
 { "imports": {
   "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
   "topojson-client": "https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/+esm",
-  "./app.js": "./app.js?v=6ab9dd24fd",
+  "./app.js": "./app.js?v=f06a86de96",
   "./busy.js": "./busy.js?v=386b779ab5",
   "./cities.js": "./cities.js?v=0d0b35869f",
-  "./colors.js": "./colors.js?v=aa4506d203",
+  "./colors.js": "./colors.js?v=74be58ea0a",
   "./compare.js": "./compare.js?v=b8b4d21159",
   "./dotlook.js": "./dotlook.js?v=5d013e2272",
   "./dots-how.js": "./dots-how.js?v=b74bd31cba",
   "./dots-worker.js": "./dots-worker.js?v=ceeecc0671",
-  "./dots.js": "./dots.js?v=3ddd631cb8",
+  "./dots.js": "./dots.js?v=5abb9859e6",
   "./home.js": "./home.js?v=d787a408c4",
   "./map3d.js": "./map3d.js?v=f4a94ca504",
   "./misread.js": "./misread.js?v=0caaa35106",
@@ -37,22 +37,22 @@
   "./places.js": "./places.js?v=2217ad7edf",
   "./player.js": "./player.js?v=33f4dcaf4f",
   "./precinct-columns.js": "./precinct-columns.js?v=3caca92010",
-  "./shade-by-votes.js": "./shade-by-votes.js?v=8fcad855ae",
+  "./shade-by-votes.js": "./shade-by-votes.js?v=618accfe5c",
   "./sitenav.js": "./sitenav.js?v=77575699c9",
   "./sourcelist.js": "./sourcelist.js?v=c4c50946ba",
   "./sources.js": "./sources.js?v=7de67fa311",
-  "./state.js": "./state.js?v=a7021e0a28",
+  "./state.js": "./state.js?v=98cc4f5d88",
   "./story.js": "./story.js?v=a93f1f435d",
-  "./viewbar.js": "./viewbar.js?v=2176ac95c3",
+  "./viewbar.js": "./viewbar.js?v=15751ee0c9",
   "./volume.js": "./volume.js?v=a9301a5d09",
   "./compare.css": "./compare.css?v=e2dcd4cefc",
   "./dotlook.css": "./dotlook.css?v=f2d5179691",
   "./home.css": "./home.css?v=ca96dd3b5d",
   "./misread.css": "./misread.css?v=868557b106",
-  "./shade-by-votes.css": "./shade-by-votes.css?v=59840f0685",
+  "./shade-by-votes.css": "./shade-by-votes.css?v=17a9ccdb7a",
   "./sources.css": "./sources.css?v=341f141015",
   "./story.css": "./story.css?v=9b2d2c6df5",
-  "./style.css": "./style.css?v=e50fc72886",
+  "./style.css": "./style.css?v=07e35652f7",
   "./voters.css": "./voters.css?v=e0cdd3dc5d",
   "./why.css": "./why.css?v=bab7c8166c"
 } }
@@ -60,14 +60,14 @@
 </head>
 <body>
 <!-- shade-by-votes.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
-     view, fades the map to one of the three colors the state maps have under Color: Vote share, Vote lead or Share + size.
+     view, fades the map to one of the three colors the state maps have under Color: Vote share, Vote lead or Vote mix.
      The three buttons under the map do the same by hand. -->
 <div class="why rel">
   <a class="back" id="back" href="texas.html">← Texas results</a>
   <header>
     <div class="kicker">Three ways to color a county map · 2026 U.S. Senate</div>
     <h1>Shade by votes, not by percentages</h1>
-    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. Every state map on this site has three choices under <b>Color</b>: <b>Vote share</b>, the usual map; <b>Vote lead</b>, shaded by how many votes each county's lead was worth; and <b>Share + size</b>, each county's Democratic and Republican votes mixed from blue through purple to red, drawn fainter where few people voted. Here is what each one shows, and what each one hides.</p>
+    <p class="lead">The usual election map shades each county by its percentage: the bigger the win, the darker the color. That makes a county where a hundred people voted look just as decisive as a big city. Every state map on this site has three choices under <b>Color</b>: <b>Vote share</b>, the usual map; <b>Vote lead</b>, shaded by how many votes each county's lead was worth; and <b>Vote mix</b>, each county's Democratic and Republican votes mixed from blue through purple to red, drawn fainter where few people voted. Here is what each one shows, and what each one hides.</p>
   </header>
 
   <div class="rel-body">
@@ -84,7 +84,7 @@
         <span>Color</span>
         <button type="button" data-mode="share" aria-pressed="true">Vote share</button>
         <button type="button" data-mode="lead" aria-pressed="false">Vote lead</button>
-        <button type="button" data-mode="mix" aria-pressed="false">Share + size</button>
+        <button type="button" data-mode="mix" aria-pressed="false">Vote mix</button>
       </div>
     </figure>
 
@@ -146,7 +146,7 @@
 
       <section class="rel-step" data-mode="mix">
         <span class="n">9</span>
-        <h2>Share + size</h2>
+        <h2>Vote mix</h2>
         <p id="s9">Each county mixes its Democratic and Republican votes into one color, blue through purple to red, and is drawn fainter the fewer votes it cast.</p>
         <p class="rel-how">Three choices keep this honest. The colors from blue through purple to red are all equally light and equally strong (they're picked in OKLCH, a color space made to match how people see), so an even county is a clear purple rather than a muddy one, and no split looks darker or louder than another. That leaves darkness free to mean one thing only: few voters. And no county fades away entirely: the smallest is still 40% solid, so you can still see its color. How solid a county is goes on a square-root scale, like Vote lead's. Other candidates' votes are left out of the mix. Read it with the key: the split across, votes cast down.</p>
       </section>
@@ -169,9 +169,9 @@
         <ul class="rel-list">
           <li><b>Vote share</b> shows how each county split. It hides how many people voted, so empty land looks as decisive as a city.</li>
           <li><b>Vote lead</b> shows how many votes each county added to its winner's total. It hides how a county split.</li>
-          <li><b>Share + size</b> shows the split as a color, from blue through purple to red, and the size as how solid that color is. It leaves out other candidates, and it is more to read, so check the key.</li>
+          <li><b>Vote mix</b> shows the split as a color, from blue through purple to red, and the votes cast as how solid that color is. It leaves out other candidates, and it is more to read, so check the key.</li>
         </ul>
-        <p>On the state maps, Share + size is for the flat map. In 3D, each column's height already shows the votes cast, so the colors go back to Vote share. Hover over any county, here or on a state map, for its exact numbers.</p>
+        <p>On the state maps, Vote mix is for the flat map. In 3D, each column's height already shows the votes cast, so the colors go back to Vote share. Hover over any county, here or on a state map, for its exact numbers.</p>
       </section>
     </div>
   </div>
@@ -179,7 +179,7 @@
   <section class="next">
     <h2>See it for yourself</h2>
     <div class="cards">
-      <a class="card" id="tryAll" href="texas.html?race=u-s-senate&amp;color=mix"><b id="tryAllName">Try all three on Texas →</b><span>Every state map has Vote share, Vote lead and Share + size under Color.</span></a>
+      <a class="card" id="tryAll" href="texas.html?race=u-s-senate&amp;color=mix"><b id="tryAllName">Try all three on Texas →</b><span>Every state map has Vote share, Vote lead and Vote mix under Color.</span></a>
       <a class="card" href="texas.html?race=u-s-senate&amp;look=dots"><b>Texas in Dots →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
       <a class="card" href="misread.html"><b>Misreading the Map →</b><span>Why the flat map looks red, step by step, with the dots.</span></a>
     </div>
@@ -191,7 +191,7 @@
     <p><a href="sources.html">Sources and credits for every state →</a></p>
   </footer>
 </div>
-<script type="module" src="shade-by-votes.js?v=8fcad855ae"></script>
+<script type="module" src="shade-by-votes.js?v=618accfe5c"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

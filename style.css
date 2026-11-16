@@ -45,7 +45,7 @@
   .legend .lead-ticks span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
   .legend .lead-ticks span:first-child { transform: none; }
   .legend .lead-ticks span:last-child { transform: translateX(-100%); }
-  /* with Share + size on: the split across (all Republican to all Democratic), votes cast down, each cell in the color a
+  /* with Vote mix on: the split across (all Republican to all Democratic), votes cast down, each cell in the color a
      county like that gets */
   .legend .mix-grid { grid-column: 1 / -1; display: grid; grid-template-columns: auto repeat(7, 1fr); gap: 2px; align-items: center; }
   .legend .mix-grid i { height: 12px; margin: 0; }

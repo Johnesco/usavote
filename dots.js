@@ -8,6 +8,8 @@
 import * as THREE from 'three';
 import { STATE } from './state.js';
 
+// Democratic blue and Republican red are matched in lightness (relative luminance about 0.25 each, OKLab L about 0.65), so
+// neither party's dots look brighter or denser than the other's on the dark map.
 export const DOT_C = { dem: '#6c7dff', rep: '#ff3b3b', other: '#9aa6b8' };
 
 // A county's area as a flat list of triangles (x0,y0,x1,y1,x2,y2 ...), in map units, from its THREE.Shapes.
@@ -116,7 +118,10 @@ export function precinctVotes({ vtds, D, R, O }, { dem, rep, other }) {
   return vtds.map(v => ({ d: dem * share(v, v.d, D), r: rep * share(v, v.r, R), o: other * share(v, v.o, O) }));
 }
 
-const glslColor = h => { const c = new THREE.Color(h); return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`; };
+// The dot shader writes its color straight to the screen, with no conversion from three.js's linear working colors back to sRGB,
+// so it takes the hex's own sRGB values. (new THREE.Color(h).r etc. are linear: they drew the blue as #2634ff and the red as #ff0b0b,
+// the red about twice as bright, and neither matched the legend.)
+const glslColor = h => { const c = new THREE.Color(h).getRGB({}, THREE.SRGBColorSpace); return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`; };
 
 // uniforms (all sizes in device pixels):
 //   uP       rise progress, same timing as the main map's columns (0 = flat)

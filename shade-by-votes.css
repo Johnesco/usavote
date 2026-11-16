@@ -45,7 +45,7 @@
 .rel-legend .ticks .pos span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .rel-legend .bandlabels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; text-align: center; }
 
-/* Share + size: the split across (all Republican to all Democratic), votes cast down, the vote numbers to the left */
+/* Vote mix: the split across (all Republican to all Democratic), votes cast down, the vote numbers to the left */
 .rel-legend .mixgrid { display: grid; grid-template-columns: 34px repeat(7, 1fr); gap: 2px; align-items: center; text-align: center; }
 .rel-legend .mixgrid > span:nth-child(8n+1) { text-align: right; padding-right: 4px; white-space: nowrap; font-size: 10.5px; }
 .rel-legend .mixgrid i { display: block; height: 8px; border-radius: 2px; }
