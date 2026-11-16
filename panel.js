@@ -12,11 +12,11 @@ if (FRAMED) document.documentElement.classList.add('framed');
 export const panelShown = () => !document.body.classList.contains('panel-hidden');
 export const panelParam = () => panelShown() || FRAMED ? '' : '&panel=0';
 
-// The panel's own Hide button, at its top, and the Details button that brings it back, first in the top strip and shown only
+// The panel's own Hide details button, at its top, and the Details button that brings it back, first in the top strip and shown only
 // while the panel is hidden. Set from the address; onChange runs after each press (to save the address). Returns the Details button.
 export function createPanelToggle(aside, onChange) {
   const hide = document.createElement('button');
-  hide.type = 'button'; hide.className = 'panel-close'; hide.textContent = '‹ Hide';
+  hide.type = 'button'; hide.className = 'panel-close'; hide.textContent = '‹ Hide details';
   hide.title = 'Hide this panel, for a wider map';
   aside.prepend(hide);
   const btn = document.createElement('button');
@@ -37,7 +37,7 @@ export function flightsHtml(tourHere = false) {
   const count = STATE.flights.length + (tour ? 1 : 0);
   if (!count) return '';
   const card = f => `<a class="flight" href="${f.href}"><b>▶ ${f.title}</b><span>${f.how}</span></a>`;
-  return `<h2>Guided flights</h2><p class="flights-note">${count > 1 ? 'Guided trips' : 'A guided trip'} over the ${(STATE.flights[0] || tour).about} race, separate from the results here.</p>` +
+  return `<h2>Guided flights</h2><p class="flights-note">${count > 1 ? 'Flights' : 'A flight'} over the ${(STATE.flights[0] || tour).about} race, separate from the results here.</p>` +
     STATE.flights.map(card).join('') +
     (!tour ? '' : tourHere
       ? `<button type="button" class="flight" id="tourPlay"><b id="tourName">▶ ${tour.title}</b><span>${tour.how}</span></button>` +

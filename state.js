@@ -13,7 +13,7 @@ const TEXAS = {
   parallels: [27.5, 35],
   rotate: [99.5, 0],
   middle: [-99.5, 31],   // a spot near the middle, for measuring miles on the map
-  summary: 'Every general election from 2008 to 2026, county by county.',
+  summary: 'Every general election from 2008 to 2026, county by county. 2026 results are unofficial.',
   data: {
     results: 'data/results-2026.json',
     history: 'data/results-history.json',
@@ -30,12 +30,12 @@ const TEXAS = {
     },
   },
   // where the state opens: any race in any year
-  results: { href: 'texas.html', title: 'See the results', text: 'Any race in any year, 2008 to 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
+  results: { href: 'texas.html', title: 'See the results', text: 'Any race in any year, 2008 to 2026. Flat or 3D, by county, precinct or district, or Dots, one per voter.' },
   // the guided flights over the county map, offered on the results page (the voter dot tour is offered on its own page, voters.html)
   flights: [
     { href: 'story.html', title: 'County Flythrough', about: '2026 U.S. Senate', how: 'Plays on its own, about 4 minutes' },
     { href: 'misread.html', title: 'Misreading the Map', about: '2026 U.S. Senate', how: 'Why the flat map looks red, step by step. About 4 minutes' },
-    { href: 'shade-by-votes.html', title: 'Shade by Votes', about: '2026 U.S. Senate', how: 'The county map in its three colors, Vote share, Vote lead and Share + size: what each shows and hides' },
+    { href: 'shade-by-votes.html', title: 'Shade by Votes', about: '2026 U.S. Senate', how: 'The county map in its three colors, Vote share, Vote lead and Vote mix: what each shows and hides' },
   ],
   tour: true,            // voters.js has a written tour of this state
   // who publishes the results, and until when they're unofficial
@@ -58,7 +58,7 @@ const OKLAHOMA = {
   parallels: [34.2, 36.4], // scripts/build_landmask.py must use the same values
   rotate: [98.7, 0],
   middle: [-97.5, 35.5],
-  summary: 'The Nov. 3, 2026 general election, by county.',
+  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
   data: {
     results: 'data/ok/results-2026.json',
     history: null,
@@ -69,7 +69,7 @@ const OKLAHOMA = {
     districts: { 'u-s-house': { url: 'data/ok/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'oklahoma.html', title: 'See the results', text: 'U.S. Senate and seven statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'oklahoma.html', title: 'See the results', text: 'U.S. Senate and seven statewide races in 2026. Flat or 3D, by county or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Oklahoma State Election Board',
@@ -87,7 +87,7 @@ const KANSAS = {
   rotate: [98.3, 0],
   middle: [-98.3, 38.5],
   radiusScaleAt: [-98.3, 38.5], // where dots.js measures a block's radius; the default is a spot in Texas, far outside this state's parallels
-  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Unofficial results.',
+  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Results are unofficial.',
   data: {
     results: 'data/ks/results-2026.json',
     history: null,
@@ -96,7 +96,7 @@ const KANSAS = {
     land: 'data/ks/landmask.bin.gz',
     cities: 'data/ks/cities.json',
   },
-  results: { href: 'kansas.html', title: 'See the results', text: 'U.S. Senate and the other statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
+  results: { href: 'kansas.html', title: 'See the results', text: 'U.S. Senate and the other statewide races in 2026. Flat or 3D, by county or precinct, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Kansas Secretary of State',
@@ -126,7 +126,7 @@ const SOUTH_CAROLINA = {
   rotate: [80.9, 0],
   middle: [-80.9, 33.6],
   radiusScaleAt: [-80.9, 33.6], // where dots.js measures a block's radius
-  summary: 'The Nov. 3, 2026 general election, by county and by precinct.',
+  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Results are unofficial.',
   data: {
     results: 'data/sc/results-2026.json',
     history: null,
@@ -137,7 +137,7 @@ const SOUTH_CAROLINA = {
     districts: { 'u-s-house': { url: 'data/sc/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'south-carolina.html', title: 'See the results', text: 'U.S. Senate and the statewide races in 2026. Bar view, by county or by precinct, or dot view, with one dot per voter.' },
+  results: { href: 'south-carolina.html', title: 'See the results', text: 'U.S. Senate and the statewide races in 2026. Flat or 3D, by county, precinct or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the South Carolina State Election Commission',
@@ -169,7 +169,7 @@ const OHIO = {
     land: 'data/oh/landmask.bin.gz',
     cities: 'data/oh/cities.json',
   },
-  results: { href: 'ohio.html', title: 'See the results', text: 'U.S. Senate, governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'ohio.html', title: 'See the results', text: 'U.S. Senate, governor and the other statewide races in 2026, unofficial and partial. Flat or 3D by county, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Ohio Secretary of State',
@@ -203,7 +203,7 @@ const IOWA = {
     districts: { 'u-s-house': { url: 'data/ia/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'iowa.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'iowa.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Flat or 3D, by county or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Iowa Secretary of State',
@@ -232,7 +232,7 @@ const NEW_MEXICO = {
     districts: { 'u-s-house': { url: 'data/nm/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'new-mexico.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'new-mexico.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026. Flat or 3D, by county or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the New Mexico Secretary of State',
@@ -266,7 +266,7 @@ const IDAHO = {
     districts: { 'u-s-house': { url: 'data/id/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'idaho.html', title: 'See the results', text: "Governor and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter." },
+  results: { href: 'idaho.html', title: 'See the results', text: "Governor and the other statewide races between a Democrat and a Republican in 2026. Flat or 3D, by county or district, or Dots, one per voter." },
   flights: [],
   tour: false,
   authority: 'the Idaho Secretary of State',
@@ -295,7 +295,7 @@ const SOUTH_DAKOTA = {
     land: 'data/sd/landmask.bin.gz',
     cities: 'data/sd/cities.json',
   },
-  results: { href: 'south-dakota.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races between a Democrat and a Republican in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'south-dakota.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races between a Democrat and a Republican in 2026. Flat or 3D by county, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the South Dakota Secretary of State',
@@ -327,7 +327,7 @@ const GEORGIA = {
     districts: { 'u-s-house': { url: 'data/ga/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'georgia.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'georgia.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, unofficial and partial. Flat or 3D, by county or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Georgia Secretary of State',
@@ -362,7 +362,7 @@ const CALIFORNIA = {
     land: 'data/ca/landmask.bin.gz',
     cities: 'data/ca/cities.json',
   },
-  results: { href: 'california.html', title: 'See the results', text: 'Governor and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'california.html', title: 'See the results', text: 'Governor and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Flat or 3D by county, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the California Secretary of State',
@@ -399,7 +399,7 @@ const RHODE_ISLAND = {
     districts: { 'u-s-house': { url: 'data/ri/districts/u-s-house.json.gz', years: [2026] } }, // By district (docs/PIPELINE.md, Part 10)
     districtSource: CD119_SOURCE,
   },
-  results: { href: 'rhode-island.html', title: 'See the results', text: 'U.S. Senate and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'rhode-island.html', title: 'See the results', text: 'U.S. Senate and the other statewide races between a Democrat and a Republican in 2026, unofficial and partial. Flat or 3D, by county or district, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Rhode Island elections board', // the pages add 's; the board's own name ends in "Elections"
@@ -435,7 +435,7 @@ const VERMONT = {
     land: 'data/vt/landmask.bin.gz',
     cities: 'data/vt/cities.json',
   },
-  results: { href: 'vermont.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races in 2026. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'vermont.html', title: 'See the results', text: 'Governor, U.S. House and the other statewide races in 2026. Flat or 3D by county, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the Vermont Secretary of State',
@@ -465,7 +465,7 @@ const WEST_VIRGINIA = {
     land: 'data/wv/landmask.bin.gz',
     cities: 'data/wv/cities.json',
   },
-  results: { href: 'west-virginia.html', title: 'See the results', text: 'U.S. Senate in 2026, the one statewide race between candidates. Bar view by county, or dot view, with one dot per voter.' },
+  results: { href: 'west-virginia.html', title: 'See the results', text: 'U.S. Senate in 2026, the one statewide race between candidates. Flat or 3D by county, or Dots, one per voter.' },
   flights: [],
   tour: false,
   authority: 'the West Virginia Secretary of State',

@@ -17,8 +17,12 @@ export function createSiteNav(view) {
     const s = STATES.find(x => x.slug === pick.value);
     if (!s || s === STATE) return;
     pick.value = STATE.slug; // so coming back with the browser's Back button finds this page's own state chosen
-    // (the same Look: the dots, if they're on screen)
-    location.href = view === 'dots' || document.body.classList.contains('look-dots') ? s.dots : s.results.href;
+    // the same view there: Look, color, By, panel, dot size and race (a race it doesn't have falls back to its default),
+    // but not the camera or the tour, which belong to this state's map
+    const here = new URLSearchParams(location.search), keep = new URLSearchParams();
+    for (const k of ['race', 'by', 'look', 'per', 'color', 'panel']) if (here.get(k)) keep.set(k, here.get(k));
+    if ((view === 'dots' || document.body.classList.contains('look-dots')) && !keep.has('look')) keep.set('look', 'dots');
+    location.href = s.results.href + (`${keep}` ? `?${keep}` : '');
   };
   nav.append(home, pick);
   return nav;

@@ -9,7 +9,7 @@ export const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m
 export const H_MAX = 420, H_FLAT = 0.8;
 // Columns shorter than SPLIT_MIN (map units; the tallest column is H_MAX) are too short to read as a stack, so they stay one color.
 export const SPLIT_MIN = 4;
-export const LOSER_C = { dem: '#584cde', rep: '#d72f30' }, OTHER_C = '#5d6c82';
+export const LOSER_C = { dem: DEM_C[3], rep: REP_C[3] }, OTHER_C = '#5d6c82';
 import { BINS, REP_C, DEM_C } from './colors.js';
 export { BINS, REP_C, DEM_C };
 export function winnerColor(c) {

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#0e1116" />
 <title>Why These Maps · How America Votes</title>
 <meta name="description" content="The same election drawn three ways, and why this site maps votes by people instead of by land." />
 <link rel="canonical" href="https://johnesco.github.io/usavote/why.html" />
@@ -15,8 +16,8 @@
 <meta property="og:image:width" content="3840" />
 <meta property="og:image:height" content="2160" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="stylesheet" href="style.css?v=2f6432c56b" />
-<link rel="stylesheet" href="why.css?v=84d3af7c23" />
+<link rel="stylesheet" href="style.css?v=07e35652f7" />
+<link rel="stylesheet" href="why.css?v=bab7c8166c" />
 </head>
 <body>
 <!-- The numbers in the text are filled in from data/results-2026.json by the script at the bottom. The pictures come from
@@ -33,7 +34,7 @@
   <section class="step">
     <div>
       <span class="n">1</span>
-      <h2>County view</h2>
+      <h2>Flat</h2>
       <p class="say">The typical county-by-county color coding. Whether a county has 100 votes or 1 million doesn't affect its color.</p>
       <p id="t1">Most of the map is red because most of the land is in counties the Republican won.</p>
     </div>
@@ -43,10 +44,10 @@
   <section class="step">
     <div>
       <span class="n">2</span>
-      <h2>3D view</h2>
+      <h2>3D</h2>
       <p class="say">Let's add a dimension to see how many votes each county cast, and how they were split.</p>
       <p id="t2">Each county rises into a column as tall as its vote count, stacked by candidate. The red plains stay flat and the cities tower.</p>
-      <a class="go" href="texas.html?race=u-s-senate">Open the 3D view →</a>
+      <a class="go" href="texas.html?race=u-s-senate&amp;look=3d">Open Texas in 3D →</a>
     </div>
     <figure><img src="texas-2d-to-3d.gif" loading="lazy" alt="The flat county map of Texas tilting and rising into columns, with the tallest over Houston, Dallas, Fort Worth, San Antonio and Austin. Each column is stacked by how the county voted: the runner-up's votes at the bottom and the winner's on top." /></figure>
   </section>
@@ -54,11 +55,11 @@
   <section class="step">
     <div>
       <span class="n">3</span>
-      <h2>One dot per voter</h2>
+      <h2>Dots, one per voter</h2>
       <p class="say">Taken down to the resolution of one dot per person, the density is so vast you can't see it clearly from afar.</p>
-      <p id="t3">So the dot view is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.</p>
+      <p id="t3">So Dots is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.</p>
       <p>Dot positions are an estimate, not a record of anyone's vote: ballots are secret.</p>
-      <a class="go" href="voters.html">Open the dot view and zoom in →</a>
+      <a class="go" href="texas.html?race=u-s-senate&amp;look=dots">Open Texas in Dots and zoom in →</a>
     </div>
     <figure class="pair">
       <img src="texas-series/map-dots.png" width="1760" height="1500" loading="lazy" alt="Map of Texas with one dot per voter: most of the state is dark, with bright clusters at the cities." />
@@ -70,9 +71,9 @@
   <section class="next">
     <h2>See it for yourself</h2>
     <div class="cards">
-      <a class="card" href="texas.html"><b>Texas, 3D view →</b><span>Any race in any year, 2008 to 2026, by county or by precinct.</span></a>
-      <a class="card" href="voters.html"><b>Texas, dot view →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
-      <a class="card" href="index.html"><b>Every state so far →</b><span>The same two views for each state on the site.</span></a>
+      <a class="card" href="texas.html?race=u-s-senate&amp;look=3d"><b>Texas in 3D →</b><span>Any race from 2008 to 2026, by county, with precinct and district maps where they exist.</span></a>
+      <a class="card" href="texas.html?race=u-s-senate&amp;look=dots"><b>Texas in Dots →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
+      <a class="card" href="index.html"><b>Every state so far →</b><span>The same three Looks, Flat, 3D and Dots, for each state on the site.</span></a>
     </div>
   </section>
 
@@ -102,7 +103,7 @@ if (D.votes > R.votes) {
   $('score').textContent = `${pct(D.votes, TOT)} to ${pct(R.votes, TOT)}`;
   $('t1').innerHTML = `<span class="r">${R.name}</span> won <b>${rWon.length} of ${counties.length} counties</b>, covering <b>${pct(sum(rWon, c => c.landSqMi), LAND, 0)} of the land</b>, so the map is red. But ${small[0].name} County, where ${num(small[0].total)} people voted, gets the same coat of paint as ${big[0].name} County, where ${short(big[0].total)} did.`;
   $('t2').innerHTML = `Each county rises into a column as tall as its vote count, stacked by candidate. The red plains stay flat and the cities tower: <b>${half} counties cast half of all the votes</b>, on ${pct(sum(big.slice(0, half), c => c.landSqMi), LAND, 0)} of the land.`;
-  $('t3').innerHTML = `There are <b>${num(TOT)} dots</b> here, so the dot view is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.`;
+  $('t3').innerHTML = `There are <b>${num(TOT)} dots</b> here, so Dots is built for zooming. From high up, the cities glow; up close, each one resolves into neighborhoods, and every dot is one voter.`;
 }
 $('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}. Percentages are of all votes cast.`;
 </script>

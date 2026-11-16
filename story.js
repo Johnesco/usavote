@@ -176,7 +176,7 @@ const STEPS = [
     <h2>Most of the map, fewer of the votes</h2>
     <p>${R.last} won ${S.cntR} counties and ${pct(S.landR, land)} of the land. ${D.last} won where people vote, and the state by <b class="hl">${fmt(S.dem - S.rep)}</b> votes.</p>
     <div class="links">
-      <a class="cta" href="texas.html?race=u-s-senate"><b>See all the results →</b><span>Any race in any year, every county, hover for details</span></a>
+      <a class="cta" href="texas.html?race=u-s-senate&look=3d"><b>See all the results →</b><span>Any race in any year, every county, hover for details</span></a>
     </div>
     <p class="note">Sources: Texas Secretary of State, election-night returns as of ${res.meta.resultsUpdated} (unofficial until the canvass) and 2024 final county results;
       U.S. Census Bureau land area and county boundaries. Column height is proportional to votes cast in the Senate race; each column is split by candidate. <a href="sources.html#texas">Sources and credits →</a></p>` },
@@ -317,12 +317,12 @@ renderer.domElement.addEventListener('pointermove', e => {
     <div class="row"><span>${D.name} (D)</span><span>${fmt(c.dem)} · ${pct(c.dem, c.total, 1)}</span></div>
     <div class="row"><span>${R.name} (R)</span><span>${fmt(c.rep)} · ${pct(c.rep, c.total, 1)}</span></div>
     <div class="row m"><span>Total votes</span><span>${fmt(c.total)}</span></div>
-    <div class="row m"><span>2026 Senate margin</span><span style="color:${c.m > 0 ? '#8fa8ff' : '#ff8b8b'}">${mg(c.m, 1)}</span></div>
-    <div class="row m"><span>2024 President margin</span><span style="color:${c.m0 > 0 ? '#8fa8ff' : '#ff8b8b'}">${mg(c.m0, 1)}</span></div>
+    <div class="row m"><span>2026 Senate margin</span><span style="color:${c.m > 0 ? 'var(--dem-ink)' : 'var(--rep-ink)'}">${mg(c.m, 1)}</span></div>
+    <div class="row m"><span>2024 President margin</span><span style="color:${c.m0 > 0 ? 'var(--dem-ink)' : 'var(--rep-ink)'}">${mg(c.m0, 1)}</span></div>
     <div class="row m"><span>Land area</span><span>${fmt(Math.round(c.landSqMi))} sq mi</span></div>` +
     (STEPS[curStep].color.rows ? (() => { const ch = STEPS[curStep].color, h = ch.rows[c.i], h0 = ch.rows0[c.i];
-      return `<div class="row m"><span>2026 ${ch.label}, all districts here</span><span style="color:${h.dem > h.rep ? '#8fa8ff' : '#ff8b8b'}">${cm(h, 1)}</span></div>` +
-        (h0.total ? `<div class="row m"><span>2024 ${ch.label}</span><span style="color:${h0.dem > h0.rep ? '#8fa8ff' : '#ff8b8b'}">${cm(h0, 1)}</span></div>` : ''); })() : '');
+      return `<div class="row m"><span>2026 ${ch.label}, all districts here</span><span style="color:${h.dem > h.rep ? 'var(--dem-ink)' : 'var(--rep-ink)'}">${cm(h, 1)}</span></div>` +
+        (h0.total ? `<div class="row m"><span>2024 ${ch.label}</span><span style="color:${h0.dem > h0.rep ? 'var(--dem-ink)' : 'var(--rep-ink)'}">${cm(h0, 1)}</span></div>` : ''); })() : '');
   tip.style.display = 'block';
   const x = e.clientX - r.left, y = e.clientY - r.top;
   tip.style.left = Math.max(8, Math.min(x + 14, r.width - tip.offsetWidth - 8)) + 'px';

@@ -4,14 +4,14 @@
 // Vote share is the usual one: the winner's color, shaded by the winner's share of the county's vote in 10-point bands.
 // Vote lead keeps the winner's color but shades by the county's lead in votes (winner minus runner-up), on a square-root
 // scale up to the biggest lead in the state, so counties where few people voted fade to pale whatever their percentage.
-// Share + size mixes the county's Democratic and Republican votes, blue through purple to red, all equally light, and draws
+// Vote mix mixes the county's Democratic and Republican votes, blue through purple to red, all equally light, and draws
 // it see-through over the dark background, the more so the fewer votes it cast (colors.js).
 //
 // Each step in the text names which color the map shows (data-mode: share, lead or mix) and which counties to point at
 // (data-focus); the numbers in the text are worked out here from the results, so they can't drift from the data.
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
-import { STATE } from './state.js';
+import { STATE, STATES } from './state.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
@@ -21,6 +21,24 @@ const short = n => n >= 1e6 ? (n / 1e6).toFixed(2) + ' million' : num(n);
 const pct = (a, b, d = 0) => (100 * a / b).toFixed(d) + '%';
 const sum = (list, f) => list.reduce((s, c) => s + f(c), 0);
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+
+// Came from another state's map by its Color ? link (viewbar.js, ?from=ohio.html?race=...): lead back there, and offer the
+// three colors on that map. Only a state's own page is taken, so the link can't be sent anywhere else.
+{
+  const from = new URLSearchParams(location.search).get('from');
+  let u = null;
+  try { u = from && new URL(from, location.href); } catch {}
+  const back = u && u.origin === location.origin && STATES.find(s => s.results.href === u.pathname.split('/').pop());
+  if (back) {
+    $('back').href = back.results.href + u.search;
+    $('back').textContent = `← ${back.name} results`;
+    // the three colors show on the Flat map by county, so keep only the race (not 3D, Dots or By precinct or district)
+    const p = new URLSearchParams(); const race = new URLSearchParams(u.search).get('race');
+    if (race) p.set('race', race); p.set('color', 'mix');
+    $('tryAll').href = `${back.results.href}?${p}`;
+    $('tryAllName').textContent = `Try all three on ${back.name} →`;
+  }
+}
 
 const [res, us] = await Promise.all([getJSON(STATE.data.results), getJSON(GEO_URL)]);
 const race = res.races.find(r => r.id === 'u-s-senate');
@@ -48,8 +66,8 @@ for (const c of counties) {
   c.col = { share: rgb(hex), lead: leadRGB(c.dWon, c.lead, MAX_LEAD), mix: mixRGB(c.dem, c.rep, c.total, MAX_TOTAL) };
   c.now = c.col.share; // the color on screen, which a fade starts from
 }
-const MODE_NAMES = { share: 'Vote share', lead: 'Vote lead', mix: 'Share + size' };
-const solid = c => `${Math.round(100 * mixT(c.total, MAX_TOTAL))}%`; // how solid a county is drawn with Share + size
+const MODE_NAMES = { share: 'Vote share', lead: 'Vote lead', mix: 'Vote mix' };
+const solid = c => `${Math.round(100 * mixT(c.total, MAX_TOTAL))}%`; // how solid a county is drawn with Vote mix
 const dShare = c => c.dem / (c.dem + c.rep); // the Democrat's share of the two-party vote, which sets the hue
 const hueName = c => { const s = dShare(c); return s >= 0.8 ? 'nearly pure blue' : s >= 0.6 ? 'a blue purple' : s > 0.4 ? 'purple' : s > 0.2 ? 'a red purple' : 'nearly pure red'; };
 const twoParty = c => `${pct(Math.max(c.dem, c.rep), c.dem + c.rep)} ${c.dWon ? 'Democratic' : 'Republican'} of the two-party vote`;
@@ -109,7 +127,7 @@ const gradient = leadGradient, TICKS = leadTicks(MAX_LEAD);
 $('legRel').innerHTML = `<div class="t">County's lead in votes</div>` +
   [W, L].map(cand => legRow(cand, `<div class="ramp" style="background:${gradient(cand === D ? DEM_C : REP_C)}"></div>`)).join('') +
   `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
-// Share + size: one grid for both parties, the split across, votes cast down
+// Vote mix: one grid for both parties, the split across, votes cast down
 const MIX_ROWS = mixRows(MAX_TOTAL);
 $('legMix').innerHTML = `<div class="t">Democratic and Republican votes mixed across, solid by votes cast down</div>` +
   `<div class="mixgrid">${MIX_ROWS.map((v, r) => `<span>${r === MIX_ROWS.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +

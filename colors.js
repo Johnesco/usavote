@@ -31,12 +31,12 @@ export function leadTicks(maxLead) {
   const pick = nice.slice(-3); // the three biggest that fit, so the marks don't crowd near zero
   return [0, ...pick, maxLead];
 }
-// Share + size color (value by alpha): two things, each in a channel of its own.
+// Vote mix color (value by alpha): two things, each in a channel of its own.
 //   The split is the hue: the Democratic and Republican votes mixed, from blue through purple to red, by the Democrat's
 //   share of the two (others left out). The mix runs along a circle of hues in OKLCH, a color space made to match how
 //   people see, at one lightness and one strength all the way, so an even county is a clear purple, not a muddy one, and
 //   no split looks darker or louder than another.
-//   The size is how solid the color is: a county is drawn see-through over the map's dark background, the more so the fewer
+//   Votes cast is how solid the color is: a county is drawn see-through over the map's dark background, the more so the fewer
 //   votes it cast, against the race's biggest county, on the same square-root scale as Vote lead. Since every split has
 //   the same lightness, dim only ever means few votes; and never fully see-through, so even the smallest shows its hue.
 export const MAP_BG = '#0e1116';            // the map's background (style.css --bg, app.js scene.background)

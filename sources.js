@@ -11,7 +11,7 @@ $('jump').innerHTML = states.map(s => `<a href="#${s.slug}">${s.name}</a>`).join
 
 const blocks = await Promise.all(states.map(async s => {
   const head = `<section class="state" id="${s.slug}"><h3>${s.name}</h3>`;
-  const links = `<p class="open"><a href="${s.results.href}">Bar view →</a><a href="${s.dots}">Dot view →</a></p>`;
+  const links = `<p class="open"><a href="${s.results.href}">See the results →</a><a href="${s.dots}">Dots →</a></p>`;
   try {
     const [res, hist] = await Promise.all([getJSON(s.data.results), s.data.history ? getJSON(s.data.history) : null]);
     const m = res.meta;

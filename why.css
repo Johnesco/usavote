@@ -9,7 +9,7 @@ html, body { height: auto; }
 .why h1 { font-size: 44px; line-height: 1.08; letter-spacing: -0.02em; margin: 8px 0 16px; text-wrap: balance; }
 .why .lead { font-size: 19px; line-height: 1.55; color: #c5cedb; margin: 0 0 12px; }
 .why .lead b { color: var(--text); }
-.d { color: #8794ff; font-weight: 650; } .r { color: #ff5757; font-weight: 650; }
+:is(p, li, span, td).d { color: var(--dem-ink); font-weight: 650; } :is(p, li, span, td).r { color: var(--rep-ink); font-weight: 650; }
 
 .step { margin-top: 44px; padding-top: 30px; border-top: 1px solid var(--line); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 36px; align-items: center; }
 .step .n { display: inline-block; width: 30px; height: 30px; line-height: 30px; border-radius: 50%; background: var(--text); color: var(--bg); text-align: center; font-weight: 700; font-size: 16px; }

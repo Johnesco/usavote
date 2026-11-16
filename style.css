@@ -1,11 +1,14 @@
   :root {
+    color-scheme: dark;     /* native controls and scrollbars draw dark */
     --bg: #0e1116;
     --panel: #151a22;
     --line: #2a3240;
     --text: #e8ecf2;
     --muted: #9aa5b5;
-    --dem: #3b5bdb;
+    --dem: #584cde;         /* party fills: the map's own (colors.js DEM_C[3], REP_C[3]) */
     --rep: #d72f30;
+    --dem-ink: #8fa8ff;     /* party text on a dark background */
+    --rep-ink: #ff8b8b;
     --oth: #5d6c82;
     --accent: #f2c14e;
   }
@@ -42,7 +45,7 @@
   .legend .lead-ticks span { position: absolute; top: 2px; transform: translateX(-50%); white-space: nowrap; }
   .legend .lead-ticks span:first-child { transform: none; }
   .legend .lead-ticks span:last-child { transform: translateX(-100%); }
-  /* with Share + size on: the split across (all Republican to all Democratic), votes cast down, each cell in the color a
+  /* with Vote mix on: the split across (all Republican to all Democratic), votes cast down, each cell in the color a
      county like that gets */
   .legend .mix-grid { grid-column: 1 / -1; display: grid; grid-template-columns: auto repeat(7, 1fr); gap: 2px; align-items: center; }
   .legend .mix-grid i { height: 12px; margin: 0; }
@@ -147,9 +150,8 @@
     .controls input[type=range] { width: 36px; }
     .hint { display: none; }
     .races { padding: 8px 12px 6px; }
-    #viewRow, #picker, #goRow { flex: none; width: 100%; max-width: none; }
+    #picker, #goRow { flex: none; width: 100%; max-width: none; }
     .site-nav { width: 100%; justify-content: space-between; }
-    #viewRow { justify-content: space-between; flex-wrap: wrap; }
     .seg > * { padding: 5px 9px; font-size: 12px; }
     .controls .seg > * { padding: 7px 8px; }
     #goRow select { padding: 5px 8px; }

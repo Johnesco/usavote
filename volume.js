@@ -115,7 +115,7 @@ function stack(c) {
   for (const p of parts) p.m.slosh.uScale.value = p.m.scale.z;
   return top;
 }
-const LOSER_C = { dem: '#584cde', rep: '#d72f30' }, OTHER_C = '#5d6c82';
+const LOSER_C = { dem: DEM_C[3], rep: REP_C[3] }, OTHER_C = '#5d6c82';
 const paint = (m, hex) => { const col = new THREE.Color(hex); m.material[0].color.copy(col); m.material[1].color.copy(col).multiplyScalar(0.85); };
 
 // ---------- the race, the colors and the three steps ----------
