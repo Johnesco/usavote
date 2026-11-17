@@ -102,6 +102,16 @@
   .races select:disabled { opacity: .5; cursor: default; }
   .races select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .races select option, .races select optgroup { background: var(--panel); color: var(--text); }
+  /* the key on the map (app.js mapKey), top left, for Flat and 3D; Dots has its own */
+  .map-key { position: absolute; top: 12px; left: 14px; z-index: 2; width: 250px; max-width: calc(100% - 28px); background: rgba(21,26,34,.88);
+    border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px 8px; font-size: 11.5px; color: var(--muted); }
+  .map-key summary { cursor: pointer; color: var(--text); font-weight: 600; font-size: 12px; list-style-position: inside; }
+  .map-key:not([open]) { width: auto; padding: 5px 10px; }
+  .map-key .k-strip { display: flex; height: 10px; margin-top: 7px; border-radius: 2px; overflow: hidden; }
+  .map-key .k-strip i { flex: 1; }
+  .map-key .k-ends { display: flex; justify-content: space-between; margin-top: 3px; }
+  .map-key .k-height { margin-top: 6px; color: var(--text); }
+  body.look-dots .map-key { display: none; }
   #tip { position: absolute; pointer-events: none; background: rgba(14,17,22,.95); border: 1px solid var(--line); border-radius: 8px;
     padding: 10px 12px; font-size: 13px; min-width: 230px; display: none; z-index: 5; box-shadow: 0 6px 24px rgba(0,0,0,.4); }
   #tip .n { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
