@@ -23,13 +23,23 @@ const opens = s => s.results.href;
 $('start').innerHTML = EXPLAINERS.map((c, i) => `
   <a class="start-card${i ? '' : ' first'}" href="${c.href}"><span class="kicker">${c.about}</span><b>${i ? '▶ ' : ''}${c.title}${i ? '' : ' →'}</b><span>${c.how}</span></a>`).join('');
 
-// the panel for each state that's ready
+// the three Looks, the same words as the map page's Look buttons (viewbar.js), each opening the state's map in that Look
+const LOOKS = [
+  { name: 'Flat', q: '', how: 'The flat map, seen from above' },
+  { name: '3D', q: '?look=3d', how: 'Columns raised by votes cast' },
+  { name: 'Dots', q: '?look=dots', how: 'One dot for each voter' },
+];
+
+// the panel for each state that's ready: its results, and straight into each Look
 $('ready').innerHTML = STATES.map(s => `
   <section class="state-card" aria-labelledby="st-${s.fips}">
     <div class="kicker">Available now</div>
     <h2 id="st-${s.fips}">${s.name}</h2>
     <p class="summary">${s.summary}</p>
     <a class="view first" href="${s.results.href}"><b>${s.results.title} →</b><span>${s.results.text}</span></a>
+    <div class="looks" role="group" aria-label="Open ${s.name} as">${LOOKS.map(l => `
+      <a href="${s.results.href}${l.q}" title="${l.how}"><b>${l.name}</b><span>${l.how}</span></a>`).join('')}
+    </div>
   </section>`).join('');
 
 // every state, for finding one by name
