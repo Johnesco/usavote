@@ -1,12 +1,30 @@
 /* The U.S. homepage. Colors come from style.css. */
 html, body { height: auto; }
 .home { max-width: 1240px; margin: 0 auto; padding: 36px 32px 48px; }
-.home header { margin-bottom: 26px; max-width: 720px; }
+/* the idea first: what the site shows and why, with the Texas picture, then where to start */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 32px; align-items: center; margin-bottom: 28px; }
 .home h1 { font-size: 38px; letter-spacing: -0.02em; margin: 0 0 8px; }
-.home header p { color: var(--muted); font-size: 17px; margin: 0; }
-.home header .why-link { margin-top: 10px; font-size: 15px; }
-.why-link a { color: var(--accent); font-weight: 650; text-decoration: none; }
-.why-link a:hover, .why-link a:focus-visible { text-decoration: underline; }
+.hero .tagline { color: var(--muted); font-size: 17px; margin: 0 0 16px; }
+.hero .thesis { font-size: 19px; line-height: 1.45; margin: 0 0 20px; max-width: 34em; }
+.hero-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; }
+.btn { display: inline-block; padding: 10px 16px; border-radius: 999px; background: var(--accent); color: #111; font-weight: 700; font-size: 15px; text-decoration: none; border: 1px solid var(--accent); }
+.btn:hover, .btn:focus-visible { background: #ffd76a; border-color: #ffd76a; }
+.btn.ghost { background: none; color: var(--accent); }
+.btn.ghost:hover, .btn.ghost:focus-visible { background: rgba(242,193,78,.08); }
+.hero-pic { display: block; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.hero-pic img { display: block; width: 100%; height: auto; }
+.hero-pic:hover, .hero-pic:focus-visible { border-color: var(--accent); }
+
+.start { margin-bottom: 30px; }
+.start h2, .states-h { margin-top: 0; }
+.start-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.start-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 15px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; color: var(--text); text-decoration: none; }
+.start-card:hover, .start-card:focus-visible { border-color: var(--accent); background: rgba(242,193,78,.06); }
+.start-card .kicker { font-size: 11px; }
+.start-card b { font-size: 16px; }
+.start-card.first { border-color: var(--accent); }
+.start-card.first b { color: var(--accent); }
+.start-card span { font-size: 13px; color: var(--muted); }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, 1fr); gap: 32px; align-items: start; }
 #map svg { display: block; width: 100%; height: auto; }
@@ -41,6 +59,8 @@ a:focus-visible .st.on { stroke: #fff; stroke-width: 2; }
 @media (max-width: 860px) {
   .home { padding: 22px 16px 36px; }
   .home h1 { font-size: 30px; }
-  .home header p { font-size: 15px; }
+  .hero { grid-template-columns: 1fr; gap: 18px; }
+  .hero .tagline { font-size: 15px; }
+  .hero .thesis { font-size: 17px; }
   .layout { grid-template-columns: 1fr; gap: 18px; }
 }
