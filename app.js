@@ -103,6 +103,9 @@ const DISTRICTS = STATE.data.districts || {};
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
   // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
   $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
+  // the key on the map for Flat and 3D (mapKey); Dots has its own. Folded on phones, where it would cover the map.
+  $('stage').insertAdjacentHTML('afterend', `<details class="map-key" id="mapKey"${matchMedia('(max-width: 600px)').matches ? '' : ' open'}>` +
+    `<summary id="mapKeyHead">Key</summary><div id="mapKeyBody"></div></details>`);
   // (through the import map, for the version stamp: scripts/stamp.mjs)
   document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${import.meta.resolve('./dotlook.css')}" />`);
 }
@@ -633,6 +636,7 @@ function colorText(m) {
 function colorLegend() {
   const m = shownMode ?? shownColor();
   $('colorMethod').innerHTML = colorText(m);
+  mapKey();
   if (m === 'share' || m === 'plain') {
     showPartyTitles(true);
     bandLegend();
@@ -658,6 +662,32 @@ function colorLegend() {
     `<span class="mix-votes">votes</span>${MIX_SPLIT_LABELS.map(l => `<span>${l.replace(/^(\d+) /, '$1% ')}</span>`).join('')}</div>` +
     `<div class="mix-note">Share of the Democratic and Republican votes; other candidates are left out.</div>`;
   $('legD').innerHTML = '';
+}
+// The key on the map, for Flat and 3D: the color on screen as one strip from Republican to Democratic, and in 3D what a
+// column's height means. The fuller key is in the panel, under "What you're seeing".
+let keyRaised = false;
+function mapKey() {
+  const body = $('mapKeyBody'); if (!body || !race) return;
+  const m = shownMode ?? shownColor();
+  const strip = (cells, [l, c, r]) => `<div class="k-strip">${cells}</div><div class="k-ends"><span>${l}</span><span>${c}</span><span>${r}</span></div>`;
+  let head, html;
+  if (m === 'lead') {
+    head = `Vote lead · each county's lead in votes`;
+    html = strip(`<i style="background:${leadGradient(REP_C)};transform:scaleX(-1)"></i><i style="background:${leadGradient(DEM_C)}"></i>`,
+      [`R +${tickLabel(maxLead)}`, '0', `D +${tickLabel(maxLead)}`]);
+  } else if (m === 'mix') {
+    head = `Vote mix · fainter where fewer voted`;
+    html = strip(MIX_SPLITS.map(s => `<i style="background:${mixHex(s, 1 - s, raceMaxTotal, raceMaxTotal)}"></i>`).join(''), ['100% R', 'Even', '100% D']);
+  } else {
+    head = `Vote share · ${winnerWord()}'s share of the ${districtCols() ? 'district' : overlayCols() ? 'precinct' : 'county'} vote`;
+    html = strip([...REP_C].reverse().concat(DEM_C).map(c => `<i style="background:${c}"></i>`).join(''), ['R 90%+', 'under 50%', 'D 90%+']);
+  }
+  if (raisedGoal()) {
+    const big = !overlayCols() && desc?.[0];
+    html += `<div class="k-height">Height = votes cast${big ? ` · tallest: ${big.name}, ${short(big.total)}` : ''}</div>`;
+  }
+  $('mapKeyHead').textContent = head;
+  body.innerHTML = html;
 }
 // the "… won the county" line over each party's key: hidden for Vote mix, whose one key covers both
 function showPartyTitles(on) { for (const id of ['legRTitle', 'legDTitle']) { const t = $(id); if (t) t.hidden = !on; } }
@@ -847,6 +877,7 @@ function layoutCounties() {
 function applyProgress(p, pose = null) {
   progress = p;
   if (p > 0.5 && !seen3d) { seen3d = true; renderPlace(); } // (the line over the map stops asking for 3D)
+  if ((p > 0.5) !== keyRaised) { keyRaised = p > 0.5; mapKey(); } // (the key adds or drops its line about height)
   setPose(pose || canonicalPose(p));
   layoutCounties();
   flatBtn.setAttribute('aria-pressed', String(!dotsOn && p <= 0.5));
