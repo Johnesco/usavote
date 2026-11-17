@@ -100,6 +100,13 @@ const DISTRICTS = STATE.data.districts || {};
   $('byCounty')?.closest('.seg')?.remove();
   if ($('viewRow') && !$('viewRow').children.length) $('viewRow').remove();
   document.querySelector('.map-area .controls').insertAdjacentHTML('afterbegin', viewBarGroups());
+  // the switches that are only for 3D, under one label and shown only in 3D (updateMode): Rotate, then Drag moves / Drag turns
+  // and County alone, which are added after it below
+  $('turnWrap').insertAdjacentHTML('beforebegin', '<div class="vb-group" id="g3d" hidden><span class="vb-label">3D</span></div>');
+  $('g3d').append($('turnWrap'));
+  $('turn').textContent = 'Rotate';
+  // what a choice that's turned off says when it's pressed (say)
+  $('stage').insertAdjacentHTML('afterend', '<div class="off-note" id="offNote" role="status" aria-live="polite" hidden></div>');
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
   // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
   $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
@@ -122,6 +129,21 @@ const districtEntry = r => { const e = DISTRICTS[r.id.replace(/^\d{4}-/, '')]; r
 const districtCols = () => byDistrict && dist && dist.race === race ? dist.cols : null;
 const overlayCols = () => districtCols() || (byPrecinct ? columns : null); // what stands in place of the county columns, if anything
 const byParam = () => byDistrict ? '&by=district' : byPrecinct ? '&by=precinct' : '';
+// A choice that doesn't fit what's on screen is turned off: it looks off and does nothing, but unlike a disabled button it can
+// still be focused and pressed, and pressing it says why, just above the control bar (the click guard by markLook).
+function setOff(b, why, title = '') {
+  if (why) b.setAttribute('aria-disabled', 'true'); else b.removeAttribute('aria-disabled');
+  b.title = why || title;
+}
+let offTimer = 0;
+const BY_TITLES = { byCounty: 'The map by county', byPrecinct: 'The map by voting precinct' };
+let districtWhy = 'Checking for district lines…', districtTitle = ''; // District's reason it's off, or its title (syncDistricts)
+function say(text) {
+  const note = $('offNote'), bar = document.querySelector('.map-area .controls');
+  note.textContent = text; note.hidden = false;
+  note.style.bottom = `${bar.parentElement.getBoundingClientRect().bottom - bar.getBoundingClientRect().top + 8}px`;
+  clearTimeout(offTimer); offTimer = setTimeout(() => { note.hidden = true; }, 6000);
+}
 // with no place chosen, the line over the map carries the race's short headline (brief, from setRace, renderChamber or renderHistory),
 // and until 3D has been on screen once, the one thing to press. Not in Dots, which writes its own line.
 let brief = '', seen3d = false;
@@ -715,11 +737,10 @@ function colorButtons() {
     if (!b) continue;
     // by precinct or district the columns show Vote share, so that's the one that looks on (colorMode is kept for By county)
     b.setAttribute('aria-pressed', String(plain ? m === 'share' : colorMode === m && !(m === 'mix' && raised)));
-    b.disabled = plain || (m === 'mix' && raised);
-    if (dotsOn) continue; // (Dots gives them its own title)
-    b.title = plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
+    setOff(b, dotsOn ? NOT_DOTS_COLOR
+      : plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
       : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Vote mix is for the flat map"
-      : COLOR_TITLES[m];
+      : '', COLOR_TITLES[m]);
   }
   // Vote mix chosen, then 3D: the map shows Vote share, so that's the button that looks on
   if (colorMode === 'mix' && raised && !plain) shareBtn.setAttribute('aria-pressed', 'true');
@@ -894,19 +915,19 @@ function updateMode() {
   controls.mouseButtons.RIGHT = raised && !drag ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
   controls.touches.ONE = drag ? THREE.TOUCH.ROTATE : THREE.TOUCH.PAN;
   controls.touches.TWO = raised && !drag ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN;
+  $('g3d').hidden = !raised || dotsOn;
   $('turnWrap').hidden = !raised;
   $('dragMode').hidden = !raised;
   $('aloneWrap').hidden = !raised;
   const canAlone = !!place?.c && !overlayCols();
-  $('alone').disabled = !canAlone;
   $('alone').setAttribute('aria-pressed', String(alone && canAlone));
-  $('alone').title = overlayCols() ? 'County alone is for the map by county'
-    : !place?.c ? 'Choose a county in Go to, then press this to see its column alone'
-    : alone ? `Raise every county again` : `See ${place.c.name} County's column alone, with every other county flat`;
+  setOff($('alone'), overlayCols() ? 'County alone is for the map by county'
+    : !place?.c ? 'Choose a county in Go to, then press County alone to see its column by itself' : '',
+    alone ? 'Raise every county again' : `See ${place?.c?.name} County's column alone, with every other county flat`);
   $('dragMove').setAttribute('aria-pressed', String(!drag));
   $('dragTurn').setAttribute('aria-pressed', String(drag));
   turnBtn.setAttribute('aria-pressed', String(turning));
-  turnBtn.textContent = turning ? 'Rotation on' : 'Rotation off';
+  turnBtn.title = turning ? 'The map is turning slowly. Press to stop it' : 'Turn the map slowly';
   const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
   hintEl.textContent = anim ? `Hover over a ${what}`
     : raised ? `${turning ? 'Turning slowly · ' : ''}${TOUCH ? (drag ? 'One finger turns · two move' : 'One finger moves · two turn') : (drag ? 'Drag to turn · right-drag to move' : 'Drag to move · right-drag to turn')} · ${TOUCH ? 'pinch' : 'scroll'} to zoom · ${TOUCH ? 'tap' : 'hover over or click'} a ${what}`
@@ -952,23 +973,27 @@ document.getElementById('reset').onclick = () => { clearPlace(); if (dotsOn) dot
 // without precinct data the parties are mixed evenly across each county, which could be taken for how neighborhoods voted, so it says so
 const DOT_HINT = 'Drag to move · scroll, pinch or double-click to zoom · ' +
   (HAS_PRECINCTS ? 'spots and colors are estimated' : 'colors are mixed evenly across each county, not by neighborhood');
-const NOT_DOTS = ['byCounty', 'byPrecinct', 'byDistrict', 'colorShare', 'leadColor', 'mixColor'];
-const byTitles = new Map(); // the By buttons' own titles, while Dots has replaced them
+// A choice that's turned off (setOff) does nothing when pressed but say why. District, on a race that isn't by district, goes to one that is.
 document.querySelector('.map-area .controls').addEventListener('click', e => { // (capture: before the buttons' own handlers)
-  if (dotsOn && e.target.closest(NOT_DOTS.map(id => '#' + id).join())) { e.stopPropagation(); e.preventDefault(); }
+  const b = e.target.closest('[aria-disabled]');
+  if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  if (b.id === 'byDistrict' && !dotsOn && !race.chamber) toDistrictRace(); else say(b.title);
 }, true);
+// the By buttons: all turned off with Dots, and District also while the race on screen has no district lines (syncDistricts)
+function byButtons() {
+  for (const id of ['byCounty', 'byPrecinct', 'byDistrict']) {
+    const b = $(id); if (!b) continue;
+    setOff(b, dotsOn ? NOT_DOTS_BY : id === 'byDistrict' ? districtWhy : '', id === 'byDistrict' ? districtTitle : BY_TITLES[id]);
+  }
+}
 function markLook() {
   document.body.classList.toggle('look-dots', dotsOn);
   $('dotLink').setAttribute('aria-pressed', String(dotsOn));
   const goal = anim ? anim.to : progress;
   flatBtn.setAttribute('aria-pressed', String(!dotsOn && goal <= 0.5));
   raisedBtn.setAttribute('aria-pressed', String(!dotsOn && goal > 0.5));
-  for (const id of NOT_DOTS) {
-    const b = $(id); if (!b) continue;
-    b.toggleAttribute('aria-disabled', dotsOn);
-    if (dotsOn) { if (id.startsWith('by')) byTitles.set(id, b.title); b.title = id.startsWith('by') ? NOT_DOTS_BY : NOT_DOTS_COLOR; }
-    else if (id.startsWith('by')) b.title = byTitles.get(id) ?? '';
-  }
+  byButtons();
   if (!dotsOn) restyle(); // (the color buttons' titles)
   if (!dotsOn) renderPlace(); // (with Dots, the line over the map is its own)
   updateMode();
@@ -1250,14 +1275,29 @@ function syncDistricts() {
   if (!btn) return;
   hasDistricts(r).then(ok => {
     if (r !== race) return;
-    btn.disabled = !ok;
-    const offices = [...new Set(races.filter(districtEntry).map(x => x.label))];
-    btn.title = ok ? `One column for each ${r.label} district` : r.chamber ? `No district lines here for the ${r.year} ${r.label}`
-      : `For ${offices.length > 1 ? offices.slice(0, -1).join(', ') + ' and ' : ''}${offices.at(-1)} races`;
+    districtTitle = ok ? `One column for each ${r.label} district` : '';
+    districtWhy = ok ? '' : r.chamber ? `No district lines here for the ${r.year} ${r.label}` : `District is for ${districtOffices()} races`;
+    byButtons();
     if (byDistrict && !districtCols()) setDistrict(ok);
   });
 }
+const districtOffices = () => {
+  const o = [...new Set(races.filter(districtEntry).map(x => x.label))];
+  return (o.length > 1 ? o.slice(0, -1).join(', ') + ' and ' : '') + o.at(-1);
+};
 if ($('byDistrict')) $('byDistrict').onclick = () => setDistrict(true);
+// District pressed on a race that isn't by district (a statewide one): go to that year's district race, the U.S. House first,
+// or the latest year's if that year has none, by district, and say so. With none whose lines are here, just say why.
+async function toDistrictRace() {
+  const from = race, house = r => /house/i.test(r.label) && /u\.?s\.?/i.test(r.label);
+  const pool = races.filter(districtEntry).sort((a, b) => (b.year === from.year) - (a.year === from.year) || house(b) - house(a) || b.year - a.year);
+  let to = null;
+  for (const r of pool) if (await hasDistricts(r)) { to = r; break; }
+  if (race !== from) return; // another race was chosen meanwhile
+  if (!to) { say($('byDistrict').title); return; }
+  chooseRace(to.id); setDistrict(true);
+  say(`Showing the ${to.year} ${to.label} by district. District is for ${districtOffices()} races.`);
+}
 
 // ---------- hover ----------
 const tip = document.getElementById('tip'), ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
