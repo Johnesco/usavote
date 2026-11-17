@@ -15,6 +15,9 @@ import { createBusy } from './busy.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
 import { createPlayer } from './player.js';
+import { createSiteNav } from './sitenav.js';
+// the site's header, at the start of the top row, before the way back to the map
+document.querySelector('#topnav .nav-row').prepend(createSiteNav('page'));
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);
