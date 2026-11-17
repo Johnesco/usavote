@@ -129,6 +129,10 @@ const districtEntry = r => { const e = DISTRICTS[r.id.replace(/^\d{4}-/, '')]; r
 const districtCols = () => byDistrict && dist && dist.race === race ? dist.cols : null;
 const overlayCols = () => districtCols() || (byPrecinct ? columns : null); // what stands in place of the county columns, if anything
 const byParam = () => byDistrict ? '&by=district' : byPrecinct ? '&by=precinct' : '';
+// 3D's Square switch: every county's column the same small square, standing on its own county (by county only; see setSquares)
+let squares = false, squareCols = null, squareCounties = [];
+const squaresOn = () => squares && !byPrecinct && !byDistrict;
+const standingCols = () => overlayCols() || (squaresOn() ? squareCols : null); // the columns standing in place of the county shapes
 // A choice that doesn't fit what's on screen is turned off: it looks off and does nothing, but unlike a disabled button it can
 // still be focused and pressed, and pressing it says why, just above the control bar (the click guard by markLook).
 function setOff(b, why, title = '') {
@@ -535,7 +539,8 @@ const LOSER_C = { dem: DEM_C[3], rep: REP_C[3] }, OTHER_C = '#5d6c82';
 const meshes = [];   // one per county: the winner's (top) segment, which is also the whole column when not stacked
 const pickables = []; // every segment of every county, for hover and label visibility tests
 // White county outlines. Each line's own opacity (the 4th color component) is multiplied by this material's.
-const edgeMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55 });
+const EDGE_OPACITY = 0.55; // (less under Square columns: frame)
+const edgeMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: EDGE_OPACITY });
 // Outline of an extruded county (height 1): the border at the bottom and top, plus a vertical line at each corner.
 // How strong a corner line is depends on how sharply the border turns there: a turn of 90 degrees or more (a square
 // corner or sharper) is drawn fully, gentler turns fade quickly, and turns under 10 degrees get no line at all, so a
@@ -636,8 +641,10 @@ const COLOR_TITLES = {
 };
 // (in a try: the first restyle runs before the camera's state exists, and the map is flat then)
 const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } catch { return false; } };
-// what the counties show now: 'plain' (by precinct or district), or the chosen color, with Vote mix as Vote share in 3D
-const shownColor = () => overlayCols() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
+// the counties are a plain gray floor under other columns: by precinct or district, and under 3D's Square columns
+const plainFloor = () => !!overlayCols() || squaresOn() && raisedGoal();
+// what the counties show now: 'plain' (plainFloor), or the chosen color, with Vote mix as Vote share in 3D
+const shownColor = () => plainFloor() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
 const targetOf = (c, m) => m === 'plain' ? c.plainColor : m === 'lead' ? c.leadColor : m === 'mix' ? c.mixColor : c.pctColor;
 // the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Vote mix,
 // one grid of the split across and votes cast down
@@ -646,6 +653,9 @@ function shareHead() { return `Vote share: ${winnerWord()}'s share of the ${dist
 // Method's Color paragraph, for each color the map can show
 function colorText(m) {
   const who = race.chamber ? 'leading party' : `county ${winnerWord()}`;
+  if (m === 'plain' && !overlayCols()) return `<b>Color:</b> with <b>Square</b> columns, each county's square is shaded by its ${winnerWord()}'s share ` +
+    `of all votes cast there, in 10-point bands, and the counties under them are a plain gray floor, so only votes, not land, carry color. ` +
+    `Vote lead and Vote mix are for County shape columns and the flat map.`;
   if (m === 'plain') return `<b>Color:</b> by ${districtCols() ? 'district' : 'precinct'}, each column is shaded by its ${winnerWord()}'s share of all votes cast in it, ` +
     `in 10-point bands, and the counties under them are a plain gray floor. Vote lead and Vote mix are for the map by county.`;
   if (m === 'lead') return `<b>Color (Vote lead)</b> shows each county's lead in votes: the ${who}'s votes minus the runner-up's. ` +
@@ -706,7 +716,7 @@ function mapKey() {
   }
   if (raisedGoal()) {
     const big = !overlayCols() && desc?.[0];
-    html += `<div class="k-height">Height = votes cast${big ? ` · tallest: ${big.name}, ${short(big.total)}` : ''}</div>`;
+    html += `<div class="k-height">Height = votes cast${squaresOn() ? ' · every square the same size' : ''}${big ? ` · tallest: ${big.name}, ${short(big.total)}` : ''}</div>`;
   }
   $('mapKeyHead').textContent = head;
   body.innerHTML = html;
@@ -732,12 +742,13 @@ function showColor(instant = false) {
 }
 // the buttons: which is on, which can be pressed, and why not
 function colorButtons() {
-  const plain = !!overlayCols(), raised = raisedGoal();
+  const plain = plainFloor(), raised = raisedGoal(), sq = plain && !overlayCols();
   for (const [m, b] of Object.entries(COLOR_BTNS)) {
     if (!b) continue;
-    // by precinct or district the columns show Vote share, so that's the one that looks on (colorMode is kept for By county)
+    // by precinct or district, or with Square columns, the columns show Vote share, so that's the one that looks on (colorMode is kept)
     b.setAttribute('aria-pressed', String(plain ? m === 'share' : colorMode === m && !(m === 'mix' && raised)));
     setOff(b, dotsOn ? NOT_DOTS_COLOR
+      : sq ? (m === 'share' ? 'Square columns are always shaded by Vote share' : `${b.textContent} is for County shape columns and the flat map`)
       : plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
       : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Vote mix is for the flat map"
       : '', COLOR_TITLES[m]);
@@ -755,11 +766,11 @@ shareBtn.onclick = () => setColor('share');
 leadBtn.onclick = () => setColor('lead');
 if (mixBtn) mixBtn.onclick = () => setColor('mix');
 const colorParam = () => colorMode === 'share' ? '' : `&color=${colorMode}`;
-// what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d and &color=lead or mix when they apply
+// what's on screen, in the address, so a link opens the same map: ?race=, then &by=, &look=3d (with &shape=square for Square columns) and &color=lead or mix when they apply
 function saveUrl() {
   if (dotsOn && dots?.touring()) return; // on the tour, its player keeps ?scene= (player.js)
   try { // (in a try: at start-up the race is saved before the camera's state exists)
-    const look = dotsOn ? `&look=dots${perAsked > 1 ? `&per=${perAsked}` : ''}` : (anim ? anim.to : progress) === 1 ? '&look=3d' : '';
+    const look = dotsOn ? `&look=dots${perAsked > 1 ? `&per=${perAsked}` : ''}` : (anim ? anim.to : progress) === 1 ? `&look=3d${squaresOn() ? '&shape=square' : ''}` : '';
     history.replaceState(null, '', `?race=${race.id}${byParam()}${look}${colorParam()}${panelParam()}`); } catch {}
 }
 
@@ -795,6 +806,7 @@ function restyle() {
     el.innerHTML = `${c.name}<small>${short(c.total)} votes</small>`;
     labelsEl.appendChild(el); return { c, el };
   });
+  if (squareCols) setSquareValues();
   if (ready && !anim) applyProgress(progress, currentPose());
 }
 restyle();
@@ -857,7 +869,7 @@ let dragTurns = false;
 // In 3D, by county: the county chosen in Go to, standing alone, with every other column sunk flat
 $('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="aloneWrap" hidden><button type="button" id="alone" aria-pressed="false">County alone</button></div>`);
 let alone = false; // asked for; it shows while a county is chosen and the map is by county
-const aloneCounty = () => alone && !overlayCols() && place?.c || null;
+const aloneCounty = () => alone && !standingCols() && place?.c || null;
 $('alone').onclick = () => { alone = !alone; if (aloneCounty()) frameColumn(aloneCounty()); updateMode(); };
 // fly to see a county's whole column, from its foot to its top, at the camera's tilt and heading now, in the clear part of the screen
 function frameColumn(c) {
@@ -883,6 +895,14 @@ function frameColumn(c) {
 $('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" role="group" aria-label="What dragging the map does" hidden>
   <button type="button" id="dragMove" aria-pressed="true" title="Dragging slides the map. Right-drag or Shift-drag turns it.">Drag moves</button>
   <button type="button" id="dragTurn" aria-pressed="false" title="Dragging turns and tilts the map. Right-drag or Shift-drag slides it.">Drag turns</button></div>`);
+// In 3D, by county: each column in its county's own shape, or every column the same small square standing on its county
+const SHAPE_TITLES = { county: "Each county's column has the county's own shape, so a big county makes a big column",
+  square: 'Every column is the same small square, standing on its county, so only votes make a column stand out' };
+$('dragMode').insertAdjacentHTML('afterend', `<div class="seg" id="shapeWrap" role="group" aria-label="Column shape" hidden>
+  <button type="button" id="shapeCounty" aria-pressed="true" title="${SHAPE_TITLES.county}">County shape</button>
+  <button type="button" id="shapeSquare" aria-pressed="false" title="${SHAPE_TITLES.square}">Square</button></div>`);
+$('shapeCounty').onclick = () => setSquares(false);
+$('shapeSquare').onclick = () => setSquares(true);
 const TURN = 0.08; // radians a second, toward the east as in the flythrough
 controls.autoRotateSpeed = -TURN * 60 / (2 * Math.PI); // OrbitControls counts in turns a minute, and the other way round
 let focus = null; // a county or precinct from the Go to menus, which 3D and Flat stay on: { view, kind, c, v }
@@ -919,9 +939,15 @@ function updateMode() {
   $('turnWrap').hidden = !raised;
   $('dragMode').hidden = !raised;
   $('aloneWrap').hidden = !raised;
-  const canAlone = !!place?.c && !overlayCols();
+  $('shapeWrap').hidden = !raised;
+  const byOther = byPrecinct || byDistrict;
+  $('shapeCounty').setAttribute('aria-pressed', String(!squaresOn()));
+  $('shapeSquare').setAttribute('aria-pressed', String(squaresOn()));
+  setOff($('shapeCounty'), byOther ? 'County shape and Square are for the map by county' : '', SHAPE_TITLES.county);
+  setOff($('shapeSquare'), byOther ? 'Square is for the map by county' : '', SHAPE_TITLES.square);
+  const canAlone = !!place?.c && !standingCols();
   $('alone').setAttribute('aria-pressed', String(alone && canAlone));
-  setOff($('alone'), overlayCols() ? 'County alone is for the map by county'
+  setOff($('alone'), overlayCols() ? 'County alone is for the map by county' : squaresOn() ? 'County alone is for County shape columns'
     : !place?.c ? 'Choose a county in Go to, then press County alone to see its column by itself' : '',
     alone ? 'Raise every county again' : `See ${place?.c?.name} County's column alone, with every other county flat`);
   $('dragMove').setAttribute('aria-pressed', String(!drag));
@@ -1123,7 +1149,10 @@ const countyFloor = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE
 countyFloor.visible = false; mapGroup.add(countyFloor);
 let precinctUnit = 1, precinctCounties = [], loadingColumns = null;
 const busy = createBusy(document.querySelector('.map-area'));
-function showChosen() { columns?.setChosen(place?.kind === 'precinct' && byPrecinct ? precinctOf.get(place.v) : -1); }
+function showChosen() {
+  columns?.setChosen(place?.kind === 'precinct' && byPrecinct ? precinctOf.get(place.v) : -1);
+  squareCols?.setChosen(squaresOn() && place?.c ? place.c.sqIndex : -1);
+}
 function setPrecinctRows() {
   const actual = race.id === ACTUAL_PRECINCTS, values = [];
   let i = 0;
@@ -1196,6 +1225,44 @@ async function setBy(on) {
 }
 if (HAS_PRECINCTS) $('byPrecinct').onclick = () => setBy(true);
 if ($('byCounty')) $('byCounty').onclick = () => byDistrict ? setDistrict(false) : setBy(false);
+
+// ---------- 3D's Square switch ----------
+// Every county's column is the same small square, at the county's middle, on the county columns' height scale. The counties
+// under them turn to a plain gray floor (plainFloor), so only votes carry color, not land. The squares are drawn by the precinct
+// columns' code and rise and sink the way precinct columns do. By county only.
+const SQUARE_K = 0.5; // a square's side, against the width of a typical county in the state
+function buildSquares() {
+  const sizes = meshes.map(m => { const b = m.userData.box; return Math.sqrt((b.x1 - b.x0) * (b.y1 - b.y0)); }).sort((a, b) => a - b);
+  const half = SQUARE_K * sizes[sizes.length >> 1] / 2;
+  squareCounties = meshes.map(m => m.userData);
+  const squaresAt = squareCounties.map((c, i) => {
+    c.sqIndex = i;
+    const V = (dx, dy) => new THREE.Vector2(c.cx + dx * half, c.cy + dy * half);
+    return [[[V(-1, -1), V(1, -1), V(1, 1), V(-1, 1)]]]; // one polygon, one ring
+  });
+  squareCols = createPrecinctColumns(mapGroup, P, squaresAt, PALETTE, new THREE.Color(OTHER_C));
+  squareCols.group.visible = false;
+  squareCols.lineMat.opacity = 0.15; // a faint edge on each square's top, not a white frame
+}
+function setSquareValues() {
+  squareCols.setValues(squareCounties.map(c => {
+    const { dem: d, rep: r, other: o, total } = c, dWon = d > r;
+    const band = total ? Math.max(0, BINS.findLastIndex(b => 100 * Math.max(d, r) / total >= b)) : 0;
+    return { h: total ? c.target : 0, top: !total ? PAL_NONE : (dWon ? PAL_DEM : 0) + band, low: dWon ? PAL_LOSER_R : PAL_LOSER_D,
+      fLow: total ? (dWon ? r : d) / total : 0, fMid: total ? o / total : 0 };
+  }));
+}
+function setSquares(on) {
+  if (on === squares) return;
+  squares = on;
+  if (on && !squareCols) buildSquares();
+  if (on) setSquareValues(); else squareCols?.setHover(-1);
+  if (progress < 0.3) { // nothing has risen yet (the map is flat, or a link's 3D is only starting): swap at once, not county columns up then down
+    precinctMix = standingCols() ? 1 : 0; lastOver = standingCols() || lastOver; layoutCounties();
+  }
+  showChosen(); colorLegend(); updateMode(); saveUrl();
+  if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
+}
 
 // ---------- bar view, by district ----------
 // One set of columns per chamber, made when first asked for. District columns have a height scale of their own for each
@@ -1342,8 +1409,15 @@ function onPointer(e) {
       return;
     }
   }
-  const hit = ray.intersectObjects(pickables, false)[0];
-  setHover(hit ? hit.object.userData.mesh : null); // any segment selects its county
+  let m = null;
+  if (squaresOn() && squareCols && precinctMix > 0.5) { // a square column first, then the county floor around it
+    const o = ray.ray.origin, d = ray.ray.direction; // from the world's axes to the map's: world (x, z, -y)
+    const i = squareCols.pick({ x: o.x, y: -o.z, z: o.y }, { x: d.x, y: -d.z, z: d.y });
+    if (i >= 0) m = squareCounties[i].mesh;
+  }
+  if (!m) { const hit = ray.intersectObjects(pickables, false)[0]; m = hit ? hit.object.userData.mesh : null; } // any segment selects its county
+  setHover(m);
+  squareCols?.setHover(squaresOn() && m ? m.userData.sqIndex : -1);
   if (!hovered) { tip.style.display = 'none'; return; }
   const c = hovered.userData, dWon = c.dem > c.rep;
   tip.innerHTML = !c.total
@@ -1390,7 +1464,7 @@ renderer.domElement.addEventListener('wheel', stopGoing, { passive: true });
 function pinTip(on) {
   tipPinned = on;
   tip.classList.toggle('pinned', on);
-  if (!on) { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); }
+  if (!on) { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); squareCols?.setHover(-1); }
 }
 tip.addEventListener('click', () => pinTip(false));
 function chooseCounty(c) {
@@ -1426,11 +1500,16 @@ function anchorVisible(c, world) {
   const hit = labelRay.intersectObjects(pickables, false)[0];
   return !!hit && hit.object.userData === c;
 }
+// the same for a county's square: the first square on the line from the camera to the top of its own is its own
+function squareTopVisible(c, world) {
+  const o = camera.position, d = world.clone().sub(o).normalize();
+  return squareCols.pick({ x: o.x, y: -o.z, z: o.y }, { x: d.x, y: -d.z, z: d.y }) === c.sqIndex;
+}
 let lastFrame = 0, lastOver = null;
 function frame(now) {
   if (dotsOn && dots) { lastFrame = now; requestAnimationFrame(frame); return; } // the dots cover this map
   // by county or by precinct: one set of columns goes down as the other comes up
-  const over = overlayCols(), goal = over ? 1 : 0, dt = now - lastFrame; lastFrame = now;
+  const over = standingCols(), goal = over ? 1 : 0, dt = now - lastFrame; lastFrame = now;
   if (over) lastOver = over; // going back to counties, it stays up while it sinks
   if (precinctMix !== goal) {
     const step = REDUCED ? 1 : Math.min(dt, 100) / 900;
@@ -1476,6 +1555,10 @@ function frame(now) {
   placeLine.material.depthTest = !!showing && progress > 0.02; // by precinct, the county's border is on the ground, among the columns
   if (columns) columns.group.visible = showing === columns;
   if (dist) dist.cols.group.visible = showing === dist.cols; // a set that was swapped out was hidden then
+  const sq = showing && showing === squareCols ? squareCols : null;
+  if (squareCols) squareCols.group.visible = !!sq && riseK() > 0; // (flat, the squares would lie on the map as tiles)
+  // the county borders fade as the squares rise, so the gray floor doesn't compete with them
+  edgeMat.opacity = EDGE_OPACITY * (1 - 0.7 * (sq ? riseK() * ease(precinctMix) : 0));
   countyFloor.visible = !!showing && showing === columns; // county lines would only confuse a map of districts
   if (showing) {
     const far = camera.position.distanceTo(controls.target);
@@ -1490,12 +1573,13 @@ function frame(now) {
     }
   }
   renderer.render(scene, camera);
-  const w = stage.clientWidth, h = stage.clientHeight, k = clamp01((progress - 0.7) / 0.3) * (1 - ease(precinctMix));
+  // the biggest counties' labels, on their county columns or on their squares
+  const w = stage.clientWidth, h = stage.clientHeight, k = clamp01((progress - 0.7) / 0.3) * (sq ? 1 : 1 - ease(precinctMix));
   cityLabels.update(camera, mapGroup, w, h, 1 - clamp01(progress / 0.2)); // hidden once columns rise: they'd float over the wrong ones
   const placed = [];
   for (const { c, el } of labeled) { // largest first; hide a label that would overlap one already shown
-    v.set(c.cx, c.cy, c.h).applyMatrix4(mapGroup.matrixWorld);
-    const hidden = k > 0 && (!anchorVisible(c, v) || (c.solo ?? 1) < 0.5);
+    v.set(c.cx, c.cy, sq ? sq.group.position.z + sq.height(c.sqIndex) * sq.group.scale.z : c.h).applyMatrix4(mapGroup.matrixWorld);
+    const hidden = k > 0 && (!(sq ? squareTopVisible(c, v) : anchorVisible(c, v)) || (c.solo ?? 1) < 0.5);
     v.project(camera);
     const x = (v.x + 1) / 2 * w, y = (1 - v.y) / 2 * h, bw = el.offsetWidth, bh = el.offsetHeight;
     const box = [x - bw / 2, y - bh * 1.2, x + bw / 2, y - bh * 0.2];
@@ -1535,6 +1619,7 @@ if (params.get('look') === '3d' && !atOk) setRaised(true);
 if (['lead', 'mix'].includes(params.get('color'))) setColor(params.get('color'));
 if (HAS_PRECINCTS && params.get('by') === 'precinct') setBy(true);
 if ($('byDistrict') && params.get('by') === 'district') setDistrict(true);
+if (params.get('shape') === 'square') setSquares(true);
 // ?look=dots, or the dot tour (?tour=1, ?scene=N), with ?per= for "1 dot ="
 if (PERS.includes(+params.get('per'))) $('per').value = perAsked = +params.get('per');
 if (dotsAsked || (STATE.tour && (tourAsked || sceneAsked))) setLook('dots', { at: atOk ? at : undefined, tour: tourAsked, scene: sceneAsked });

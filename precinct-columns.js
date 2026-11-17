@@ -1,5 +1,5 @@
 // Bar view, by precinct (app.js): one column per precinct across the whole state, drawn as a single mesh so that 9,000 of them
-// stay fast. Each column is stacked the way a county's is, by votes: the most on top and the fewest at the bottom. The
+// stay fast. The same code draws the district columns and the equal squares of 3D's Square switch. Each column is stacked the way a county's is, by votes: the most on top and the fewest at the bottom. The
 // stack is colored in the shader, from how far up the wall a pixel is, so each wall needs only one piece of geometry.
 //
 // Shapes come from data/precinct-shapes.json.gz (scripts/build_precincts.py), in map units once projected by P. Heights are set
@@ -9,11 +9,12 @@ import { fetchJsonGz } from './dots.js';
 
 export const loadPrecinctShapes = url => fetchJsonGz(url);
 
-// A ring as map points, counterclockwise for land and clockwise for a hole.
+// A ring as map points, counterclockwise for land and clockwise for a hole. A ring is either the shapes file's flat list of
+// coordinate steps (in 1/10,000 degree), or points already on the map (THREE.Vector2), as for the squares of app.js's Square columns.
 function ringPoints(flat, P, hole) {
   const pts = [];
-  let x = 0, y = 0;
-  for (let i = 0; i < flat.length; i += 2) {
+  if (flat[0]?.isVector2) pts.push(...flat.map(q => q.clone()));
+  else for (let i = 0, x = 0, y = 0; i < flat.length; i += 2) {
     x += flat[i]; y += flat[i + 1];
     pts.push(P([x / 1e4, y / 1e4]));
   }

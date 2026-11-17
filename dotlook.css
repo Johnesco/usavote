@@ -57,7 +57,7 @@ body:not(.look-dots) .dots-only, body.look-dots .bars-only { display: none !impo
 #raceCount b { color: var(--text); }
 .dots-how p { margin: 0 0 8px; }
 /* with Dots, the columns' labels, tip and rotation are put away; By and Color stay in the bar, turned off */
-body.look-dots :is(#labels, #tip, #turnWrap, #aloneWrap, #loading, .map-area > .city-layer) { display: none !important; }
+body.look-dots :is(#labels, #tip, #turnWrap, #aloneWrap, #shapeWrap, #loading, .map-area > .city-layer) { display: none !important; }
 .controls [aria-disabled] { opacity: .45; cursor: not-allowed; }
 .controls { z-index: 2; }
 
