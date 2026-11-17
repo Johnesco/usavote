@@ -3,6 +3,7 @@
 import { geoAlbersUsa, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATES } from './state.js';
+import { EXPLAINERS } from './sitenav.js';
 
 const US_STATES = [['01','Alabama'],['02','Alaska'],['04','Arizona'],['05','Arkansas'],['06','California'],['08','Colorado'],
   ['09','Connecticut'],['10','Delaware'],['11','District of Columbia'],['12','Florida'],['13','Georgia'],['15','Hawaii'],
@@ -17,14 +18,9 @@ const READY = new Map(STATES.map(s => [s.fips, s]));
 const $ = id => document.getElementById(id);
 const opens = s => s.results.href;
 
-// Start here: the page that explains the idea, then every guided flight and dot tour a state has (state.js), in that order
-const START = [
-  { href: 'why.html', about: 'Why these maps', title: 'Same election, three maps', how: 'Flat, 3D and Dots, side by side: why a red county map can still mean a Democratic win' },
-  ...STATES.flatMap(s => s.flights.map(f => ({ ...f, about: `${s.name} · ${f.about}` }))),
-  ...STATES.filter(s => s.tour).map(s => ({ href: `${s.dots}&tour=1`, about: `${s.name} · 2026 U.S. Senate`,
-    title: `${s.name} Population Density Tour`, how: 'One dot for each voter, from the whole state down to single voters. Plays on its own' })),
-];
-$('start').innerHTML = START.map((c, i) => `
+// Start here: the page that explains the idea, then every guided flight and dot tour (sitenav.js, the same list as the
+// Explainers menu on every other page)
+$('start').innerHTML = EXPLAINERS.map((c, i) => `
   <a class="start-card${i ? '' : ' first'}" href="${c.href}"><span class="kicker">${c.about}</span><b>${i ? '▶ ' : ''}${c.title}${i ? '' : ' →'}</b><span>${c.how}</span></a>`).join('');
 
 // the panel for each state that's ready

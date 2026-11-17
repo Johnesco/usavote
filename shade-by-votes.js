@@ -12,7 +12,11 @@
 import { geoConicEqualArea, geoPath } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { STATE, STATES } from './state.js';
+import { mountSiteHeader } from './sitenav.js';
 import { BINS, BAND_LABELS, REP_C, DEM_C, leadRGB, leadT, leadGradient, leadTicks, tickLabel, mixRGB, mixT, mixRows, MIX_SPLITS, MIX_SPLIT_LABELS } from './colors.js';
+
+// the site's header above the page's own way back (#back, set below from ?from=)
+mountSiteHeader(document.querySelector('.why'));
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-10m.json';
 const $ = id => document.getElementById(id);

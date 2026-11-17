@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import { createCityLabels } from './cities.js';
 import { createPlayer } from './player.js';
 import { GEO_URL, buildMap, layout, H_FLAT, REP_C, DEM_C, LOSER_C, OTHER_C, winnerColor } from './map3d.js';
+import { createSiteNav } from './sitenav.js';
+// the site's header, at the start of the top row, before the way back to the map
+document.querySelector('#topnav .nav-row').prepend(createSiteNav('page'));
 
 const $ = id => document.getElementById(id);
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });

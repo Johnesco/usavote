@@ -1,6 +1,9 @@
 // The Sources page: every state's list of sources, read from the same place its results page reads it (sourcelist.js).
 import { STATES } from './state.js';
 import { sourceItems } from './sourcelist.js';
+import { mountSiteHeader } from './sitenav.js';
+
+mountSiteHeader(document.querySelector('.src'));
 
 const $ = id => document.getElementById(id);
 const getJSON = url => fetch(url).then(r => { if (!r.ok) throw new Error(`${url}: ${r.status}`); return r.json(); });
