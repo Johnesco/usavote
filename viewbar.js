@@ -2,7 +2,7 @@
 //   Look   Flat · 3D · Dots     Flat and 3D are the bars; Dots is one dot for each voter (dotlook.js), on the same page
 //   By     County · Precinct · District, whichever the state has
 //   Color  Vote share · Vote lead · Vote mix (Flat only), with a ? link to the page that explains all three
-// then, with Dots, "1 dot =", and Whole state. A choice that doesn't fit what's on screen is turned off, with the reason as its title.
+// then, with Dots, "1 dot =", and Whole state. A choice that doesn't fit what's on screen is turned off, and pressing it says why (app.js).
 import { STATE } from './state.js';
 import { LEAD_PAGE } from './colors.js';
 
@@ -28,7 +28,7 @@ export function viewBarGroups() {
     `<button type="button" id="dotLink" aria-pressed="false" title="One dot for each voter">Dots</button>`;
   const by = `<button type="button" id="byCounty" aria-pressed="true">County</button>` +
     (HAS_PRECINCTS ? `<button type="button" id="byPrecinct" aria-pressed="false">Precinct</button>` : '') +
-    (HAS_DISTRICTS ? `<button type="button" id="byDistrict" aria-pressed="false" disabled>District</button>` : '');
+    (HAS_DISTRICTS ? `<button type="button" id="byDistrict" aria-pressed="false" aria-disabled="true" title="Checking for district lines…">District</button>` : '');
   const color = `<button type="button" id="colorShare" aria-pressed="true">Vote share</button>` +
     `<button type="button" id="leadColor" aria-pressed="false">Vote lead</button>` +
     `<button type="button" id="mixColor" aria-pressed="false">Vote mix</button>` +
