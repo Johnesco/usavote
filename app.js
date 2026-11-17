@@ -10,7 +10,7 @@ import { STATE } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
-import { viewBarGroups, NOT_DOTS_BY, NOT_DOTS_COLOR, PERS } from './viewbar.js';
+import { viewBarGroups, NOT_DOTS_BY, NOT_DOTS_COLOR, PERS, SHAPE_TITLES } from './viewbar.js';
 import { startDots, LAYER_HTML } from './dotlook.js';
 import { DOTS_HOW } from './dots-how.js';
 import { createPanelToggle, panelParam, flightsHtml, FRAMED, compareHref, followCamera } from './panel.js';
@@ -629,22 +629,22 @@ const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].col
 
 // ---------- color: Vote share, Vote lead, Vote mix ----------
 // Each county fades from the color it shows to the chosen one (colors.js). Vote lead has a ? link to the page that explains
-// it. Only by county: by precinct or district, the counties are a plain floor under the columns. Vote mix is for Flat:
-// in 3D a column's height already shows the votes cast, so there the map shows Vote share until it's flat again.
+// it. Only by county: by precinct or district, the counties are a plain floor under the columns. The three are for Flat: in
+// 3D a column's height already shows the votes cast, so there the map shows Vote share, and the bar shows Shape in Color's place.
 let colorMode = 'share', shownMode = null, fadeT = 1, maxLead = 1, raceMaxTotal = 1;
 const COLOR_BTNS = { share: $('colorShare'), lead: $('leadColor'), mix: $('mixColor') };
 const leadBtn = COLOR_BTNS.lead, shareBtn = COLOR_BTNS.share, mixBtn = COLOR_BTNS.mix;
 const COLOR_TITLES = {
   share: "Shade each county by the winner's share of its vote",
   lead: 'Shade each county by its lead in votes, so places where few people voted fade out',
-  mix: "Mix each county's Democratic and Republican votes, blue through purple to red, drawn fainter the fewer votes it cast. For the flat map",
+  mix: "Mix each county's Democratic and Republican votes, blue through purple to red, drawn fainter the fewer votes it cast",
 };
 // (in a try: the first restyle runs before the camera's state exists, and the map is flat then)
 const raisedGoal = () => { try { return (anim ? anim.to : progress) > 0.5; } catch { return false; } };
 // the counties are a plain gray floor under other columns: by precinct or district, and under 3D's Square columns
 const plainFloor = () => !!overlayCols() || squaresOn() && raisedGoal();
-// what the counties show now: 'plain' (plainFloor), or the chosen color, with Vote mix as Vote share in 3D
-const shownColor = () => plainFloor() ? 'plain' : colorMode === 'mix' && raisedGoal() ? 'share' : colorMode;
+// what the counties show now: 'plain' (plainFloor), Vote share in 3D, or the chosen color
+const shownColor = () => plainFloor() ? 'plain' : raisedGoal() ? 'share' : colorMode;
 const targetOf = (c, m) => m === 'plain' ? c.plainColor : m === 'lead' ? c.leadColor : m === 'mix' ? c.mixColor : c.pctColor;
 // the key under "What you're seeing": the six bands; each party's run from pale to its biggest lead; or, for Vote mix,
 // one grid of the split across and votes cast down
@@ -654,8 +654,8 @@ function shareHead() { return `Vote share: ${winnerWord()}'s share of the ${dist
 function colorText(m) {
   const who = race.chamber ? 'leading party' : `county ${winnerWord()}`;
   if (m === 'plain' && !overlayCols()) return `<b>Color:</b> with <b>Square</b> columns, each county's square is shaded by its ${winnerWord()}'s share ` +
-    `of all votes cast there, in 10-point bands, and the counties under them are a plain gray floor, so only votes, not land, carry color. ` +
-    `Vote lead and Vote mix are for County shape columns and the flat map.`;
+    `of all votes cast there, in 10-point bands, and the counties under them are a plain gray floor, so only votes, not land, carry color.` +
+    (colorMode !== 'share' ? ` Vote lead and Vote mix are for the flat map.` : '');
   if (m === 'plain') return `<b>Color:</b> by ${districtCols() ? 'district' : 'precinct'}, each column is shaded by its ${winnerWord()}'s share of all votes cast in it, ` +
     `in 10-point bands, and the counties under them are a plain gray floor. Vote lead and Vote mix are for the map by county.`;
   if (m === 'lead') return `<b>Color (Vote lead)</b> shows each county's lead in votes: the ${who}'s votes minus the runner-up's. ` +
@@ -663,7 +663,7 @@ function colorText(m) {
   if (m === 'mix') return `<b>Color (Vote mix)</b> mixes each county's Democratic and Republican votes, blue through purple to red, by the Democrat's ` +
     `share of the two; other candidates are left out. A county is drawn fainter the fewer votes it cast, and solid at the most any county cast in this race.`;
   return `<b>Color (Vote share)</b> shows the ${who}'s share of all votes cast there, in 10-point bands. Percentages are of all votes cast in the race, including ${OTHER_VOTES}.` +
-    (colorMode === 'mix' ? ` Vote mix is for the flat map: in 3D, each column's height already shows the votes cast.` : '');
+    (colorMode !== 'share' && raisedGoal() ? ` Vote lead and Vote mix are for the flat map: in 3D, each column's height already shows the votes cast.` : '');
 }
 function colorLegend() {
   const m = shownMode ?? shownColor();
@@ -741,20 +741,17 @@ function showColor(instant = false) {
   paintColors(); colorLegend(); colorButtons();
 }
 // the buttons: which is on, which can be pressed, and why not
+// (they're only on the bar for Flat and Dots: 3D shows Vote share, and Shape in their place)
 function colorButtons() {
-  const plain = plainFloor(), raised = raisedGoal(), sq = plain && !overlayCols();
+  const plain = !!overlayCols();
   for (const [m, b] of Object.entries(COLOR_BTNS)) {
     if (!b) continue;
-    // by precinct or district, or with Square columns, the columns show Vote share, so that's the one that looks on (colorMode is kept)
-    b.setAttribute('aria-pressed', String(plain ? m === 'share' : colorMode === m && !(m === 'mix' && raised)));
+    // by precinct or district, the columns show Vote share, so that's the one that looks on (colorMode is kept)
+    b.setAttribute('aria-pressed', String(plain ? m === 'share' : colorMode === m));
     setOff(b, dotsOn ? NOT_DOTS_COLOR
-      : sq ? (m === 'share' ? 'Square columns are always shaded by Vote share' : `${b.textContent} is for County shape columns and the flat map`)
       : plain ? (m === 'share' ? 'Vote share is for the map by county; columns by precinct or district are always shaded by share' : `${b.textContent} is for the map by county`)
-      : m === 'mix' && raised ? "In 3D, each column's height already shows the votes cast. Vote mix is for the flat map"
       : '', COLOR_TITLES[m]);
   }
-  // Vote mix chosen, then 3D: the map shows Vote share, so that's the button that looks on
-  if (colorMode === 'mix' && raised && !plain) shareBtn.setAttribute('aria-pressed', 'true');
 }
 function setColor(m) {
   colorMode = m;
@@ -895,12 +892,8 @@ function frameColumn(c) {
 $('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" role="group" aria-label="What dragging the map does" hidden>
   <button type="button" id="dragMove" aria-pressed="true" title="Dragging slides the map. Right-drag or Shift-drag turns it.">Drag moves</button>
   <button type="button" id="dragTurn" aria-pressed="false" title="Dragging turns and tilts the map. Right-drag or Shift-drag slides it.">Drag turns</button></div>`);
-// In 3D, by county: each column in its county's own shape, or every column the same small square standing on its county
-const SHAPE_TITLES = { county: "Each county's column has the county's own shape, so a big county makes a big column",
-  square: 'Every column is the same small square, standing on its county, so only votes make a column stand out' };
-$('dragMode').insertAdjacentHTML('afterend', `<div class="seg" id="shapeWrap" role="group" aria-label="Column shape" hidden>
-  <button type="button" id="shapeCounty" aria-pressed="true" title="${SHAPE_TITLES.county}">County shape</button>
-  <button type="button" id="shapeSquare" aria-pressed="false" title="${SHAPE_TITLES.square}">Square</button></div>`);
+// In 3D, by county, the bar's Shape (in Color's place): each column in its county's own shape, or every column the same small
+// square standing on its county
 $('shapeCounty').onclick = () => setSquares(false);
 $('shapeSquare').onclick = () => setSquares(true);
 const TURN = 0.08; // radians a second, toward the east as in the flythrough
@@ -938,8 +931,10 @@ function updateMode() {
   $('g3d').hidden = !raised || dotsOn;
   $('turnWrap').hidden = !raised;
   $('dragMode').hidden = !raised;
-  $('aloneWrap').hidden = !raised;
-  $('shapeWrap').hidden = !raised;
+  $('aloneWrap').hidden = !raised || squaresOn(); // (Square columns stand on every county, so there's no county to see alone)
+  // the bar shows Color for Flat (and Dots, where it's turned off) and Shape in its place for 3D, which is always Vote share
+  $('gColor').hidden = !dotsOn && raisedGoal();
+  $('gShape').hidden = dotsOn || !raisedGoal();
   const byOther = byPrecinct || byDistrict;
   $('shapeCounty').setAttribute('aria-pressed', String(!squaresOn()));
   $('shapeSquare').setAttribute('aria-pressed', String(squaresOn()));
@@ -947,7 +942,7 @@ function updateMode() {
   setOff($('shapeSquare'), byOther ? 'Square is for the map by county' : '', SHAPE_TITLES.square);
   const canAlone = !!place?.c && !standingCols();
   $('alone').setAttribute('aria-pressed', String(alone && canAlone));
-  setOff($('alone'), overlayCols() ? 'County alone is for the map by county' : squaresOn() ? 'County alone is for County shape columns'
+  setOff($('alone'), overlayCols() ? 'County alone is for the map by county'
     : !place?.c ? 'Choose a county in Go to, then press County alone to see its column by itself' : '',
     alone ? 'Raise every county again' : `See ${place?.c?.name} County's column alone, with every other county flat`);
   $('dragMove').setAttribute('aria-pressed', String(!drag));
