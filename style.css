@@ -80,6 +80,13 @@
   .off-note { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); z-index: 3; width: max-content; max-width: min(460px, calc(100% - 32px));
     padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(21,26,34,.96); color: var(--text); font-size: 13px; line-height: 1.4; text-align: center; }
   .off-note[hidden] { display: none; }
+  /* whenever the map shows estimates rather than counts (app.js, estimateNote): a strip along its bottom edge, with the
+     control bar raised above it by the strip's height (--est-h); on a phone, just below the map instead */
+  .est-note { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 7px 16px; background: rgba(21,26,34,.96);
+    border-top: 2px solid var(--accent); color: var(--text); font-size: 13px; line-height: 1.4; text-align: center; }
+  .est-note b { color: var(--accent); }
+  .est-note[hidden] { display: none; }
+  @media (min-width: 821px) { .map-area.has-est .controls { bottom: calc(var(--est-h, 34px) + 12px); } }
   .seg > [aria-pressed="true"] { background: var(--accent); color: #111; border-color: var(--accent); }
   .seg > a:hover, .seg > a:focus-visible { color: var(--accent); }
   .place-note:not(:first-child)::before { content: " · "; }
@@ -158,6 +165,7 @@
     .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; height: auto; }
     main { order: -1; }
     .map-area { flex: none; height: 58vh; min-height: 300px; }
+    .est-note { position: static; border-bottom: 1px solid var(--line); }
     aside { border-right: 0; border-top: 1px solid var(--line); padding: 18px 16px 28px; }
     input[type=range] { width: 44px; }
     .controls { gap: 6px; padding: 6px 8px 6px 6px; bottom: 12px; }

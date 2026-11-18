@@ -43,6 +43,11 @@
 .player { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; z-index: 2;
   background: rgba(21,26,34,.88); border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px 7px 8px; backdrop-filter: blur(6px); }
 .player button { min-width: 80px; }
+/* above the strip that says the dots are estimated (style.css, .est-note), like the control bar */
+@media (min-width: 821px) {
+  .map-area.has-est .player { bottom: calc(var(--est-h, 34px) + 10px); }
+  .map-area.has-est .scalebar { bottom: calc(var(--est-h, 34px) + 80px); }
+}
 .player button.ghost { min-width: 0; padding: 6px 13px; font-size: 18px; line-height: 1; }
 .track { position: relative; width: 200px; height: 4px; background: var(--line); border-radius: 2px; cursor: pointer; touch-action: none; }
 .track::before { content: ""; position: absolute; inset: -12px 0; }
@@ -77,4 +82,5 @@ body.touring .panel-toggle { display: none; }
   .player { width: calc(100% - 24px); max-width: 440px; }
   .track { flex: 1; width: auto; min-width: 80px; }
   body.touring .map-area { height: calc(100svh - var(--top, 0px)); }
+  body.touring .map-area.has-est { height: calc(100svh - var(--top, 0px) - var(--est-h, 60px)); } /* (the strip below it stays on screen) */
 }
