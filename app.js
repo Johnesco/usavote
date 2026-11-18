@@ -107,6 +107,9 @@ const DISTRICTS = STATE.data.districts || {};
   $('turn').textContent = 'Rotate';
   // what a choice that's turned off says when it's pressed (say)
   $('stage').insertAdjacentHTML('afterend', '<div class="off-note" id="offNote" role="status" aria-live="polite" hidden></div>');
+  // what on the map is estimated rather than counted, whenever any of it is (estimateNote)
+  // (over the map's bottom edge on a wide screen; on a phone, just below the map, so the map keeps its size)
+  document.querySelector('.map-area').insertAdjacentHTML('afterend', '<div class="est-note" id="estNote" role="note" hidden></div>');
   $('reset').textContent = 'Whole state'; $('reset').title = 'Back to the whole state';
   // the dot look's layer (dotlook.js), just above this map's canvas, and its styles
   $('stage').insertAdjacentHTML('afterend', LAYER_HTML);
@@ -164,7 +167,32 @@ const renderPlace = () => {
     line += `<span class="place-note">${race.id === ACTUAL_PRECINCTS ? BASE.asCounted : `Precinct votes are estimated from the ${BASE.label} pattern.`}</span>`;
   }
   $('placeInfo').innerHTML = line;
+  estimateNote();
 };
+// Anything on the map that's estimated rather than counted says so in a strip along the map's bottom edge: precinct columns
+// shared out from county totals, and every dot's spot (ballots are secret). County and district views are counts, so they
+// show none. A state's base race can say its precincts are partly estimated (state.js, base.partEstimated).
+let estH = 0; // the strip's height, kept clear of the map when it's fitted (PAD)
+function estimateNote() {
+  const note = $('estNote'); if (!note) return;
+  let text = '';
+  if (dotsOn) text = !HAS_PRECINCTS
+    ? `<b>Estimated:</b> no dot is anyone's real vote. Each county's total is real, but its parties are mixed evenly across the county, not by neighborhood, and placed where adults live.`
+    : race?.id === ACTUAL_PRECINCTS
+      ? `<b>Estimated:</b> no dot is anyone's real vote; ballots are secret. Each precinct's total is counted, but where its dots sit is estimated from where adults live.`
+      : `<b>Estimated:</b> no dot is anyone's real vote; ballots are secret. Each county's total is real, placed by precinct on the ${BASE.label} pattern and then where adults live.`;
+  else if (byPrecinct && columns && race) text = race.id !== ACTUAL_PRECINCTS
+    ? `<b>Estimated:</b> these precinct numbers are not counted results. Each county's real total is shared among its precincts by the ${BASE.label} pattern.`
+    : BASE.partEstimated ? `<b>Partly estimated:</b> ${BASE.partEstimated}` : '';
+  if (note.innerHTML !== text) note.innerHTML = text;
+  note.hidden = !text;
+  const area = document.querySelector('.map-area');
+  area.classList.toggle('has-est', !!text);
+  // over the map (a wide screen), the strip's height is kept clear of the map when it's fitted; below it (a phone), nothing is
+  estH = text && getComputedStyle(note).position === 'absolute' ? note.offsetHeight : 0;
+  if (text) area.style.setProperty('--est-h', `${note.offsetHeight}px`);
+}
+addEventListener('resize', () => estimateNote());
 const votesLine = row => { // a precinct's votes in the race on screen, in words
   const who = party => race.chamber ? (party === 'DEM' ? 'Democrats' : 'Republicans') : race.candidates.find(k => k.party === party).last;
   const est = race.id === ACTUAL_PRECINCTS ? '' : 'estimated ';
@@ -819,7 +847,8 @@ const TOP = { phi: 0.0001, theta: 0 };
 const DEFAULT_TILT = { phi: 0.98, theta: -0.22, r: 1.08 };
 const RAISED_SHIFT = 0.6; // tilted, the ground is foreshortened, so centering in the clear part of the screen takes a longer shift
 // screen space kept clear of the map in the flat view: a margin at the top, the Flat / 3D controls at the bottom
-const PAD = { top: 16, bottom: 84, side: 16 };
+// (and the estimate strip below them, when it shows: estH, from estimateNote)
+const PAD = { top: 16, get bottom() { return 84 + estH; }, side: 16 };
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const flatBtn = $('viewFlat'), raisedBtn = $('view3d'), turnBtn = $('turn');
@@ -956,6 +985,7 @@ function updateMode() {
     : `Hover over a ${what}`;
   if (dotsOn) hintEl.textContent = DOT_HINT;
   colorButtons();
+  estimateNote();
 }
 function resize() {
   const w = stage.clientWidth, h = stage.clientHeight;
