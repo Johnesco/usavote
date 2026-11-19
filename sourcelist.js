@@ -30,7 +30,8 @@ export function sourceItems(state, meta, histMeta) {
       2008 has no precinct boundaries of its own: its results are the Council's re-tally onto the 2010 precincts.`,
     `Texas Legislative Council, ${a('https://data.capitol.texas.gov/dataset/planh2316', 'PLANH2316')} (Texas House districts) and
       ${a('https://data.capitol.texas.gov/dataset/plans2168', 'PLANS2168')} (Texas Senate districts), the lines used for the 2022, 2024 and 2026 elections, both listed by the Council under a
-      ${CC_BY} license, and
+      ${CC_BY} license;
+      ${a('https://data.capitol.texas.gov/dataset/planc2193', 'PLANC2193')} (U.S. House districts for the 2022 and 2024 elections), also under a ${CC_BY} license; and
       ${a('https://data.capitol.texas.gov/dataset/planc2333', 'PLANC2333')} (U.S. House districts for the 2026 elections), which the Council lists with no license; all simplified here, for the by-district columns.`,
     `Texas Secretary of State, ${a('https://electionresults.sos.state.tx.us/results.html', 'Election Results, Tuesday, November 3, 2026')} (statewide totals, used as a cross-check).`,
     `U.S. Census Bureau, ${a(meta.landUrl, '2024 Gazetteer Files')}, counties: land area (ALAND_SQMI) and FIPS codes.`,

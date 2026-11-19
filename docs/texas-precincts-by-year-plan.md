@@ -1,7 +1,7 @@
 # Plan: Texas precincts by year, 2010–2024
 
-Written 2026-11-18. Steps 1 to 3 done 2026-11-18; the owner took every recommended choice in step 3. Steps 4 and 5 built
-2026-11-19 (`scripts/build_tx_precinct_years.py`, `data/tx-years/`); steps 6 to 8 in progress.
+Written 2026-11-18. Steps 1 to 3 done 2026-11-18; the owner took every recommended choice in step 3. Steps 4 to 6 and 8
+done 2026-11-19 (PR #29); step 7 done 2026-11-19 after it.
 
 ## Why
 
@@ -195,6 +195,9 @@ Make sure Kansas and South Carolina's precinct views still load.
 If PLANC2193's terms allow it (step 1), add it to `scripts/build_districts.py` for 2022 and 2024, and use the per-year precinct
 votes to check that every district's results reach the counties its lines do. Run the same check for the 2022 and 2024 Texas
 House and Senate results, which has never been done.
+
+**Done 2026-11-19:** `data/districts/u-s-house-2022-2024.json.gz`; every 2022 and 2024 result matches its lines but for 329
+votes in four Freestone County precincts. See `docs/PIPELINE.md` Part 9, Build.
 
 ### 8. Record and publish
 

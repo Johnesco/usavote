@@ -4,12 +4,13 @@ By district view on the results page (app.js).
 Sources (saved under data/raw/census-dl/tlc/districts/, which is not committed), all from the Texas Legislative Council's
 Capitol Data Portal:
   * PLANC2333, U.S. House districts for the 2026 elections:  https://data.capitol.texas.gov/dataset/planc2333
+  * PLANC2193, U.S. House districts for 2022 and 2024:      https://data.capitol.texas.gov/dataset/planc2193
   * PLANH2316, Texas House districts for 2022 to 2026:       https://data.capitol.texas.gov/dataset/planh2316
   * PLANS2168, Texas Senate districts for 2022 to 2026:      https://data.capitol.texas.gov/dataset/plans2168
-The House and Senate datasets are listed as Creative Commons Attribution. PLANC2333 shows no license; the owner chose on
-2026-11-12 to publish its outlines with credit (docs/PIPELINE.md, Part 9).
+The House and Senate datasets and PLANC2193 are listed as Creative Commons Attribution. PLANC2333 shows no license; the owner
+chose on 2026-11-12 to publish its outlines with credit (docs/PIPELINE.md, Part 9).
 
-Output, one file per chamber: { meta, districts: { "1": [[outer, hole, ...], ...], ... } }. A ring is
+Output, one file per plan (u-s-house.json.gz for 2026, u-s-house-2022-2024.json.gz for PLANC2193): { meta, districts: { "1": [[outer, hole, ...], ...], ... } }. A ring is
 [lon, lat, dlon, dlat, ...] in 1e-4 degree steps, not closed: the format of precinct-shapes.json.gz. Borders are simplified to
 about 55 m along the pieces neighbors share, so districts still meet without gaps.
 
@@ -19,6 +20,10 @@ district's counties are worked out from the 2024 precincts whose centers fall in
 district reaches every county the 2026 county feed reports results from. A district may also reach a county that reports
 nothing for it, where its piece of the county has no voters or a precinct's center falls just across the line; the build prints
 how many do and stops if any district has more than one such county.
+For the plans used in 2022 and 2024, a second check uses the Council's own precinct returns for those years (the files of
+scripts/build_tx_precinct_years.py, under data/raw/census-dl/tlc/years/): every precinct with votes for district N must lie
+at least partly inside district N, by its center or a point of its outline. A plan used only for 2022 and 2024 (PLANC2193)
+gets this check in place of the 2026 one.
 
 Run:  python scripts/build_districts.py   (after scripts/build_data.py)
 
@@ -47,10 +52,11 @@ RAW = ROOT / "data" / "raw" / "census-dl" / "tlc"
 OUT_DIR = ROOT / "data" / "districts"
 PORTAL = "https://data.capitol.texas.gov/dataset/"
 CC_BY = {"license": "Creative Commons Attribution, as listed by the Council", "licenseUrl": "http://www.opendefinition.org/licenses/cc-by"}
-PLANS = [  # race id in the results files, plan, what the Council calls it, the general elections held on it, license
-    ("u-s-house", "PLANC2333", "U.S. House districts for the 2026 elections", [2026], {"license": None, "licenseUrl": None}),
-    ("texas-house", "PLANH2316", "Texas House districts for the 2022 to 2026 elections", [2022, 2024, 2026], CC_BY),
-    ("texas-senate", "PLANS2168", "Texas Senate districts for the 2022 to 2026 elections", [2022, 2024, 2026], CC_BY),
+PLANS = [  # race id in the results files, plan, what the Council calls it, the general elections held on it, license, file
+    ("u-s-house", "PLANC2333", "U.S. House districts for the 2026 elections", [2026], {"license": None, "licenseUrl": None}, "u-s-house"),
+    ("u-s-house", "PLANC2193", "U.S. House districts for the 2022 and 2024 elections", [2022, 2024], CC_BY, "u-s-house-2022-2024"),
+    ("texas-house", "PLANH2316", "Texas House districts for the 2022 to 2026 elections", [2022, 2024, 2026], CC_BY, "texas-house"),
+    ("texas-senate", "PLANS2168", "Texas Senate districts for the 2022 to 2026 elections", [2022, 2024, 2026], CC_BY, "texas-senate"),
 ]
 Q = 1e4
 TOLERANCE = 5.0  # simplification, in 1e-4 degree steps (about 55 m)
@@ -337,9 +343,88 @@ for (cnty,), rings in read_shapes(zipfile.ZipFile(RAW / "vtds_24pg.zip"), "VTDs_
     vtd_at.append((int(cnty), lon * Q, lat * Q))
 print(f"{len(vtd_at):,} precinct centers")
 
+history = json.loads((ROOT / "data" / "results-history.json").read_text(encoding="utf-8"))
+
+# ---------- the Council's own precinct returns for 2022 and 2024, on that year's precinct lines: each precinct's votes for a
+# district must come from a precinct that district's lines reach ----------
+YEAR_FILES = {2022: (RAW / "years" / "lines-2022.zip", "VTDs_22G", RAW / "years" / "votes-2022.zip"),
+              2024: (RAW / "vtds_24pg.zip", "VTDs_24PG", RAW / "years" / "votes-2024.zip")}
+COUNCIL_OFFICE = {"u-s-house": re.compile(r"U\.S\. Rep (\d+)$"), "texas-house": re.compile(r"State Rep (\d+)$"),
+                  "texas-senate": re.compile(r"State Sen (\d+)$")}
+_year_vtds, _year_votes = {}, {}
+
+
+def year_vtds(year):
+    """{(county, code in capitals): (center, outline points)} for the year's precincts, in 1e-4 degrees."""
+    if year not in _year_vtds:
+        path, stem, _ = YEAR_FILES[year]
+        out = {}
+        for (cnty, vtd), rings in read_shapes(zipfile.ZipFile(path), stem, ["CNTY", "VTD"]):
+            big = max(rings, key=len, default=None)
+            if not big: continue
+            pts = [(lon * Q, lat * Q) for r in rings for lon, lat in (inv(x, y) for x, y in r)]
+            lon, lat = inv(sum(p[0] for p in big) / len(big), sum(p[1] for p in big) / len(big))
+            out[(int(float(cnty)), vtd.upper())] = ((lon * Q, lat * Q), pts)
+        _year_vtds[year] = out
+    return _year_vtds[year]
+
+
+def year_votes(year):
+    """[(office, (county, code in capitals), votes)] for every candidate row of the year's general election."""
+    if year not in _year_votes:
+        import csv
+        import io
+        z = zipfile.ZipFile(YEAR_FILES[year][2])
+        name = next(n for n in z.namelist() if n.endswith(f"{year}_General_Election_Returns.csv"))
+        rows = csv.reader(io.TextIOWrapper(z.open(name), encoding="latin-1"))
+        head = [h.lower() for h in next(rows)]
+        iF, iV, iO, iN = head.index("fips"), head.index("vtd"), head.index("office"), head.index("votes")
+        _year_votes[year] = [(r[iO], (int(r[iF]), r[iV].strip().upper()), int(r[iN])) for r in rows if len(r) >= len(head)]
+    return _year_votes[year]
+
+
+def check_year(race_id, plan, year, rings_of):
+    """Stops unless every precinct with votes for district N lies at least partly inside district N's lines."""
+    vtds, rx = year_vtds(year), COUNCIL_OFFICE[race_id]
+    votes = defaultdict(int)
+    for office, key, n in year_votes(year):
+        m = rx.match(office)
+        if m and n: votes[(int(m.group(1)), key)] += n
+    boxes = {d: (min(p[0] for r in rs for p in r), min(p[1] for r in rs for p in r), max(p[0] for r in rs for p in r), max(p[1] for r in rs for p in r))
+             for d, rs in rings_of.items()}
+
+    def within(d, x, y):
+        x0, y0, x1, y1 = boxes[d]
+        return x0 <= x <= x1 and y0 <= y <= y1 and inside(x, y, rings_of[d])
+
+    by_center = on_edge = 0
+    outside = []
+    total = sum(votes.values())
+    for (d, key), n in votes.items():
+        assert d in rings_of, f"{plan}, {year}: votes for district {d}, which the plan doesn't have"
+        assert key in vtds, f"{plan}, {year}: votes in precinct {key}, which the lines don't have"
+        (cx, cy), pts = vtds[key]
+        if within(d, cx, cy):
+            by_center += n
+            continue
+        # a precinct the district's line splits: some point of its outline, pulled a little toward its center, is inside
+        if any(within(d, x + (cx - x) * 0.02, y + (cy - y) * 0.02) for x, y in pts): on_edge += n
+        else: outside.append((n, d, key, min(math.hypot((x - cx) * KX, y - cy) for r in rings_of[d] for x, y in r) / Q * 111))
+    # The Council's precincts (VTDs) aren't always the precincts voted in: a precinct with no census match is folded into a
+    # neighbor. So a few votes may sit in a precinct just across the line. Stop if they're more than a trace, or far away.
+    away = sum(o[0] for o in outside)
+    assert away <= 0.0001 * total, f"{plan}, {year}: {away:,} votes in precincts wholly outside their district: {sorted(outside, reverse=True)[:5]}"
+    assert all(o[3] <= 10 for o in outside), f"{plan}, {year}: a precinct more than 10 km from its district: {max(outside, key=lambda o: o[3])}"
+    print(f"  {year}: {len(votes):,} precinct and district pairs with votes, in {len({d for d, _ in votes})} districts; "
+          f"{100 * by_center / total:.2f}% of {total:,} votes in precincts whose center is inside their district, "
+          f"the rest in precincts the line splits" + (f"; {away:,} in {len(outside)} precincts wholly outside, within "
+          f"{max(o[3] for o in outside):.1f} km ({', '.join(f'{o[2][1]} in county {o[2][0]}, {o[0]} votes for district {o[1]}' for o in sorted(outside, reverse=True))})" if outside else "; none outside"))
+
+
 OUT_DIR.mkdir(exist_ok=True)
-for race_id, plan, what, years, lic in PLANS:
-    race = next(r for r in results["races"] if r["id"] == race_id)
+for race_id, plan, what, years, lic, out_name in PLANS:
+    race = next(r for r in results["races"] if r["id"] == race_id) if 2026 in years else \
+        next(r for r in history["races"] if r["id"] == f"{years[0]}-{race_id}")
     z = zipfile.ZipFile(RAW / "districts" / f"{plan.lower()}.zip")
     raw_points, rings_of = 0, {}
     for (num,), rings in read_shapes(z, f"{plan}/{plan}", ["District"]):
@@ -350,31 +435,35 @@ for race_id, plan, what, years, lic in PLANS:
     small, n_arcs = simplify_all(rings_of)
     polys = {d: to_polygons(rings) for d, rings in small.items()}
 
-    # the counties each district reaches, from the precincts whose centers are inside it, against its 2026 results
-    boxes = {d: (min(p[0] for r in rs for p in r), min(p[1] for r in rs for p in r), max(p[0] for r in rs for p in r), max(p[1] for r in rs for p in r))
-             for d, rs in small.items()}
-    reach, unplaced = defaultdict(set), 0
-    for cnty, x, y in vtd_at:
-        for d, (x0, y0, x1, y1) in boxes.items():
-            if x0 <= x <= x1 and y0 <= y <= y1 and inside(x, y, small[d]):
-                reach[d].add(cnty); break
-        else: unplaced += 1
-    extra, n_checked = [], 0
-    for d in race["districts"]:
-        office = OFFICE[race_id] + str(d["district"])
-        counted = {county_code[norm(c["N"])] for c in sos.values() if any(r["N"].strip() == office for r in c["Races"].values())}
-        if not counted: continue  # a single candidate, so not on the ballot
-        n_checked += 1
-        missing = counted - reach[d["district"]]
-        assert not missing, f"{plan}: district {d['district']} has results from counties its shape doesn't reach: {sorted(missing)}"
-        more = reach[d["district"]] - counted
-        assert len(more) <= 1, f"{plan}: district {d['district']} reaches {len(more)} counties with no results for it"
-        if more: extra.append(d["district"])
-    print(f"{plan}: {len(rings_of)} districts, {raw_points:,} points -> {sum(len(r) for rs in small.values() for r in rs):,} in {n_arcs:,} border pieces; "
-          f"all {n_checked} districts on the 2026 ballot reach every county their results came from; "
-          f"{len(extra)} also hold the center of a precinct in one more county; precinct centers in no district: {unplaced}")
+    if 2026 in years:
+        # the counties each district reaches, from the precincts whose centers are inside it, against its 2026 results
+        boxes = {d: (min(p[0] for r in rs for p in r), min(p[1] for r in rs for p in r), max(p[0] for r in rs for p in r), max(p[1] for r in rs for p in r))
+                 for d, rs in small.items()}
+        reach, unplaced = defaultdict(set), 0
+        for cnty, x, y in vtd_at:
+            for d, (x0, y0, x1, y1) in boxes.items():
+                if x0 <= x <= x1 and y0 <= y <= y1 and inside(x, y, small[d]):
+                    reach[d].add(cnty); break
+            else: unplaced += 1
+        extra, n_checked = [], 0
+        for d in race["districts"]:
+            office = OFFICE[race_id] + str(d["district"])
+            counted = {county_code[norm(c["N"])] for c in sos.values() if any(r["N"].strip() == office for r in c["Races"].values())}
+            if not counted: continue  # a single candidate, so not on the ballot
+            n_checked += 1
+            missing = counted - reach[d["district"]]
+            assert not missing, f"{plan}: district {d['district']} has results from counties its shape doesn't reach: {sorted(missing)}"
+            more = reach[d["district"]] - counted
+            assert len(more) <= 1, f"{plan}: district {d['district']} reaches {len(more)} counties with no results for it"
+            if more: extra.append(d["district"])
+        print(f"{plan}: {len(rings_of)} districts, {raw_points:,} points -> {sum(len(r) for rs in small.values() for r in rs):,} in {n_arcs:,} border pieces; "
+              f"all {n_checked} districts on the 2026 ballot reach every county their results came from; "
+              f"{len(extra)} also hold the center of a precinct in one more county; precinct centers in no district: {unplaced}")
+    else:
+        print(f"{plan}: {len(rings_of)} districts, {raw_points:,} points -> {sum(len(r) for rs in small.values() for r in rs):,} in {n_arcs:,} border pieces")
+    for year in (y for y in years if y in YEAR_FILES): check_year(race_id, plan, year, rings_of)
 
-    path = OUT_DIR / f"{race_id}.json.gz"
+    path = OUT_DIR / f"{out_name}.json.gz"
     path.write_bytes(gzip.compress(json.dumps({
         "meta": {
             "plan": plan, "what": what, "years": years,

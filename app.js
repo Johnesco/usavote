@@ -138,7 +138,8 @@ let barAngle = null;    // the 3D tilt and heading the map had when Dots was cho
 const legHead = $('legHead') || [...document.querySelectorAll('aside h2')].find(h => /share of the county vote/.test(h.textContent));
 let byDistrict = false, dist = null, nmOf = c => c.last;
 const districtSets = new Map(), districtThere = new Map(); // a chamber's columns, once made; whether its file is there
-const districtEntry = r => { const e = DISTRICTS[r.id.replace(/^\d{4}-/, '')]; return r.chamber && e?.years.includes(r.year) ? e : null; };
+// the lines a chamber's race was held on: state.js lists one entry per chamber, or several when the lines changed
+const districtEntry = r => r.chamber && [DISTRICTS[r.id.replace(/^\d{4}-/, '')] ?? []].flat().find(e => e.years.includes(r.year)) || null;
 const districtCols = () => byDistrict && dist && dist.race === race ? dist.cols : null;
 const overlayCols = () => districtCols() || (byPrecinct ? columns : null); // what stands in place of the county columns, if anything
 const byParam = () => byDistrict ? '&by=district' : byPrecinct ? '&by=precinct' : '';

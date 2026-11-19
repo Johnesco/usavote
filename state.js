@@ -24,7 +24,10 @@ const TEXAS = {
     // By district: each chamber's district outlines and the general elections held on them (scripts/build_districts.py;
     // docs/PIPELINE.md, Part 9). A file that isn't there leaves its chamber without the view.
     districts: {
-      'u-s-house': { url: 'data/districts/u-s-house.json.gz', years: [2026] },
+      'u-s-house': [ // a list when a chamber's lines changed: the entry whose years hold the race's year
+        { url: 'data/districts/u-s-house.json.gz', years: [2026] },
+        { url: 'data/districts/u-s-house-2022-2024.json.gz', years: [2022, 2024] },
+      ],
       'texas-house': { url: 'data/districts/texas-house.json.gz', years: [2022, 2024, 2026] },
       'texas-senate': { url: 'data/districts/texas-senate.json.gz', years: [2022, 2024, 2026] },
     },
