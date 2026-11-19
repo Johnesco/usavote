@@ -51,6 +51,24 @@ This is a reading of the published pages, not legal advice. Nobody at these offi
 - Commercial use wasn't considered. If the site ever carries ads or charges, read this again.
 - Applying this text to the results site is inferred, from `sdsos.gov`'s footer link. The results site itself says nothing.
 
+### Read again for a link to the author's work, 2026-11-19
+
+The owner asked whether the site could link to a Ko-fi tip page, or to a "Support my work" page that has one, without its use of these results stopping being "informational". Read again in full in Chrome:
+
+| Page | What it says now |
+|---|---|
+| [South Dakota Online Disclaimer](https://www.sd.gov/cs?id=kb_article_view&sysparm_article=KB0010221) | Unchanged from 2026-11-09. Reuse wording: "Anyone may view, copy or distribute information found on the State's website for personal or informational use without owing an obligation to the State." Nothing defines either phrase, and nothing mentions commercial use, money, donations, advertising or linking from other sites. Its list of links that aren't appropriate is about links the State itself places on its own sites. |
+| `sdsos.gov` footer | The "Information Accuracy" link goes to `sd.gov/disclaim.aspx`, the same disclaimer. Also Privacy Policy, Accessibility Policy, Request Public Records, State Homepage. |
+| [Results site](https://electionresults.sd.gov/) and its [FAQs](https://electionresults.sd.gov/ElectionTerminology.aspx) | No terms, copyright or license wording. The FAQs are election terminology only. |
+| `sd.gov/disclaim.aspx`, `sd.gov/accpolicy.aspx` | Both still redirect to a Microsoft sign-in page, which was left without signing in. |
+
+**Reading (not legal advice; nobody at the state was asked):**
+
+- The site's use of the results stays informational as long as the maps stay free, with nothing behind a payment, no ads, and no South Dakota maps on anything sold.
+- A plain link to the author's own portfolio site ("About me", "More by John"), where a tip page may be one item among others, is ordinary credit and doesn't change that. The owner chose this on 2026-11-19.
+- A "Support my work" or tip link on the map pages asks visitors for money for the maps themselves. The wording doesn't settle whether that's still "informational", so ask the Secretary of State before adding one.
+- Selling South Dakota views (merchandise, prints) is outside "personal or informational use". Don't, without written permission.
+
 **Gaps in the record:** `sd.gov/disclaim.aspx` redirects to a sign-in page, which was left without signing in, so the text above comes from the knowledge-base article of the same title. `accpolicy.aspx` and the "Terms of Use Agreement" weren't read.
 
 ## Build, from the repo root

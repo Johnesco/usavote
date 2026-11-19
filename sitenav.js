@@ -1,6 +1,6 @@
 // The site's own header, the same on every page: the site's name, which opens the U.S. homepage; a menu of every state that's
 // ready; and an Explainers menu of the pages that explain the maps. On a state page it starts the top bar (app.js), and the
-// state menu opens the same view of the state chosen. Elsewhere (why.html, shade-by-votes.html, sources.html, the guided
+// state menu opens the same view of the state chosen. Elsewhere (why.html, shade-by-votes.html, sources.html, about.html, the guided
 // flights) mountSiteHeader puts it at the top of the page.
 import { STATE, STATES } from './state.js';
 
@@ -51,7 +51,8 @@ function explainersMenu() {
   const current = e => e.href.includes('tour=1') ? tour && e.href.startsWith(page) : e.href === page;
   menu.innerHTML = `<summary title="Pages that explain the maps">Explainers</summary><ul>` +
     EXPLAINERS.map(e => `<li><a href="${e.href}"${current(e) ? ' aria-current="page"' : ''}><b>${e.title}</b><span>${e.about}</span></a></li>`).join('') +
-    `<li class="sep"><a href="sources.html"${page === 'sources.html' ? ' aria-current="page"' : ''}><b>Sources and credits</b><span>Where every number and shape comes from</span></a></li></ul>`;
+    `<li class="sep"><a href="sources.html"${page === 'sources.html' ? ' aria-current="page"' : ''}><b>Sources and credits</b><span>Where every number and shape comes from</span></a></li>` +
+    `<li><a href="about.html"${page === 'about.html' ? ' aria-current="page"' : ''}><b>About me</b><span>Who makes this site, and more of my work</span></a></li></ul>`;
   document.addEventListener('pointerdown', e => { if (menu.open && !menu.contains(e.target)) menu.open = false; });
   menu.addEventListener('keydown', e => { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
   return menu;
