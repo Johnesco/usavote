@@ -50,7 +50,7 @@ OUT = ROOT / "data" / "sc" / "results-2026.json"
 TABLE = ROOT / "data" / "sc" / "precinct-crosswalk.csv"
 UNITS = RAW / "derived" / "precinct-votes.json"
 RESULTS_URL = "https://www.enr-scvotes.org/SC/127300/web.345435/#/summary"
-RETRIEVED = "2026-11-08"
+RETRIEVED = "2026-11-19"  # saved again after the State Board of Canvassers certified the results (docs/records/south-carolina.md)
 SQ_M_PER_SQ_MI = 2_589_988.110336
 COUNTIES = 46
 PRECINCTS = 2312
@@ -344,7 +344,7 @@ tiger = link("https://www.census.gov/geographies/mapping-files/time-series/geo/t
 out = dict(
     meta=dict(
         election="2026 Statewide General Election (Nov. 3, 2026)",
-        resultsSource="South Carolina State Election Commission, Election Night Reporting (unofficial results; certification pending)",
+        resultsSource="South Carolina State Election Commission, Election Night Reporting (official results)",
         resultsUrl=RESULTS_URL,
         resultsUpdated=UPDATED, retrieved=RETRIEVED,
         landSource="U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171), county land area (AREALAND)",
@@ -352,7 +352,7 @@ out = dict(
         precinctPlacement=dict(senateVotes=total_senate, asCounted=as_counted, exact=by_method["exact"], fixed=by_method["fix"], combined=by_method["combine"],
                                moved=moved, pooled=tally["pooled"], family=tally["family"], county=tally["county"], failsafeProvisional=special, precinctsMarkedEstimated=est),
         sources=[
-            f"South Carolina State Election Commission, {link(RESULTS_URL, 'Election Night Reporting')}, Nov. 3, 2026 general election: the statewide file and all {COUNTIES} county precinct files, as of {UPDATED}, retrieved {RETRIEVED}. These results are unofficial until the state certifies them.",
+            f"South Carolina State Election Commission, {link(RESULTS_URL, 'Election Night Reporting')}, Nov. 3, 2026 general election: the statewide file and all {COUNTIES} county precinct files, as of {UPDATED}, retrieved {RETRIEVED}. The site marks these as official results.",
             f"Where the precinct votes come from: {fmt(as_counted)} of {fmt(total_senate)} U.S. Senate votes ({100 * as_counted / total_senate:.1f}%) were placed on a 2020 voting district by the name of their 2026 precinct, in a {link('data/sc/precinct-crosswalk.csv', 'table you can read')}. The other {fmt(moved)} were shared out by rule, because the precinct is new since 2020 or the row names no precinct: {fmt(special)} countywide failsafe and provisional votes, {fmt(tally['county'] - special)} in new precincts with no clear parent, {fmt(tally['family'])} among a group of districts the name points to, and {fmt(tally['pooled'])} in {fmt(tally['pooled rows'])} rows in Lancaster and Spartanburg counties whose names don't match the 2020 districts. Precincts marked (est.) have at least {EST_SHARE:.0%} of their votes placed this way.",
             f"U.S. Census Bureau, {link('https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html', '2020 Census Redistricting Data')} (P.L. 94-171): county land area and codes, cities, and each block's location and adults; {tiger} Shapefiles: voting districts for the precinct outlines (simplified here, with districts combined where the 2026 results combine them, and those under 10 votes merged) and blocks for where people were counted. <b>TIGER/Line® is a registered trademark of the Census Bureau, used here only to describe the data. This site repackages that data and is not a Census Bureau product.</b> Census boundaries are for statistical purposes and are not legal land descriptions.",
             f"U.S. Census Bureau, {link('https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html', 'Cartographic Boundary Files')}, 2017 counties, via {link('https://github.com/topojson/us-atlas', 'us-atlas')} v3.0.1 (counties-10m.json).",

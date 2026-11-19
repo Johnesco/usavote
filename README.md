@@ -7,7 +7,7 @@ Other states show as not available yet; [`state.js`](state.js) holds what the pa
 
 ## States added after Texas and Oklahoma
 
-These show the Nov. 3, 2026 general election, on the same code as Texas, with each state's data in `data/<code>/`. All are **unofficial** until the state certifies them, and each needs a rebuild after that.
+These show the Nov. 3, 2026 general election, on the same code as Texas, with each state's data in `data/<code>/`. All are **unofficial** until the state certifies them, and each needs a rebuild after that; South Carolina and Oklahoma now have official results.
 
 | State | Pages | View | What to know |
 |---|---|---|---|
@@ -28,7 +28,7 @@ Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/rec
 
 ## Oklahoma
 
-[`oklahoma.html`](https://johnesco.github.io/usavote/oklahoma.html) and [`oklahoma-voters.html`](https://johnesco.github.io/usavote/oklahoma-voters.html) show the Nov. 3, 2026 general election by county: bar view and dot view. They use the same code as Texas, with the data in [`data/ok/`](data/ok/). The results are **unofficial** until the state certifies them, set for Nov. 10, 2026.
+[`oklahoma.html`](https://johnesco.github.io/usavote/oklahoma.html) and [`oklahoma-voters.html`](https://johnesco.github.io/usavote/oklahoma-voters.html) show the Nov. 3, 2026 general election by county: bar view and dot view. They use the same code as Texas, with the data in [`data/ok/`](data/ok/). The results are **official**, checked against the state's results site on Nov. 19, 2026.
 
 It has eight races: U.S. Senate, Governor, Lieutenant Governor, Attorney General, Superintendent of Public Instruction, Commissioner of Labor, Insurance Commissioner and Corporation Commissioner, plus the U.S. House, which can also be drawn district by district. Left out: State Treasurer, because no Democrat ran and the maps compare one Democrat with one Republican; judicial retention and state questions; and for now the legislature, earlier years and guided flights.
 
