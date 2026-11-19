@@ -20,7 +20,14 @@ export function sourceItems(state, meta, histMeta) {
     `Texas Secretary of State, ${a(meta.resultsUrl, 'Election Night Returns, 2026 November General Election')}, county results for statewide races
       (${a(meta.resultsApi, 'data feed')}), as of ${meta.resultsUpdated}, retrieved ${meta.retrieved}. Unofficial until the state canvass.`,
     `Texas Legislative Council, ${a('https://data.capitol.texas.gov/dataset/vtds', 'VTDs_24PG')} (2024 precinct boundaries, listed by the Council under a ${CC_BY} license; simplified here, with precincts under 10 votes merged) and
-      ${a('https://ted.capitol.texas.gov/api/Offices/510/2/vtd', '2024 U.S. Senate results by precinct')}, for the by-precinct columns and for placing dots within a county.`,
+      ${a('https://ted.capitol.texas.gov/api/Offices/510/2/vtd', '2024 U.S. Senate results by precinct')}, for 2026's estimated by-precinct columns and for placing 2026's dots within a county.`,
+    `Texas Legislative Council, each general election's own precincts, 2008 to 2024, for the by-precinct columns and dots of those years, all listed by the Council
+      under a ${CC_BY} license: precinct boundaries from ${a('https://data.capitol.texas.gov/dataset/archived_vtds_2010s', 'archived_vtds_2010s')} (2010 to 2018) and
+      ${a('https://data.capitol.texas.gov/dataset/vtds', 'vtds')} (VTDs20G_2020, VTDs_22G, VTDs_24PG), and precinct results from
+      ${a('https://data.capitol.texas.gov/dataset/historical_elections_2010s', 'historical_elections_2010s')} (2008 to 2018) and
+      ${a('https://data.capitol.texas.gov/dataset/comprehensive-election-datasets-compressed-format', 'comprehensive election datasets')} (2020 to 2024).
+      Changed here: boundaries simplified, precincts with under 10 votes in a statewide race merged into a neighbor, and each district race's candidates added up by party.
+      2008 has no precinct boundaries of its own: its results are the Council's re-tally onto the 2010 precincts.`,
     `Texas Legislative Council, ${a('https://data.capitol.texas.gov/dataset/planh2316', 'PLANH2316')} (Texas House districts) and
       ${a('https://data.capitol.texas.gov/dataset/plans2168', 'PLANS2168')} (Texas Senate districts), the lines used for the 2022, 2024 and 2026 elections, both listed by the Council under a
       ${CC_BY} license, and
