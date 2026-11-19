@@ -448,15 +448,16 @@ Built 2026-11-12, for the **By district** view on `texas.html`: one column for e
 
 ### Raw files, under `data/raw/census-dl/tlc/districts/` (not committed)
 
-All three are shapefiles from the Texas Legislative Council's [Capitol Data Portal](https://data.capitol.texas.gov/), downloaded 2026-11-12.
+All four are shapefiles from the Texas Legislative Council's [Capitol Data Portal](https://data.capitol.texas.gov/): three downloaded 2026-11-12, and PLANC2193 on 2026-11-19.
 
 | What | Local file | SHA-256 (first 16) |
 |---|---|---|
 | [PLANC2333](https://data.capitol.texas.gov/dataset/planc2333), U.S. House, "enacted by 89th Legislature, 2nd C.S., 2025" ([zip](https://data.capitol.texas.gov/dataset/748c952b-e926-4f44-8d01-a738884b3ec8/resource/5712ebe1-d777-4d4a-b836-0534e17bca01/download/planc2333.zip)) | `planc2333.zip` | `6797d6e39f76224f` |
+| [PLANC2193](https://data.capitol.texas.gov/dataset/planc2193), U.S. House, "TEXAS CONGRESSIONAL DISTRICTS, 2023-2026" ([zip](https://data.capitol.texas.gov/dataset/b806b39a-4bab-4103-a66a-9c99bcaba490/resource/086a8045-7d52-4758-9d7d-6b57fe1b8de4/download/planc2193.zip)) | `planc2193.zip` | `5a84fe6064d47d76` |
 | [PLANH2316](https://data.capitol.texas.gov/dataset/planh2316), "State House districts, 2023-2026" ([zip](https://data.capitol.texas.gov/dataset/71af633c-21bf-42cf-ad48-4fe95593a897/resource/a4d3230f-47f2-4253-85f3-51a6c3c9ad0a/download/planh2316.zip)) | `planh2316.zip` | `82d2a0aeb31e714c` |
 | [PLANS2168](https://data.capitol.texas.gov/dataset/plans2168), "State Senate districts, 2023-2026" ([zip](https://data.capitol.texas.gov/dataset/70836384-f10c-423d-a36e-748d7e000872/resource/8247dbc6-b942-4a29-813c-1ebc603a7236/download/plans2168.zip)) | `plans2168.zip` | `7bf496e41cfc6ddc` |
 
-**Which elections:** the portal tags all three "districts for 2026 elections", and the House and Senate plans also "districts for 2022-2026 elections". So the House and Senate views cover 2022, 2024 and 2026, and the U.S. House view covers 2026 only. The 2022 and 2024 U.S. House lines (PLANC2193) and every plan before 2022 weren't fetched.
+**Which elections:** the portal tags PLANC2333, PLANH2316 and PLANS2168 "districts for 2026 elections", and the House and Senate plans also "districts for 2022-2026 elections". It tags PLANC2193 "districts for 2022-2024 elections" (its title's "2023-2026" is the term of the Congress it was drawn for; PLANC2333 replaced it for 2026). So the House and Senate views cover 2022, 2024 and 2026, and the U.S. House view covers 2022 and 2024 on PLANC2193 and 2026 on PLANC2333. The checks below confirm the tags against each year's precinct votes. No plan before 2022 was fetched.
 
 ### Terms of use, read 2026-11-12
 
@@ -467,34 +468,47 @@ This is a reading of the published pages, not legal advice. Each dataset page an
 | PLANH2316, PLANS2168 | Listed as Creative Commons Attribution, linking to the same general [license page](http://www.opendefinition.org/licenses/cc-by) as `VTDs_24PG`, with no version named. | Credit, a license link and a note of changes: in the page's Sources and in each file's `meta` |
 | PLANC2333 | **No license.** The page shows none and its catalog record has an empty license field. The portal's [About page](https://data.capitol.texas.gov/about) describes the portal and has no terms. | Nothing stated. This is silence, not permission, the same standing as the Secretary of State's results. The owner was told and chose on 2026-11-12 to publish the outlines with credit, in the page's Sources and the file's `meta`. |
 
-**Gap in the record:** the Council wasn't asked about PLANC2333. PLANC2193 was read on 2026-11-18 and is licensed: see "Texas precincts by year and PLANC2193 terms" in Part 5.
+**Gap in the record:** the Council wasn't asked about PLANC2333. PLANC2193 was read on 2026-11-18 and is licensed Creative Commons Attribution: see "Texas precincts by year and PLANC2193 terms" in Part 5.
 
 ### Build
 
-`python scripts/build_districts.py` (after `build_data.py`; 6 seconds) writes one file per chamber to `data/districts/`:
+`python scripts/build_districts.py` (after `build_data.py`, and with the 2022 and 2024 files of `build_tx_precinct_years.py` in `data/raw/census-dl/tlc/`; about 5 minutes, nearly all of it the 2022 and 2024 checks) writes one file per plan to `data/districts/`:
 
 | File | Districts | Points, raw to simplified | Size | SHA-256 (first 16) |
 |---|---:|---|---:|---|
 | `texas-house.json.gz` | 150 | 615,053 to 49,235 | 119 KB | `5383ed86378e8f0f` |
 | `texas-senate.json.gz` | 31 | 386,881 to 31,215 | 76 KB | `322cddd96a64811f` |
-| `u-s-house.json.gz` | 38 | 411,204 to 35,578 | 85 KB | `b1d159bcf0e412f7` |
+| `u-s-house.json.gz` (2026, PLANC2333) | 38 | 411,204 to 35,578 | 85 KB | `b1d159bcf0e412f7` |
+| `u-s-house-2022-2024.json.gz` (PLANC2193) | 38 | 400,436 to 31,319 | 76 KB | `3a55e7f79150e561` |
 
 Outlines are converted from the Council's Lambert projection and simplified to about 55 m along the borders neighbors share, the way the precinct outlines are.
 
 Checks that stop the build:
-- Each file has exactly the chamber's districts, numbered 1 to its size in `results-2026.json`.
+- Each file has exactly the chamber's districts, numbered 1 to its size in `results-2026.json` (for PLANC2193, in the 2022 results of `results-history.json`).
 - **The lines match the results.** Each district's counties are worked out from the 2024 precincts whose centers fall inside it. Every district on the 2026 ballot must reach every county the Secretary of State's feed reports results from for it: all 38, 150 and 16 do.
 - A district may also reach one county with no results for it, where its piece has no voters or a precinct's center falls just over the line (4, 9 and 3 districts do). More than one stops the build.
 
-Not checked: the 2022 and 2024 results against the House and Senate lines. That rests on the portal's tags.
+- **The 2022 and 2024 results match the lines** (added 2026-11-19). The Council's own precinct votes for those years (`votes-2022.zip`, `votes-2024.zip`, on `VTDs_22G` and `VTDs_24PG`, the files of Part 3 #6) give each precinct's votes for each district. A precinct with votes for district N must lie at least partly inside N's lines: its center is inside, or a point of its outline pulled 2% toward its center is. A precinct wholly outside may hold at most 0.01% of the year's votes, and must be within 10 km of the district; more stops the build. The Council leaves out districts with one candidate, so those have nothing to check.
+
+| Plan | Year | Votes checked | Center inside | Wholly outside |
+|---|---|---:|---:|---|
+| PLANC2193 (U.S. House) | 2022 | 7,089,460 in 34 districts | 99.46% | 25 votes: Freestone County precinct 0004B for District 17, 3.1 km away |
+| PLANC2193 | 2024 | 9,622,652 in 33 districts | 99.42% | 304 votes, all in Freestone County: 0004A (269) and 0006B (17) for District 6, 0006A (14) and 0004B (4) for District 17, within 4.7 km |
+| PLANH2316 (Texas House) | 2022 | 5,054,610 in 92 districts | 99.28% | none |
+| PLANH2316 | 2024 | 7,511,571 in 96 districts | 99.50% | none |
+| PLANS2168 (Texas Senate) | 2022 | 5,471,731 in 21 districts | 99.56% | none |
+| PLANS2168 | 2024 | 3,764,398 in 10 districts | 99.57% | none |
+
+The Freestone precincts sit where Districts 6 and 17 meet, and their votes went to the neighboring district. Why isn't known: the county's precinct lines may be drawn a little apart from the Council's district lines there, or some voters assigned across the line. It isn't a wrong plan: the rest of both districts match. It changes no district's map.
 
 ### On the page
 
-- `STATE.data.districts` in `state.js` lists each chamber's file and years. The page checks that a file is there before offering its view, so removing a file removes that chamber's button. `app.js` draws them with the precinct view's column code (`precinct-columns.js`).
+- `STATE.data.districts` in `state.js` lists each chamber's file and years, or several files when the lines changed, as the U.S. House's did for 2026; `districtEntry` in `app.js` picks the one whose years hold the race's year. The page checks that a file is there before offering its view, so removing a file removes that chamber's button. `app.js` draws them with the precinct view's column code (`precinct-columns.js`).
 - **Color:** the winner's share of all votes cast in the district, in the same 10-point bands. **Height:** votes cast, on a scale of the chamber's own: its district with the most votes in any year on the page stands as tall as the tallest county column (420 map units). The first build used the county columns' scale, on which Texas's largest districts stood 7% to 23% as tall as Harris County, so every district was a low slab; the owner chose the change on 2026-11-12.
 - A district with a single candidate is left off the ballot in Texas, so it has its winner's color at full strength and no height. Senate districts not up that year are gray.
 - The sidebar's headline and bars still describe counties. Only the race line, "What you're seeing", the legend titles and a Method paragraph change.
 - Checked in a browser on 2026-11-12: all three chambers flat and in 3D, hover, 2022 Texas House, switching among county, precinct and district, and that Kansas and Oklahoma still load. Not checked: other screen sizes, or the Go to menus while by district.
+- Checked in a browser on 2026-11-19: the U.S. House by district in 2022 (25 of 38 seats Republican) and 2024 on PLANC2193, then 2026 on PLANC2333 with the view staying on, and 2020 with its button off ("No district lines here"). No errors in the console.
 
 ### Other states
 
