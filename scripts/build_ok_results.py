@@ -29,6 +29,7 @@ OUT = ROOT / "data" / "ok" / "results-2026.json"
 EXPORT_URL = "https://results.okelections.gov/OKER/?elecDate=20261103"
 UPDATED = "Nov. 6, 2026, 6:26 PM"  # the results site's own "Server TLU" stamp when the exports were saved
 RETRIEVED = "2026-11-08"
+OFFICIAL = "2026-11-19"  # the day the site was seen marking these as official results, with every race unchanged (docs/PIPELINE.md, Part 7)
 SQ_M_PER_SQ_MI = 2_589_988.110336
 COUNTIES = 77
 
@@ -151,13 +152,13 @@ link = lambda url, text: f'<a href="{url}" target="_blank" rel="noopener">{text}
 out = dict(
     meta=dict(
         election="2026 November General Election (Nov. 3, 2026)",
-        resultsSource="Oklahoma State Election Board, OK Election Results (unofficial results; state certification pending)",
+        resultsSource="Oklahoma State Election Board, OK Election Results (official results)",
         resultsUrl=EXPORT_URL,
         resultsUpdated=UPDATED, retrieved=RETRIEVED,
         landSource="U.S. Census Bureau, 2020 Census Redistricting Data (P.L. 94-171), county land area (AREALAND)",
         countyRow="counties[i] = [Democratic votes, Republican votes, all other votes, total votes] for meta.counties[i]",
         sources=[
-            f"Oklahoma State Election Board, {link(EXPORT_URL, 'OK Election Results')}, Nov. 3, 2026 general election: state and county files from the site's Export menu (its precinct file only as a cross-check), as last updated {UPDATED}, retrieved {RETRIEVED}.",
+            f"Oklahoma State Election Board, {link(EXPORT_URL, 'OK Election Results')}, Nov. 3, 2026 general election: state and county files from the site's Export menu (its precinct file only as a cross-check), as last updated {UPDATED}, retrieved {RETRIEVED}. The site marks these as official results; every race was checked against it again on {OFFICIAL}, unchanged.",
             f"U.S. Census Bureau, {link('https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html', '2020 Census Redistricting Data')} (P.L. 94-171): county land area and codes, cities, and each block's location and adults, for placing dots within a county; {link('https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html', '2020 TIGER/Line')} blocks for where people were counted.",
             f"U.S. Census Bureau, {link('https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html', 'Cartographic Boundary Files')}, 2017 counties, via {link('https://github.com/topojson/us-atlas', 'us-atlas')} v3.0.1 (counties-10m.json).",
             f"Software: {link('https://threejs.org', 'three.js')} r160, {link('https://github.com/d3/d3-geo', 'd3-geo')} 3.1.1, {link('https://github.com/topojson/topojson-client', 'topojson-client')} 3.1.0.",

@@ -1,6 +1,6 @@
 # South Carolina: the record
 
-Built 2026-11-08, for the 2026 general election only, with bar view by county and by precinct, and dot view. **Results are unofficial:** the [State Election Commission's public notices](https://scvotes.gov/about-the-sec/public-notices/) list the State Board of Canvassers' certification meeting for Nov. 10, 2026, so save the files again after that, rebuild, and compare.
+Built 2026-11-08, for the 2026 general election only, with bar view by county and by precinct, and dot view. **Results are official:** saved again on 2026-11-19, after the state certified them, and rebuilt. See "Rebuilt with official results" at the end. The first build used unofficial results saved 2026-11-08.
 
 **What the By precinct view is:** 2026 votes on 2020 lines. The state's own precinct layer can't be used (see Terms), so the shapes are the Census Bureau's 2020 voting districts (VTDs), matched by name to the 2026 precincts. Some are combined, and some votes are shared out by rule. A district's number is exact only where no votes were moved to it.
 
@@ -42,7 +42,7 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 | Source | What it says | What it asks of us |
 |---|---|---|
-| Results (State Election Commission) | No license or reuse terms found for results. The [scvotes.gov](https://scvotes.gov/) footer has a general notice: "© 2026 South Carolina State Election Commission. All Rights Reserved." The [privacy statement](https://scvotes.gov/about-the-sec/sec-website-privacy-statement/) limits commercial solicitation with personal information, which doesn't apply: no personal information is used. | Nothing stated about reuse. The site credits the Commission, links to it, and says results are unofficial. |
+| Results (State Election Commission) | No license or reuse terms found for results. The [scvotes.gov](https://scvotes.gov/) footer has a general notice: "© 2026 South Carolina State Election Commission. All Rights Reserved." The [privacy statement](https://scvotes.gov/about-the-sec/sec-website-privacy-statement/) limits commercial solicitation with personal information, which doesn't apply: no personal information is used. | Nothing stated about reuse. The site credits the Commission, links to it, and says whether results are official. |
 | Census TIGER/Line, voting districts and blocks | [Technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc.pdf), Chapter 1: "TIGER/Line" is a registered trademark that may be used only to refer to a product's nature; the Bureau requests that repackaged files carry a conspicuous statement to this effect on the "cover, the first page of the website, or elsewhere of comparable visibility", and asks that the ® be used where convenient. Section 1.2: no copyright, but cite the Bureau as the source. Boundaries are for statistical purposes and aren't legal land descriptions. | The statement, near the top of both pages and in Sources. **Open:** the site's first page, `index.html`, doesn't carry it, because this work wasn't to edit that file. |
 | Census redistricting file | No license found for these files. | Credit |
 | us-atlas | ISC license, per npm. It redistributes Census boundaries. | Nothing while the site loads it from a CDN |
@@ -54,10 +54,10 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 
 | # | Command | Writes | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_sc_results.py` (reads the table `data/sc/precinct-crosswalk.csv`, `5ebd2b06a91b9d77`) | `data/sc/results-2026.json` | `fe4ad07fa0253315` |
+| 1 | `python scripts/build_sc_results.py` (reads the table `data/sc/precinct-crosswalk.csv`, `5ebd2b06a91b9d77`) | `data/sc/results-2026.json` | `4380203469d1693c` |
 |   | | `data/raw/sc/derived/precinct-votes.json` (not committed: it holds any precinct under 10 votes) | not recorded |
 | 2 | `python scripts/build_cities.py sc` | `data/sc/cities.json` | `29261ac6915b6d76` |
-| 3 | `python scripts/build_precincts.py sc` (reads #1) | `data/sc/precincts.json.gz` | `d784da9786eb5ff7` |
+| 3 | `python scripts/build_precincts.py sc` (reads #1) | `data/sc/precincts.json.gz` | `6ad8ff042c70647d` |
 |   | | `data/sc/precinct-shapes.json.gz` | `3431210757852e8b` |
 | 4 | `python scripts/build_landmask.py sc` | `data/sc/landmask.bin.gz` | `220af1fcb0721e72` |
 
@@ -71,14 +71,14 @@ The crosswalk table is the reviewed input. It was drafted once by a throwaway sc
 
 | Race | Democrat | Republican | Others | Total |
 |---|---|---|---:|---:|
-| U.S. Senate | Annie Andrews 1,043,712 | Darline Graham 951,896 | 45,287 | 2,040,895 |
-| Governor and Lt. Governor | Johnson / Skardon 960,269 | Wilson / Reichenbach 1,051,010 | 26,343 | 2,037,622 |
-| Secretary of State | Jason Belton 952,186 | Mark Hammond 1,073,652 | 961 | 2,026,799 |
-| State Treasurer | Vincent Coe 959,539 | Curtis Loftis 1,062,666 | 1,107 | 2,023,312 |
-| Attorney General | Richard Hricik 964,921 | David Stumbo 1,059,358 | 1,135 | 2,025,414 |
-| Comptroller General | Tiffany Boozer 965,075 | Mike Burkhold 1,048,553 | 730 | 2,014,358 |
-| Superintendent of Education | Sylvia Wright 976,406 | Ellen Weaver 1,032,516 | 16,769 | 2,025,691 |
-| Commissioner of Agriculture | DeShawn Blanding 922,961 | Cody Simpson 1,042,601 | 55,635 | 2,021,197 |
+| U.S. Senate | Annie Andrews 1,044,001 | Darline Graham 952,191 | 45,295 | 2,041,487 |
+| Governor and Lt. Governor | Johnson / Skardon 960,534 | Wilson / Reichenbach 1,051,334 | 26,346 | 2,038,214 |
+| Secretary of State | Jason Belton 952,447 | Mark Hammond 1,073,982 | 961 | 2,027,390 |
+| State Treasurer | Vincent Coe 959,809 | Curtis Loftis 1,062,986 | 1,107 | 2,023,902 |
+| Attorney General | Richard Hricik 965,180 | David Stumbo 1,059,689 | 1,135 | 2,026,004 |
+| Comptroller General | Tiffany Boozer 965,343 | Mike Burkhold 1,048,871 | 730 | 2,014,944 |
+| Superintendent of Education | Sylvia Wright 976,673 | Ellen Weaver 1,032,834 | 16,772 | 2,026,279 |
+| Commissioner of Agriculture | DeShawn Blanding 923,209 | Cody Simpson 1,042,930 | 55,646 | 2,021,785 |
 
 Precincts: 2,252 on the map, from 2,268 voting districts; 12 precincts hold several districts; 107 say "(est.)"; 4 districts left off; 0 merged for being under 10 votes (the smallest has 32). 2,252 outlines, 100,103 points. 209 places; 146,844 blocks, 103,772 with adults, 4,014,460 adults; a 4,589 × 3,617 land grid.
 
@@ -131,7 +131,7 @@ Moved votes are concentrated: Spartanburg 30,515 (25.5% of its votes), Beaufort 
 
 ## Gaps
 
-- **Unofficial:** rebuild after certification, Nov. 10, 2026.
+- **Official:** rebuilt with the certified results on 2026-11-19 (below).
 - **Pooled counties:** in Lancaster and Spartanburg, 40,049 votes are on districts with no count of their own, so one party mix covers those districts. This is the weakest part of the map. A public, reusable list of precinct changes since 2020 would fix it; none was looked for beyond the sources named here.
 - **Margaritaville** (3,655 votes, Jasper) has no clear parent by name, so it's spread across the county. It's likely in one part of the county, but nothing used here says which.
 - **The new precincts' shapes aren't on the map:** Bluffton, Burton and the others show as the older, larger districts.
@@ -152,3 +152,23 @@ Moved votes are concentrated: Spartanburg 30,515 (25.5% of its votes), Beaufort 
 ## U.S. House, added 2026-11-12
 
 `results-2026.json` now also has the U.S. House as one race: every district added up by county, with each district's own result, built by the same script through `scripts/chamber.py`. All 7 districts are in the statewide file, with each one's counties; counties add up to its totals. The results page draws the districts (By district) on Census outlines, which the build checks against the results. The record for all the states is in [`../PIPELINE.md`](../PIPELINE.md), Part 10.
+
+## Rebuilt with official results, 2026-11-19
+
+The results site's header now reads "Official Results", last updated Tuesday, Nov. 10, 2026, 4:22 PM, the day of the State Board of Canvassers' meeting. The statewide file had moved from version 386034 to 386661. The files were saved again the same way as before, through Claude in Chrome, as one bundle (`results/sc-results-bundle-20261119.json`, `15ab23dca30a6760`), unpacked with every file's SHA-256 checked. The first save is kept beside it in `data/raw/sc/results-20261108/`.
+
+| What | Path | SHA-256 (first 16) |
+|---|---|---|
+| Statewide file, version 386661, stamped Nov. 10, 2026, 5:20 PM | `results/detailxml.zip` | `b02c3e838530e89d` |
+| Current version number | `results/current_ver.txt` | `7db0372ff06ecdb2` |
+| Statewide settings | `results/electionsettings.json` | `9ba72996c131b504` |
+| The manifest | `results/manifest.json` | `234ce6add761fa31` |
+
+The new settings file reports 0 precincts reporting in its summary fields, unlike the first save's 2,312 of 2,312. The build doesn't read those fields: it checks that every contest in the statewide and county files has all precincts reported, and that passed.
+
+**What changed:** three county files are new (Anderson, Calhoun and York). Only Calhoun's counts changed, by 586 to 592 votes in each race (the U.S. Senate: +289 Democratic, +295 Republican, +8 other). That turns Calhoun from Wright to Weaver in the Superintendent race; no other county changes hands in any race. Anderson's and York's new files have the same counts. The 1,912,372 exact-match Senate votes became 1,912,964, all in Calhoun; nothing moved by rule changed.
+
+**Rebuilt:** `build_sc_results.py` and `build_precincts.py sc` (new hashes in the Build table above). `precinct-shapes.json.gz`, `cities.json` and `landmask.bin.gz` are unchanged. `build_districts.py sc` gives the same check and file as before.
+
+**On the pages:** `state.js` sets `official: true` and `returns: 'official results'`, so the method text, Sources and the race line say "official results" and drop "unofficial until". The page footer says "These are official results."
+

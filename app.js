@@ -49,7 +49,7 @@ const WON = STATE.won ?? 'won', WINNER = STATE.winner ?? 'winner', OTHER_VOTES =
 const CAST = /^the votes reported/.test(STATE.votesCounted ?? '') ? 'reported' : 'cast';
 const MAJOR = ['president', 'u-s-senate', 'governor', 'lieutenant-governor', 'attorney-general', 'u-s-house', 'texas-house', 'texas-senate'];
 const races = [
-  ...res.races.map(r => ({ ...r, year: 2026, date: 'Nov. 3, 2026', unofficial: true })),
+  ...res.races.map(r => ({ ...r, year: 2026, date: 'Nov. 3, 2026', unofficial: !STATE.official })),
   ...hist.races,
 ];
 const DEFAULT_RACE = STATE.defaultRace ?? 'u-s-senate';
@@ -235,7 +235,7 @@ function setRace(id) {
   document.title = `${$('title').textContent}: ${STATE.name} Election Results · How America Votes`;
   if (race.chamber) { renderChamber(nm); finishRace(); return; }
   if (race.year !== 2026) { renderHistory(minor, nm); finishRace(); return; }
-  $('raceLine').textContent = `2026 ${race.label} election in ${STATE.name}${STATE.wonState ? ' (unofficial, partial count)' : ' (unofficial results)'} · ` +
+  $('raceLine').textContent = `2026 ${race.label} election in ${STATE.name}${STATE.wonState ? ' (unofficial, partial count)' : STATE.official ? ' (official results)' : ' (unofficial results)'} · ` +
     [D, R, ...minor.filter(c => c.party !== 'W')].map(c => `${c.name} (${PARTY_LONG[c.party] || c.party})`).join(', ');
 
   const dWonState = S.dem > S.rep, rMoreLand = S.landR > S.landD;
@@ -274,7 +274,7 @@ function setRace(id) {
   $('method').innerHTML = `
     <p><b>Votes:</b> ${STATE.votesCounted ?? 'the total votes cast in the selected race in each county, counting every candidate including write-ins.'}
     These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, ${STATE.reporting?.(meta, fmt) ?? `with all precincts reporting in all ${counties.length} counties`}.
-    They are unofficial until ${STATE.unofficialUntil}. For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
+    ${STATE.official ? '' : `They are unofficial until ${STATE.unofficialUntil}. `}For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by votes, the most on top and the fewest at the bottom: the ${WINNER}'s votes in the county's color, the runner-up's in that party's color and ${OTHER_VOTES} in gray. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
     <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
@@ -385,7 +385,7 @@ function renderChamber(nm) {
     crosses county lines, only the part of its vote cast in that county is counted. A district with no candidate from one party adds
     nothing to that party's total, so counties in uncontested districts lean further toward the other party than its voters may.</p>
     <p><b>Seats:</b> each district's ${winnerWord()}, from the same results. ${race.year !== 2026 ? `Source for this race: <a href="${race.sourceUrl}" target="_blank" rel="noopener">${race.source}</a>.` :
-      `These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, unofficial until ${STATE.unofficialUntil}. ${STATE.chamberTotals ?? `Every candidate's
+      `These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}${STATE.official ? '' : `, unofficial until ${STATE.unofficialUntil}`}. ${STATE.chamberTotals ?? `Every candidate's
       county figures add up exactly to the district totals ${STATE.authority} publishes.`}`}</p>
     <p><b>Column height</b> is proportional to votes cast, on the same scale as every other race. Each raised column is stacked by party.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded).</p>

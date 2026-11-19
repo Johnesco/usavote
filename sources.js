@@ -19,7 +19,7 @@ const blocks = await Promise.all(states.map(async s => {
     const [res, hist] = await Promise.all([getJSON(s.data.results), s.data.history ? getJSON(s.data.history) : null]);
     const m = res.meta;
     return `${head}
-      <p class="as-of">${cap(s.authority.includes(s.name) ? s.authority : s.authority.replace(/^the /, `the ${s.name} `))}'s 2026 ${s.returns}, as of ${m.resultsUpdated}. Unofficial until ${s.unofficialUntil}.</p>
+      <p class="as-of">${cap(s.authority.includes(s.name) ? s.authority : s.authority.replace(/^the /, `the ${s.name} `))}'s 2026 ${s.returns}, as of ${m.resultsUpdated}.${s.official ? '' : ` Unofficial until ${s.unofficialUntil}.`}</p>
       <ol>${sourceItems(s, m, hist?.meta).map(x => `<li>${x}</li>`).join('')}</ol>${links}</section>`;
   } catch (e) {
     console.error(`${s.name}'s sources did not load`, e);

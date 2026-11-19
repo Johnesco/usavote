@@ -38,7 +38,7 @@ const TEXAS = {
     { href: 'shade-by-votes.html', title: 'Shade by Votes', about: '2026 U.S. Senate', how: 'The county map in its three colors, Vote share, Vote lead and Vote mix: what each shows and hides' },
   ],
   tour: true,            // voters.js has a written tour of this state
-  // who publishes the results, and until when they're unofficial
+  // who publishes the results, and until when they're unofficial (or official: true once the state's site says so)
   authority: 'the Secretary of State',
   returns: 'election-night returns',
   unofficialUntil: 'the state canvass',
@@ -58,7 +58,7 @@ const OKLAHOMA = {
   parallels: [34.2, 36.4], // scripts/build_landmask.py must use the same values
   rotate: [98.7, 0],
   middle: [-97.5, 35.5],
-  summary: 'The Nov. 3, 2026 general election, by county. Results are unofficial.',
+  summary: 'The Nov. 3, 2026 general election, by county. Official results.',
   data: {
     results: 'data/ok/results-2026.json',
     history: null,
@@ -73,8 +73,8 @@ const OKLAHOMA = {
   flights: [],
   tour: false,
   authority: 'the Oklahoma State Election Board',
-  returns: 'returns',
-  unofficialUntil: 'the state certifies them',
+  returns: 'official results',
+  official: true,         // its results site marks them official (checked 2026-11-19); no "unofficial until" wording
   base: null,            // no precinct results or shapes here (docs/PIPELINE.md, Part 7)
 };
 
@@ -126,7 +126,7 @@ const SOUTH_CAROLINA = {
   rotate: [80.9, 0],
   middle: [-80.9, 33.6],
   radiusScaleAt: [-80.9, 33.6], // where dots.js measures a block's radius
-  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Results are unofficial.',
+  summary: 'The Nov. 3, 2026 general election, by county and by precinct. Official results.',
   data: {
     results: 'data/sc/results-2026.json',
     history: null,
@@ -141,8 +141,8 @@ const SOUTH_CAROLINA = {
   flights: [],
   tour: false,
   authority: 'the South Carolina State Election Commission',
-  returns: 'returns',
-  unofficialUntil: 'the state certifies them',
+  returns: 'official results',
+  official: true,         // its results site marks them official (saved again 2026-11-19); no "unofficial until" wording
   // 2026 votes on 2020 lines, on the Census Bureau's 2020 voting districts (docs/records/south-carolina.md)
   base: {
     raceId: 'u-s-senate', label: '2026 U.S. Senate', dem: 'Andrews', rep: 'Graham',

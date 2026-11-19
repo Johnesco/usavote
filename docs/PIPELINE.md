@@ -159,7 +159,7 @@ These came out of decisions made along the way. Keep them in any state.
 - **Hide very small precincts.** Merge anything under 10 votes before publishing, even if the source publishes it.
 - **Don't go down to households.** Stop at blocks and a coarse land grid, and don't use building locations in a way that points to individual homes.
 - **Every total must match the source.** County totals have to match exactly, and the scripts should stop if they don't.
-- **Say when results are unofficial,** and rebuild after the canvass.
+- **Say when results are unofficial,** and rebuild after the canvass. Once a state's own results site marks them official, set `official: true` and `returns: 'official results'` in `state.js`: the pages then say "official results" and drop "unofficial until". Don't name a certification date that wasn't read at a state source.
 
 ### Texas terms of use, read 2026-11-08
 
@@ -247,7 +247,7 @@ These are from general knowledge and haven't been checked state by state.
 
 ## 7. Oklahoma: the record
 
-Built 2026-11-08, for the 2026 general election only, and **county-only**: bar view by county and dot view, with no By precinct view or precinct menu. **Results are unofficial:** the state certifies them on Nov. 10, 2026, so save the exports again after that, rebuild, and compare.
+Built 2026-11-08, for the 2026 general election only, and **county-only**: bar view by county and dot view, with no By precinct view or precinct menu. **Results are official:** checked against the results site on 2026-11-19, unchanged (below).
 
 ### Raw files, under `data/raw/ok/` (not committed)
 
@@ -285,7 +285,7 @@ This is a reading of the published pages, not legal advice.
 
 | # | Command | Writes to `data/ok/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_ok_results.py` | `results-2026.json` | `029131a254b22b9c` |
+| 1 | `python scripts/build_ok_results.py` | `results-2026.json` | `89da83b444e5a794` |
 | 2 | `python scripts/build_cities.py ok` | `cities.json` | `03e595d5154fc24e` |
 | 3 | `python scripts/build_precincts.py ok` (reads #1) | `blocks.json.gz` | `cc635054c09e4a3b` |
 | 4 | `python scripts/build_landmask.py ok` | `landmask.bin.gz` | `3c08d559b02e7cb8` |
@@ -309,6 +309,10 @@ Checks that stop the build: all precincts reporting; counties add up to the stat
 - Oklahoma's pages were opened in a browser: bar view by county in 3D with `?by=precinct` ignored, no precinct controls, the go-to menus, and dot view with 1,118,730 Senate dots (the state's total), down to Tulsa County.
 - Not checked: other screen sizes, or every race by eye.
 
+### Official results, checked 2026-11-19
+
+The results site's header now reads "Official Results". Its "Server TLU" stamp is still 11/06/2026 06:26:09 PM, the stamp the exports were saved under, and every race on the site's state page matched `results-2026.json` exactly: the eight statewide races and the five U.S. House districts (1,118,012 votes in all). So the exports weren't saved again. `build_ok_results.py` now calls these official results, with the date they were checked, so `results-2026.json` changed only in that wording; `blocks.json.gz` and both district files rebuilt byte for byte the same. The pages say "official results" (`official: true` in `state.js`). No certification date is given, since none was read at a state source.
+
 ## 8. States after Oklahoma: where the records are
 
 Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state's record has the shape of Part 7: sources and hashes, terms, build commands, expected numbers, differences from Texas, and gaps. Raw files are under `data/raw/<code>/`, not committed.
@@ -316,7 +320,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | State | Record | View | Precinct source | Rebuild after |
 |---|---|---|---|---|
 | Kansas | [`records/kansas.md`](records/kansas.md) | County and precinct | IKE Lab 2024 votes and shapes (CC-BY) | Nov. 16 county canvass and Dec. 1 certification deadline |
-| South Carolina | [`records/south-carolina.md`](records/south-carolina.md) | County and precinct | 2026 U.S. Senate votes on Census 2020 voting districts | Nov. 10 certification |
+| South Carolina | [`records/south-carolina.md`](records/south-carolina.md) | County and precinct | 2026 U.S. Senate votes on Census 2020 voting districts | Done: rebuilt with official results 2026-11-19 |
 | Ohio | [`records/ohio.md`](records/ohio.md) | County | None | The official canvass, about Nov. 24 |
 | Iowa | [`records/iowa.md`](records/iowa.md) | County | None | The state canvass, about Nov. 30 |
 | New Mexico | [`records/new-mexico.md`](records/new-mexico.md) | County | None | State canvassing board, Nov. 24 |
