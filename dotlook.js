@@ -11,7 +11,7 @@
 import * as THREE from 'three';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
-import { createDots, countyTris, loadPrecincts, precinctUnits, DOT_C } from './dots.js';
+import { createDots, countyTris, loadPrecincts, loadPrecinctYear, precinctUnits, DOT_C } from './dots.js';
 import { createBusy } from './busy.js';
 import { STATE } from './state.js';
 import { createCityLabels } from './cities.js';
@@ -573,12 +573,19 @@ export async function startDots(opts) {
     .then(h => { RACES.push(...h.races); })
     .catch(e => console.error('Earlier years did not load', e));
   const raceWithId = id => RACES.find(r => r.id === id) || RACES.find(r => r.year === 2026 && `2026-${r.id}` === id);
-  // this race's votes in each county, placed the same way as the Senate race's
-  function votersOf(r) {
+  // this race's votes in each county, placed the same way as the Senate race's; or, in a year with its own precincts and
+  // counted votes (Texas, 2008 to 2024: state.js precinctYears), by that year's precincts and each one's count
+  async function votersOf(r) {
     if (r === SENATE) return ordered;
+    const years = STATE.precinctYears;
+    const own = PC && years?.years.includes(r.year)
+      ? await loadPrecinctYear(P, years, r.year).catch(e => { console.error(`${r.year}'s precincts did not load; placed as 2026 is`, e); return null; }) : null;
+    const k = own ? own.races.indexOf(r.id) : -1;
     return ordered.map(c => {
       const [dem, rep, other, total] = r.counties[rowOf.get(c.fips)], v = { ...c, dem, rep, other, total };
-      if (c.units) v.units = precinctUnits(PC.byFips.get(c.fips), v);
+      const yc = k >= 0 && own.byFips.get(c.fips);
+      if (yc) v.units = precinctUnits(yc, v, k);
+      else if (c.units) v.units = precinctUnits(PC.byFips.get(c.fips), v);
       return v;
     });
   }
@@ -589,7 +596,9 @@ export async function startDots(opts) {
     const placing = `Placing ${fmt(r.counties.reduce((s, row) => s + row[3], 0))} voters…`;
     if ($('dotLoading')) $('dotLoading').textContent = placing; else busy.show('race', placing);
     // (if another race is asked for before this one is ready, this one never finishes)
-    const asked = per, { n } = await dots.place(votersOf(r), { per: asked, seed: 2026 + RACES.indexOf(r) });
+    const voters = await votersOf(r);
+    if (chosen !== r) return; // another race was asked for meanwhile
+    const asked = per, { n } = await dots.place(voters, { per: asked, seed: 2026 + RACES.indexOf(r) });
     shown = r; shownPer = asked; needsDraw = landed = true;
     const [dem, rep, tot] = r.counties.reduce((s, row) => [s[0] + row[0], s[1] + row[1], s[2] + row[3]], [0, 0, 0]);
     const d = r.candidates.find(c => c.party === 'DEM'), e = r.candidates.find(c => c.party === 'REP');

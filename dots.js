@@ -64,6 +64,64 @@ export async function loadPrecincts(P, url = 'data/precincts.json.gz', landUrl =
   return { byFips: out, hot: data.hot, meta: data.meta, land: landUrl ? await loadLand(P, landUrl) : null };
 }
 
+// One election's own precincts, for a state with precinct lines and counted votes by year (Texas, 2008 to 2024: state.js
+// precinctYears, scripts/build_tx_precinct_years.py): the same shape as loadPrecincts's, from the year's file and the one
+// shared file of census blocks, which each year's precincts point into. Each precinct also has n: [dem, rep, other] for each
+// race in races, as counted; its d, r, o are the first race's (the year's base, for any race not in the file).
+let yearBlocks = null; // (the blocks, read once: Map(fips -> Float32Array of x, y, radius, adults per block))
+const yearSets = new Map(); // (each year's, read once, for the bar view and the dots alike)
+export function loadPrecinctYear(P, years, year) {
+  if (!yearSets.has(year)) yearSets.set(year, readPrecinctYear(P, years, year).catch(e => { yearSets.delete(year); throw e; }));
+  return yearSets.get(year);
+}
+async function readPrecinctYear(P, years, year) {
+  yearBlocks ??= fetchJsonGz(years.blocks).then(data => {
+    const [lon, lat] = STATE.radiusScaleAt ?? [-99.5, 31];
+    const upm = P([lon, lat]).distanceTo(P([lon, lat + 0.1])) / 11113;
+    const out = new Map();
+    for (const [fips, flat] of Object.entries(data.counties)) {
+      const pts = new Float32Array(flat.length);
+      let x = 0, y = 0;
+      for (let i = 0; i < flat.length; i += 4) {
+        x += flat[i]; y += flat[i + 1];
+        const p = P([x / 1e4, y / 1e4]);
+        pts[i] = p.x; pts[i + 1] = p.y; pts[i + 2] = flat[i + 2] * 10 * upm; pts[i + 3] = flat[i + 3];
+      }
+      out.set(fips, pts);
+    }
+    return { byFips: out, hot: data.hot, upm };
+  }).catch(e => { yearBlocks = null; throw e; });
+  const [blocks, data] = await Promise.all([yearBlocks, fetchJsonGz(years.file(year))]);
+  const out = new Map();
+  for (const [fips, list] of Object.entries(data.counties)) {
+    const all = blocks.byFips.get(fips) || new Float32Array(0);
+    let D = 0, R = 0, O = 0;
+    const vtds = list.map(([name, runs, n, circle]) => {
+      const [d, r, o] = n;
+      D += d; R += r; O += o;
+      let pts;
+      if (circle) { // no block's center inside: one circle the size of the precinct, at its center
+        const p = P([circle[0] / 1e4, circle[1] / 1e4]);
+        pts = new Float32Array([p.x, p.y, circle[2] * 10 * blocks.upm, 1]);
+      } else {
+        let len = 0;
+        for (let i = 1; i < runs.length; i += 2) len += runs[i];
+        pts = new Float32Array(len * 4);
+        let at = 0, j = 0;
+        for (let i = 0; i < runs.length; i += 2) {
+          at += runs[i];
+          pts.set(all.subarray(at * 4, (at + runs[i + 1]) * 4), j); j += runs[i + 1] * 4; at += runs[i + 1];
+        }
+      }
+      let adults = 0;
+      for (let i = 3; i < pts.length; i += 4) adults += pts[i];
+      return { d, r, o, n, adults, pts, name };
+    });
+    out.set(fips, { vtds, D, R, O, adults: vtds.reduce((s, v) => s + v.adults, 0) });
+  }
+  return { byFips: out, hot: blocks.hot, meta: data.meta, races: data.races, land: null };
+}
+
 // Where the 2020 Census counted anyone, from data/landmask.bin.gz (scripts/build_landmask.py), so that dots stay off lakes,
 // bays, airports and the like: { bits (one per cell, row by row), w, h, sx, ox, sy, oy }, where a map point (x, y) is in
 // grid cell (ox + x * sx, oy + y * sy). Dots are placed without it (null) if it doesn't load.
@@ -96,9 +154,11 @@ async function loadLand(P, url) {
 // Each party's county total (dem, rep, other: the race being shown) is shared among the VTDs in proportion to that party's
 // 2024 Senate votes there, then among each VTD's blocks by adults. A party with no 2024 votes in the county is shared by
 // all 2024 votes instead.
-export function precinctUnits(county, votes) {
+// With counted (a race's place in a year's races, loadPrecinctYear), each precinct's own counted votes are used instead.
+export function precinctUnits(county, votes, counted = -1) {
   const { vtds } = county, n = vtds.reduce((s, v) => s + v.pts.length / 4, 0);
-  const units = new Float32Array(n * 6), est = precinctVotes(county, votes);
+  const units = new Float32Array(n * 6);
+  const est = counted >= 0 ? countedVotes(county, votes, counted) : precinctVotes(county, votes);
   let j = 0;
   vtds.forEach((v, k) => {
     const { d, r, o } = est[k];
@@ -108,6 +168,23 @@ export function precinctUnits(county, votes) {
     }
   });
   return units;
+}
+
+// Each precinct's counted votes in race k of its year's file: { d, r, o }. Precincts with none in that race (a district with
+// one candidate, which the Council leaves out) share whatever the county's result has beyond the counted votes, by the year's
+// base race there, so those voters still have somewhere to go.
+export function countedVotes(county, votes, k) {
+  const got = county.vtds.map(v => ({ d: v.n[3 * k], r: v.n[3 * k + 1], o: v.n[3 * k + 2] }));
+  const empty = county.vtds.filter((v, i) => !(got[i].d + got[i].r + got[i].o));
+  if (!empty.length || !votes) return got;
+  const sum = p => got.reduce((s, g) => s + g[p], 0);
+  const left = { dem: Math.max(0, votes.dem - sum('d')), rep: Math.max(0, votes.rep - sum('r')), other: Math.max(0, votes.other - sum('o')) };
+  const base = { vtds: empty, D: 0, R: 0, O: 0 };
+  for (const v of empty) { base.D += v.d; base.R += v.r; base.O += v.o; }
+  if (!(base.D + base.R + base.O) || !(left.dem + left.rep + left.other)) return got;
+  const fill = precinctVotes(base, left);
+  let j = 0;
+  return got.map(g => g.d + g.r + g.o ? g : fill[j++]);
 }
 
 // Each precinct's expected votes in a race known only by county: { d, r, o }, adding up to the county's result.
