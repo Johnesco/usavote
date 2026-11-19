@@ -65,7 +65,19 @@ export function createPlaceMenus({ counties, P, upm, cityUrl, getVtds, onChoose 
     const miles = Math.max(3, 1.7 * Math.sqrt(people / 2500));
     onChoose({ kind: 'city', name, people, view: { x: p.x, y: p.y, halfW: 0, halfH: miles * upm / 2 } });
   });
-  return { clear() { job++; $('goCity').value = $('goCounty').value = ''; fillPrecincts(null, [], false); } };
+  return {
+    clear() { job++; $('goCity').value = $('goCounty').value = ''; fillPrecincts(null, [], false); },
+    countyPlace,
+    // the county's precincts again, after the race changes to another year's (app.js useSet)
+    async refresh() {
+      const c = byFips.get($('goCounty').value);
+      if (!c || !getVtds) return;
+      const mine = ++job;
+      fillPrecincts(c, [], true);
+      const list = await getVtds(c);
+      if (mine === job) fillPrecincts(c, list || [], false);
+    },
+  };
 }
 
 // A line about the place. race: the race on screen; votesOf: county -> [dem, rep, total] in that race.

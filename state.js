@@ -42,11 +42,23 @@ const TEXAS = {
   authority: 'the Secretary of State',
   returns: 'election-night returns',
   unofficialUntil: 'the state canvass',
-  // the one race whose votes by precinct are on the site; every other race's precinct votes are estimated from its pattern
+  // 2026's precincts: its votes by precinct aren't out yet, so each race is estimated on the 2024 lines from the 2024 U.S.
+  // Senate's pattern (data/precincts.json.gz). The years in precinctYears use their own precincts instead.
   base: {
     raceId: '2024-u-s-senate', label: '2024 U.S. Senate', dem: 'Allred', rep: 'Cruz',
     asCounted: '2024 U.S. Senate votes as counted in each precinct.',
-    method: `<p><b>By precinct:</b> one column for each voting precinct, on 2024 precinct lines, stacked and colored like the county columns. Precinct votes are on this site for one race, the 2024 U.S. Senate (Texas Legislative Council), and that race shows them as counted. Every other race is an estimate: each party's county total is shared among the county's precincts by that party's share of its 2024 U.S. Senate vote there, so each county still adds up to its result, but a precinct's own number is not a real count. Precincts with fewer than 10 votes are merged into the nearest one in their county. All columns share one height scale, which stays the same at every zoom.</p>`,
+    method: `<p><b>By precinct:</b> one column for each voting precinct, stacked and colored like the county columns. From 2008 to 2024, each election is drawn on its own precinct lines, with each precinct's votes as counted, from the Texas Legislative Council. 2008 has no precinct lines of its own, so its votes are the Council's re-tally onto the 2010 lines, which shares out votes where lines changed. The Council's counts can differ a little from the Secretary of State's county totals, by 0.3% of the votes or less statewide in each race; they're shown as counted, not adjusted to match. Texas House, Texas Senate and U.S. House districts with one candidate have no precinct counts, so their precincts show no column. 2026's precinct results aren't out yet, so 2026 is an estimate on the 2024 lines: each party's county total is shared among the county's precincts by that party's share of its 2024 U.S. Senate vote there, so each county still adds up to its result, but a precinct's own number is not a real count. Precincts with fewer than 10 votes are merged into the nearest one in their county. All years share one height scale, which stays the same at every zoom.</p>`,
+  },
+  // each general election's own precinct lines and counted precinct votes (scripts/build_tx_precinct_years.py; docs/PIPELINE.md,
+  // Part 5): By precinct and Dots use them for these years, and the base above for any other. tallest: the most votes in any
+  // precinct, race or year, base included, for one height scale (the build stops if it doesn't match).
+  precinctYears: {
+    years: [2008, 2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024],
+    blocks: 'data/tx-years/blocks.json.gz',
+    file: y => `data/tx-years/${y}.json.gz`,
+    shapes: y => `data/tx-years/${y}-shapes.json.gz`,
+    linesOf: y => y === 2008 ? 2010 : y, // whose precinct lines a year is drawn on
+    tallest: 13511,
   },
 };
 

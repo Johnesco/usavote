@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createCityLabels } from './cities.js';
-import { loadPrecincts, precinctVotes } from './dots.js';
+import { loadPrecincts, loadPrecinctYear, precinctVotes } from './dots.js';
 import { createPrecinctColumns, loadPrecinctShapes } from './precinct-columns.js';
 import { createPlaceMenus, describePlace } from './places.js';
 import { STATE } from './state.js';
@@ -88,6 +88,16 @@ let pressed = null, tipPinned = false; // a press on the map that may be a click
 let byPrecinct = false, columns = null; // bar view by precinct: columns draws them once they have loaded
 let precinctRows = [], precinctOf = new Map(); // one row per precinct on the map, for the race on screen; which row a precinct from the menus is
 const HAS_PRECINCTS = !!STATE.data.precinctShapes, BASE = STATE.base, ACTUAL_PRECINCTS = BASE?.raceId; // the one race with results by precinct here; the rest are estimated from it
+// Texas also has each general election's own precincts, 2008 to 2024, with every race counted (state.js precinctYears). A race
+// of those years is shown on its year's precincts; any other on the base set above.
+const YEARS_P = STATE.precinctYears ?? null;
+const setKey = r => YEARS_P?.years.includes(r.year) ? r.year : 'base';
+let pset = null; // the precinct set on screen: { key, races (its counted race ids; null for the base set), columns, rows, of, lists }
+const countedAt = () => pset?.races && pset.key === setKey(race) ? pset.races.indexOf(race.id) : -1; // the race's place in its year's file
+const isCounted = () => countedAt() >= 0 || (!pset?.races && race.id === ACTUAL_PRECINCTS);
+const linesNote = () => race.year === 2008 ? '2008 votes as re-tallied by the Texas Legislative Council onto the 2010 precinct lines.'
+  : `${race.year} votes as counted in each precinct, on ${race.year} precinct lines (Texas Legislative Council).` +
+    (race.chamber ? ' Districts with one candidate have no precinct counts, so their precincts stand empty.' : '');
 // Bar view by district, for a chamber's races: one column per district, on the lines its election was held on (state.js lists the
 // files and their years). byDistrict is what was asked for; dist is the set of columns loaded for a chamber, and it's on screen
 // only once its rows are those of the race on screen.
@@ -161,27 +171,35 @@ const renderPlace = () => {
   if (byPrecinct && columns) {
     if (place?.kind === 'precinct') {
       const row = precinctRows[precinctOf.get(place.v)], v = place.v;
-      line = `<b>Precinct ${v.name}, ${place.c.name} County</b>: ${race.year} ${race.label}, ${votesLine(row)}` +
-        (race.id === ACTUAL_PRECINCTS ? '' : `. ${BASE.label}: ${BASE.dem} ${fmt(v.d)}, ${BASE.rep} ${fmt(v.r)}, others ${fmt(v.o)}`);
+      line = `<b>Precinct ${v.name}, ${place.c.name} County</b>: ${race.year} ${race.label}, ${row ? votesLine(row) : 'loading…'}` +
+        (isCounted() || pset?.races ? '' : `. ${BASE.label}: ${BASE.dem} ${fmt(v.d)}, ${BASE.rep} ${fmt(v.r)}, others ${fmt(v.o)}`);
     }
-    line += `<span class="place-note">${race.id === ACTUAL_PRECINCTS ? BASE.asCounted : `Precinct votes are estimated from the ${BASE.label} pattern.`}</span>`;
+    line += `<span class="place-note">${countedAt() >= 0 ? linesNote() : isCounted() ? BASE.asCounted : `Precinct votes are estimated from the ${BASE.label} pattern.`}</span>`;
   }
   $('placeInfo').innerHTML = line;
   estimateNote();
 };
 // Anything on the map that's estimated rather than counted says so in a strip along the map's bottom edge: precinct columns
 // shared out from county totals, and every dot's spot (ballots are secret). County and district views are counts, so they
-// show none. A state's base race can say its precincts are partly estimated (state.js, base.partEstimated).
+// show none. A state's base race can say its precincts are partly estimated (state.js, base.partEstimated). Texas's years with
+// their own precincts are counted, but 2008's are the Council's re-tally onto 2010 lines.
+const RETALLY_2008 = `2008 has no precinct lines of its own, so these are the Texas Legislative Council's re-tally of its votes onto the 2010 precincts, which shares out votes where lines changed.`;
 let estH = 0; // the strip's height, kept clear of the map when it's fitted (PAD)
 function estimateNote() {
   const note = $('estNote'); if (!note) return;
   let text = '';
+  const ownYear = race && setKey(race) !== 'base'; // a Texas race on its own year's precincts, counted
   if (dotsOn) text = !HAS_PRECINCTS
     ? `<b>Estimated:</b> no dot is anyone's real vote. Each county's total is real, but its parties are mixed evenly across the county, not by neighborhood, and placed where adults live.`
+    : ownYear
+      ? `<b>Estimated:</b> no dot is anyone's real vote; ballots are secret. Each precinct's votes are counted, but where its dots sit is estimated from where adults lived in 2020.` +
+        (race.chamber ? ` Districts with one candidate have no precinct counts, so their voters are placed by the ${race.year} ${races.find(r => r.year === race.year && !r.chamber)?.label} vote there.` : '') +
+        (race.year === 2008 ? ` ${RETALLY_2008}` : '')
     : race?.id === ACTUAL_PRECINCTS
       ? `<b>Estimated:</b> no dot is anyone's real vote; ballots are secret. Each precinct's total is counted, but where its dots sit is estimated from where adults live.`
       : `<b>Estimated:</b> no dot is anyone's real vote; ballots are secret. Each county's total is real, placed by precinct on the ${BASE.label} pattern and then where adults live.`;
-  else if (byPrecinct && columns && race) text = race.id !== ACTUAL_PRECINCTS
+  else if (byPrecinct && columns && race) text = ownYear ? (race.year === 2008 ? `<b>Partly estimated:</b> ${RETALLY_2008}` : '')
+    : race.id !== ACTUAL_PRECINCTS
     ? `<b>Estimated:</b> these precinct numbers are not counted results. Each county's real total is shared among its precincts by the ${BASE.label} pattern.`
     : BASE.partEstimated ? `<b>Partly estimated:</b> ${BASE.partEstimated}` : '';
   if (note.innerHTML !== text) note.innerHTML = text;
@@ -195,7 +213,7 @@ function estimateNote() {
 addEventListener('resize', () => estimateNote());
 const votesLine = row => { // a precinct's votes in the race on screen, in words
   const who = party => race.chamber ? (party === 'DEM' ? 'Democrats' : 'Republicans') : race.candidates.find(k => k.party === party).last;
-  const est = race.id === ACTUAL_PRECINCTS ? '' : 'estimated ';
+  const est = isCounted() ? '' : 'estimated ';
   return row.total ? `${est}${who('DEM')} ${fmt(Math.round(row.dem))}, ${who('REP')} ${fmt(Math.round(row.rep))}, others ${fmt(Math.round(row.other))}` : 'no votes reported';
 };
 
@@ -289,7 +307,13 @@ function finishRace() {
   // the same chamber in another year, on the same lines: its districts can change at once; anything else waits for syncDistricts
   if (byDistrict && dist && districtEntry(race) === dist.entry) setDistrictRows();
   districtText();
-  if (meshes.length) { if (byPrecinct && columns) setPrecinctRows(); restyle(); }
+  if (meshes.length) {
+    if (byPrecinct && columns) {
+      if (pset?.key === setKey(race)) setPrecinctRows();
+      else syncSet().then(ok => { if (ok) { restyle(); showChosen(); renderPlace(); outlinePlace(place); updateMode(); } }); // another year's precincts
+    }
+    restyle();
+  }
   renderPlace();
   syncDistricts();
 }
@@ -1143,12 +1167,10 @@ function outlinePlace(p) {
   placeLine.geometry = new THREE.BufferGeometry();
   if (lines) placeLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(lines, 3));
 }
-let precincts = null;
 const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: UPM, cityUrl: STATE.data.cities,
-  getVtds: !HAS_PRECINCTS ? null : async c => {
-    precincts ??= loadPrecincts(P, STATE.data.precincts, null).catch(e => { console.error('Precincts did not load', e); return null; });
+  getVtds: !HAS_PRECINCTS ? null : async c => { // the precincts of the race on screen's year (precinctList)
     busy.show('precincts', 'Loading precincts…');
-    const list = await precincts;
+    const list = await precinctList(setKey(race)).catch(e => { console.error('Precincts did not load', e); return null; });
     busy.hide('precincts');
     return list?.byFips.get(c.fips)?.vtds || [];
   },
@@ -1157,6 +1179,7 @@ const menus = createPlaceMenus({ counties: meshes.map(m => m.userData), P, upm: 
     place = p; focus = p?.c ? { view: p.view, kind: p.kind, c: p.c, v: p.v } : null;
     if (dotsOn) { dots?.choosePlace(p); return; }
     if (p?.kind === 'precinct' && !byPrecinct) await setBy(true); // a precinct is best seen by precinct
+    if (p?.kind === 'precinct' && !precinctOf.has(p.v)) return; // (from another year's list, left over from before the race changed)
     if (place !== p) return;
     showChosen(); renderPlace(); outlinePlace(p);
     if (p && aloneCounty() === p.c && (anim ? anim.to : progress) === 1) frameColumn(p.c); else if (p) flyTo(p.view);
@@ -1172,20 +1195,86 @@ const PALETTE = [...REP_C, ...DEM_C, LOSER_C.rep, LOSER_C.dem, NO_RACE_C, OTHER_
 const PAL_DEM = REP_C.length, PAL_LOSER_R = PAL_DEM + DEM_C.length, PAL_LOSER_D = PAL_LOSER_R + 1, PAL_NONE = PAL_LOSER_D + 1, PAL_OTHER = PAL_NONE + 1;
 const countyFloor = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
 countyFloor.visible = false; mapGroup.add(countyFloor);
-let precinctUnit = 1, precinctCounties = [], loadingColumns = null;
+let precinctUnit = 1, precinctCounties = [];
+// The precinct sets, each read once: the base set (STATE.data.precincts), and for Texas each year's own (precinctYears).
+// precinctList is what Go to's menu needs; loadSet adds the outlines and builds the columns, when By precinct first shows that set.
+const plists = new Map(), psets = new Map();
+function precinctList(key) {
+  if (!plists.has(key)) plists.set(key, (key === 'base' ? loadPrecincts(P, STATE.data.precincts, null) : loadPrecinctYear(P, YEARS_P, key))
+    .catch(e => { plists.delete(key); throw e; }));
+  return plists.get(key);
+}
+function loadSet(key) {
+  if (!psets.has(key)) psets.set(key, (async () => {
+    const [list, shapes] = await Promise.all([precinctList(key), loadPrecinctShapes(key === 'base' ? STATE.data.precinctShapes : YEARS_P.shapes(key))]);
+    const polygons = [], rows = [], of = new Map(), lists = new Map();
+    let tallest = 0;
+    for (const c of counties) {
+      const l = list.byFips.get(c.fips);
+      if (!l) continue;
+      lists.set(c.fips, l);
+      l.vtds.forEach((v, k) => {
+        polygons.push(shapes.counties[c.fips][k]);
+        of.set(v, rows.length); rows.push({ c, v });
+        tallest = Math.max(tallest, v.d + v.r + v.o);
+      });
+    }
+    const cols = createPrecinctColumns(mapGroup, P, polygons, PALETTE, new THREE.Color(OTHER_C));
+    cols.group.visible = false;
+    if (!countyFloor.geometry.getAttribute('position'))
+      countyFloor.geometry.setAttribute('position', new THREE.Float32BufferAttribute(counties.flatMap(c => c.lines), 3));
+    return { key, races: list.races ?? null, columns: cols, rows, of, lists, tallest };
+  })().catch(e => { psets.delete(key); throw e; }));
+  return psets.get(key);
+}
+// put a set on screen in place of the one there; a precinct chosen in the old one gives way to its county
+function useSet(s) {
+  if (pset === s) return;
+  const old = pset;
+  pset = s; columns = s.columns; precinctRows = s.rows; precinctOf = s.of;
+  precinctCounties = counties.filter(c => s.lists.has(c.fips));
+  for (const c of counties) c.list = s.lists.get(c.fips);
+  precinctUnit = PRECINCT_H / (YEARS_P?.tallest || s.tallest); // one height scale for every year
+  if (old) {
+    old.columns.setHover(-1); old.columns.group.visible = false;
+    if (lastOver === old.columns) lastOver = s.columns;
+    if (place?.kind === 'precinct') { place = menus.countyPlace(place.c); focus = { view: place.view, kind: place.kind, c: place.c }; }
+    menus.refresh();
+  }
+}
+// by precinct: the set for the race on screen, loaded if need be, with its columns set to the race. False if it didn't load,
+// or the race or view changed meanwhile.
+async function syncSet() {
+  const key = setKey(race);
+  if (pset?.key !== key) {
+    busy.show('columns', 'Loading precincts…');
+    try {
+      const s = await loadSet(key);
+      if (setKey(race) !== key || !byPrecinct) return false;
+      useSet(s);
+    } catch (e) {
+      console.error('The precinct map did not load', e);
+      $('placeInfo').textContent = 'The precinct map did not load. Please reload the page to try again.';
+      return false;
+    } finally { busy.hide('columns'); }
+  }
+  setPrecinctRows();
+  return true;
+}
 const busy = createBusy(document.querySelector('.map-area'));
 function showChosen() {
   columns?.setChosen(place?.kind === 'precinct' && byPrecinct ? precinctOf.get(place.v) : -1);
   squareCols?.setChosen(squaresOn() && place?.c ? place.c.sqIndex : -1);
 }
 function setPrecinctRows() {
-  const actual = race.id === ACTUAL_PRECINCTS, values = [];
+  const at = countedAt(), actual = isCounted(), values = [];
   let i = 0;
   for (const c of precinctCounties) {
     const est = actual ? null : precinctVotes(c.list, c);
     c.tallest = 0;
     c.list.vtds.forEach((v, k) => {
-      const { d, r, o } = est ? est[k] : v, total = d + r + o, dWon = d > r;
+      // counted: the year's own count (a district with one candidate has none here, so no column), or the base race's
+      const { d, r, o } = at >= 0 ? { d: v.n[3 * at], r: v.n[3 * at + 1], o: v.n[3 * at + 2] } : est ? est[k] : v, total = d + r + o, dWon = d > r;
       Object.assign(precinctRows[i++], { dem: d, rep: r, other: o, total });
       const h = total ? Math.max(0.02, total * precinctUnit) : 0;
       c.tallest = Math.max(c.tallest, h);
@@ -1195,31 +1284,6 @@ function setPrecinctRows() {
     });
   }
   columns.setValues(values);
-}
-function loadColumns() {
-  loadingColumns ??= (async () => {
-    precincts ??= loadPrecincts(P, STATE.data.precincts, null).catch(e => { precincts = null; throw e; });
-    const [list, shapes] = await Promise.all([precincts, loadPrecinctShapes(STATE.data.precinctShapes)]);
-    if (!list) throw new Error('no precincts');
-    const polygons = [];
-    let tallest = 0;
-    for (const c of counties) {
-      c.list = list.byFips.get(c.fips);
-      if (!c.list) continue;
-      precinctCounties.push(c);
-      c.list.vtds.forEach((v, k) => {
-        polygons.push(shapes.counties[c.fips][k]);
-        precinctOf.set(v, precinctRows.length);
-        precinctRows.push({ c, v });
-        tallest = Math.max(tallest, v.d + v.r + v.o);
-      });
-    }
-    precinctUnit = PRECINCT_H / tallest;
-    columns = createPrecinctColumns(mapGroup, P, polygons, PALETTE, new THREE.Color(OTHER_C));
-    columns.group.visible = false;
-    countyFloor.geometry.setAttribute('position', new THREE.Float32BufferAttribute(counties.flatMap(c => c.lines), 3));
-  })();
-  return loadingColumns;
 }
 function showBy() {
   $('byCounty')?.setAttribute('aria-pressed', String(!byPrecinct && !byDistrict));
@@ -1231,19 +1295,13 @@ async function setBy(on) {
   if (on === byPrecinct) return;
   byPrecinct = on; showBy();
   saveUrl();
-  if (on && !columns) {
-    $('placeInfo').textContent = 'Loading precincts…';
-    try { await busy.showNow('columns', 'Loading precincts…'); await loadColumns(); }
-    catch (e) {
-      busy.hide('columns');
-      console.error('The precinct shapes did not load', e);
-      $('placeInfo').textContent = 'The precinct map did not load. Please reload the page to try again.';
-      byPrecinct = false; showBy(); loadingColumns = null; return;
-    }
-    if (!byPrecinct) { busy.hide('columns'); return; } // changed back while it was loading
-  }
-  if (on) setPrecinctRows();
-  else columns?.setHover(-1);
+  if (on) {
+    if (pset?.key !== setKey(race)) { $('placeInfo').textContent = 'Loading precincts…'; await busy.showNow('columns', 'Loading precincts…'); }
+    const ok = await syncSet();
+    busy.hide('columns');
+    if (!byPrecinct) return; // changed back while it was loading
+    if (!ok) { if (pset?.key !== setKey(race)) { byPrecinct = false; showBy(); updateMode(); } return; }
+  } else columns?.setHover(-1);
   restyle(); showChosen(); renderPlace(); outlinePlace(place); updateMode();
   if (focus && progress > 0) flyTo(focus.view); // the top of what's there has moved
   busy.hide('columns');
@@ -1412,13 +1470,13 @@ function onPointer(e) {
     dc.setHover(i);
     if (i >= 0) { setHover(null); tip.innerHTML = districtTip(dist.rows[i]); placeTip(e, r); return; }
   }
-  if (byPrecinct && columns) {
+  if (byPrecinct && columns && pset?.key === setKey(race)) {
     const o = ray.ray.origin, d = ray.ray.direction; // from the world's axes to the map's: world (x, z, -y)
     const i = columns.pick({ x: o.x, y: -o.z, z: o.y }, { x: d.x, y: -d.z, z: d.y });
     columns.setHover(i);
     if (i >= 0) {
       setHover(null);
-      const row = precinctRows[i], { dem, rep, other, total } = row, dWon = dem > rep, actual = race.id === ACTUAL_PRECINCTS;
+      const row = precinctRows[i], { dem, rep, other, total } = row, dWon = dem > rep, actual = isCounted();
       // an estimate says so first, with its shares in whole percents, so it doesn't read as a count
       const rnd = x => fmt(Math.round(x)), sh = x => pct(x, total, actual ? 1 : 0);
       tip.innerHTML = `<div class="n">Precinct ${row.v.name}${actual ? '' : ' · estimate'}</div>` +

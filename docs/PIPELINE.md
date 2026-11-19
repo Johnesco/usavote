@@ -81,6 +81,8 @@ Run these in order from the repo root. Each script stops with an error if a chec
 | 4 | `python scripts/build_precincts.py` | 3 min | `data/precincts.json.gz` | `32ee28870ca8fcc9` |
 |   | (same script as #4) | | `data/precinct-shapes.json.gz` | `06539cd799cf987e` |
 | 5 | `python scripts/build_landmask.py` | 1 min | `data/landmask.bin.gz` | `44544362e7852d66` |
+| 6 | `python scripts/build_tx_precinct_years.py` | 30 min | `data/tx-years/blocks.json.gz` | `c09127178a073062` |
+|   | (same script as #6), one pair per year from 2008 to 2024 | | `data/tx-years/<year>.json.gz`, `<year>-shapes.json.gz` | below |
 
 `build_blockgroups.py` isn't needed if you downloaded the Census file in step 2.1. Its output was used by an earlier placement method and the site no longer reads it.
 
@@ -104,6 +106,31 @@ What each one does, and the numbers to expect for Texas:
 7. Writes the precincts' outlines to `data/precinct-shapes.json.gz`, in the same order, simplifying to about 55 m along shared borders so neighbors still meet. A merged precinct keeps all its pieces. Expect 9,206 outlines, 377,785 points and a 0.94 MB file.
 
 **#5 Where dots can't go.** Draws every block with people or housing units onto a 100 m grid in the map's projection. Everything else is empty, such as lakes, bays, airports and big parks. Expect 455,943 blocks drawn on a 13,180 × 12,083 grid, and a 1.03 MB file.
+
+**#6 Precincts by year.** Each general election from 2008 to 2024 on its own precinct lines with its precinct votes as counted, from the Texas Legislative Council (CC BY; the terms are in Part 5, the plan in [`texas-precincts-by-year-plan.md`](texas-precincts-by-year-plan.md)). The raw zips go under `data/raw/census-dl/tlc/years/`, which isn't committed; their URLs are in `urls.txt` there. 2008 has no lines of its own, so it uses the Council's re-tally of the 2008 votes onto the 2010 lines.
+1. Writes one blocks file shared by every year: the 442,628 blocks with adults, by county, and each county's most crowded spot from #4.
+2. For each year, reads the lines and every race the site has for that year, matched by county and precinct code. Stops if a precinct with votes has no lines.
+3. Gives each block to the precinct containing its center point, as #4 does.
+4. Merges any precinct with under 10 votes in a statewide race into the nearest precinct in its county. Stops unless every vote is still there.
+5. Stops unless each statewide race is within 0.5% of the Secretary of State's total (`data/results-history.json`). The votes are shown as the Council counted them, not scaled to match. The chambers' totals come out lower than the site's in most years, by up to 46% for the Texas House: the Council's files leave out districts with one candidate, and the site's totals count them. Those districts' precincts stand empty by precinct.
+6. Writes the year's votes and outlines (simplified as in #4).
+7. Stops unless `precinctYears.tallest` in `state.js` equals the tallest precinct of any year and race, so every year shares one height scale. This check runs only when every year is built.
+
+Expect, per year:
+
+| Year | Lines | Precincts | Merged | Largest statewide gap | `<year>.json.gz` | `<year>-shapes.json.gz` |
+|---|---|---:|---:|---:|---|---|
+| 2008 | the 2010 lines (VTD10G), the Council's re-tally | 8,400 | 132 | 0.10% | `8ef7a036c61082ad` | `4051146803485f45` |
+| 2010 | VTD10G | 8,400 | 166 | 0.27% | `b726163eea915da4` | `b6de1ac108a087d5` |
+| 2012 | 2012 general VTDs | 8,952 | 222 | 0.08% | `3a7e36f9b4435134` | `c5e44e19a1d8cf41` |
+| 2014 | 2014G_VTD | 8,996 | 287 | 0.01% | `17a3edd00969d9d0` | `dd1d9bece8f9f839` |
+| 2016 | VTDs_2016G | 8,941 | 195 | 0.16% | `0f593c4cec12d1fa` | `ed32531edc7702d9` |
+| 2018 | VTDs_2018G | 9,082 | 196 | 0.04% | `be5bdd0bd31f0628` | `1fe6545c9d4d89aa` |
+| 2020 | VTDs20G_2020 (2020 Census blocks) | 9,157 | 151 | 0.07% | `eba35e68c2f55989` | `dd40769fb970d11b` |
+| 2022 | VTDs_22G | 9,634 | 164 | 0.05% | `d9f47545d9ec4c2c` | `2ecd15e9bab4cf37` |
+| 2024 | VTDs_24PG | 9,712 | 145 | 0.15% | `13958ad5cf1e47e2` | `235a4c5196a3ab20` |
+
+Each votes file is 0.24 to 0.36 MB and each shapes file 0.91 to 0.94 MB, so about 13.8 MB in all with the 2.01 MB blocks file; a page loads only the years it shows. On the 2010s lines (2008 to 2018), 81 blocks have their center in no precinct of their county and go to the nearest; on the 2020s lines, none. Between 2 and 10 precincts a year have no block's center inside them, so their dots go in one circle. The tallest precinct of any year and race is 13,511 votes.
 
 **Optional images:**
 
@@ -129,10 +156,10 @@ Nothing is computed on a server. Each page fetches its files and works everythin
 - Controls: **Flat** or **3D**. In 3D the map turns slowly (0.08 radians a second, the County Flythrough's closing pace) in every bar view, until the reader takes hold of it or switches **Rotation** off; then drag moves, right-drag or two fingers turn, and scroll zooms.
 - Bar view and dot view hand each other the camera in the link (`?at=x,y,distance,tilt,heading`), so switching keeps the place and zoom. The dot view always settles flat and north up, so it hands a 3D bar view's tilt and heading back unchanged.
 
-**Bar view by precinct** (`precinct-columns.js`), on the results page's **By precinct** toggle: one mesh holds every precinct's column, stacked in the shader. Height is on one scale at every zoom: 70 map units for the 2024 Senate race's largest precinct. Votes are as counted for the 2024 U.S. Senate race and otherwise estimated by step 1 below, and labeled so on screen.
+**Bar view by precinct** (`precinct-columns.js`), on the results page's **By precinct** toggle: one mesh holds every precinct's column, stacked in the shader. Height is on one scale at every zoom and in every year: 70 map units for the largest precinct of any race and year (`precinctYears.tallest` in `state.js`). In Texas, a race from 2008 to 2024 stands on its own year's precincts with its votes as counted (#6 in Part 3, `data/tx-years/`; 2008 on the 2010 lines), and 2026 on the 2024 lines, estimated by step 1 below. The page loads each year's set when it's first shown (`app.js`, `loadSet`). U.S. House, Texas House and Texas Senate districts with one candidate have no precinct counts, so their precincts stand empty. Estimates are labeled on screen (Part 5).
 
 **Dot view: one dot per voter** (`dots.js`, `dots-worker.js`), on `voters.html`, which the **Dot view** button in bar view opens for the race on screen (`?race=`). It shows any race and year, always on the flat map:
-1. **Share by precinct:** each party's 2026 county total is split among precincts by that party's share of its 2024 county vote there.
+1. **Share by precinct:** each party's county total is split among precincts by that party's share of its 2024 county vote there. In Texas, a race from 2008 to 2024 is split by its own year's precincts and their counted votes instead (`dots.js`, `loadPrecinctYear`, `countedVotes`); in a district race, voters in districts with one candidate, which have no precinct counts, are split among those precincts by the year's first statewide race.
 2. **Share by block:** each precinct's share is split among its blocks by adults.
 3. **Whole dots:** systematic rounding turns those shares into whole dots, so every county adds up exactly to its 2026 result.
 4. **Place each dot:** a random spot around its block, on a bell curve whose standard deviation is 0.75 of the block's radius, cut off at 2.5 standard deviations.
@@ -174,6 +201,44 @@ This is a reading of the published pages, not legal advice. Nobody at these agen
 | us-atlas | ISC license, per npm. It redistributes Census boundaries. | Nothing while the site loads it from a CDN |
 
 **Gap in the record:** not read were the state's website linking policy (a search summary says public information may be copied if it doesn't suggest state endorsement, but the full conditions weren't seen), any terms from Civix, the vendor behind the results feed (both results sites' footers point to the Secretary of State's policies), and the rest of the link policy. The two copies of the 2024 U.S. Senate votes weren't compared.
+
+### Texas terms for commercial use, read 2026-11-17
+
+The owner asked whether the Texas views could be sold, for example printed on merchandise. Every page below was read in full in a browser, looking for anything about commercial use. This is a reading of the published pages, not legal advice, and no agency was asked.
+
+| Source | What it says | For selling |
+|---|---|---|
+| Secretary of State: [Disclaimer](https://www.sos.state.tx.us/disclaimer.shtml), [Link Policy](https://www.sos.state.tx.us/linkpolicy.shtml), [Open Records Policy](https://www.sos.state.tx.us/records.shtml), [Privacy Policy](https://www.sos.state.tx.us/privacy.shtml), all listed on its [Website Policies](https://www.sos.state.tx.us/policies.shtml) page | The Disclaimer says using the site means agreeing to its terms, but those terms only disclaim warranties and liability. The Link Policy says not to frame its pages, "present Secretary of State content as its own, or otherwise misrepresent" it, or "misinform users about the origin or ownership" of it; protected marks must be used lawfully. The Open Records Policy says "All government information is presumed to be available to the public", which is about access. Nothing grants a license, and nothing mentions commercial use. | **Silent.** No grant and no limit. Conditions: name the Secretary of State as the source, don't present the results as your own, and keep estimates labeled so nothing misrepresents the counts |
+| Both results sites, [Civix's election-night site](https://goelect.txelections.civixapps.com/ivis-enr-ui/races) and [results.texas-election.com](https://results.texas-election.com/races) | Their footers link only to the Secretary of State's policies above (checked on the second site's links). Neither shows terms or a copyright line of its own. Civix wasn't checked further | Same as the Secretary of State |
+| State of Texas: [Site Policies](https://www.texas.gov/about/site-policies), Linking and Legal notices tabs | The Linking policy repeats the Secretary of State's and adds "or in any way attempt to modify the content and present it as the content of Texas.gov". Legal notices cover trademarks, a DMCA procedure and warranty disclaimers, and say references to commercial products "shall not be used for advertising or product endorsement purposes". Footer: "Copyright © 2026 State of Texas. All rights reserved." These cover Texas.gov; whether they reach the Secretary of State's sites is inferred. The state policy the Secretary of State's Link Policy links to, on `dir.texas.gov`, returns "Page Not Found". | No limit on selling. Don't present altered maps as the state's, and don't suggest the state endorses a product |
+| `VTDs_24PG` shapes and the [2024 General](https://data.capitol.texas.gov/dataset/2024_general) votes (Texas Legislative Council) | Both dataset pages list "Creative Commons Attribution" and link to the Open Definition's [cc-by page](https://opendefinition.org/licenses/cc-by/), which names versions 1.0 to 4.0 and points to [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). That deed allows adapting "for any purpose, even commercially". | **Allowed,** with credit, a license link and a note of changes on the product or its listing. The 2024 votes the site uses came from the TED API, which shows no license; the portal's copy is the licensed one, and the two weren't compared |
+| [Texas Legislative Council](https://tlc.texas.gov/) site | Footer links: training, HUB and wireless policies, and public information requests. No terms of use, copyright policy or reuse wording found. [TED](https://ted.capitol.texas.gov/), where the 2024 votes came from, rendered a blank page and wasn't read | Nothing found |
+| PLANC2333 (U.S. House lines) | Read again: the dataset page still has no License section | **Silent,** as recorded in Part 9. The 2026-11-12 choice covered the website only |
+| Census files | Part 8: U.S. Government works have no copyright | **Allowed.** Cite the Bureau; don't use "TIGER/Line" in a product's name |
+
+**The reading:** for selling, Texas's shapes, the 2024 precinct votes and the Census files are licensed, and the Secretary of State's results are silent: no license, nothing against commercial use, and conditions only about crediting the source and not misrepresenting it. So a view drawn only from the 2024 U.S. Senate precinct votes, the `VTDs_24PG` shapes and Census files rests entirely on licensed or public-domain sources, once the 2024 votes are confirmed to match the portal's licensed copy. Views using other years' results, or the U.S. House lines, rest on silence.
+
+**Gap in the record:** Civix's own terms, the TED app's pages and the Texas Public Information Act weren't read. Only the CC BY 4.0 deed was read, not the legal code or earlier versions; the dataset pages name no version.
+
+### Texas precincts by year and PLANC2193 terms, read 2026-11-18
+
+For the plan in [`texas-precincts-by-year-plan.md`](texas-precincts-by-year-plan.md): each election's own precinct lines and votes, 2010 to 2024, and the U.S. House lines for 2022 and 2024. Every page below was read in full in a browser, including the License box beside each dataset, which the page's main text leaves out. This is a reading of the published pages, not legal advice, and the Council wasn't asked.
+
+| Source | What it says | What it asks of us |
+|---|---|---|
+| [VTDs](https://data.capitol.texas.gov/dataset/vtds): `VTDs_24PG` (in use), `VTDs_22G`, `VTDs_22P`, `VTDs20G_2020` | License: "Creative Commons Attribution", "This dataset satisfies the Open Definition." VTDs "can differ from actual election precincts because precincts do not always follow census geography"; a precinct with no census match is merged into a neighbor's VTD. Join field `VTDKEY`. | Credit, license link, note of changes |
+| [2010s Archived VTD & Precinct Geography](https://data.capitol.texas.gov/dataset/archived_vtds_2010s): VTDs for the 2010 to 2020 primaries and generals, on 2010 Census geography, and actual precinct shapes for the same elections | License: Creative Commons Attribution. "The boundaries included in this directory are for informational purposes only and may be approximate." That is a caution, not a limit on use. | The same, and keep calling precinct shapes approximate |
+| [2010s Archived Election Data](https://data.capitol.texas.gov/dataset/historical_elections_2010s): one zip per general election, 2010 to 2020, each on that election's VTDs | License: Creative Commons Attribution. Compiled by the Council's Research Division "for redistricting purposes" from county and Secretary of State returns. "There may be small differences between the data presented here and official election results." | The same. Measure the differences against the Secretary of State's county totals before choosing how to show them |
+| [Comprehensive Election Datasets](https://data.capitol.texas.gov/dataset/comprehensive-election-datasets-compressed-format): 2020 General, 2022 Primary and General, 2024 Primary and General | License: Creative Commons Attribution. Each zip has "2012 - 20xx election data" reported by that year's VTDs: the Council re-tallies earlier elections onto newer lines, as well as giving that year's own. | The same |
+| Per-election datasets, such as [2018 General](https://data.capitol.texas.gov/dataset/2018_general), one TED API link per race | The 2018 page was read: License: Creative Commons Attribution. The catalog records of 2012, 2014, 2016, 2020, 2022 and 2024 General list the same license; their pages weren't each opened. There is no 2008 or 2010 dataset of this kind. | The same, if the TED API is used |
+| [PLANC2193](https://data.capitol.texas.gov/dataset/planc2193), "TEXAS CONGRESSIONAL DISTRICTS, 2023-2026", tagged for 2022 elections on | License: Creative Commons Attribution. Unlike PLANC2333, which has none. | Credit, license link and note of changes, in the page's Sources and the file's `meta` |
+| Portal [About](https://data.capitol.texas.gov/about) page | Describes the portal and gives the mapping and redistricting section's phone number. No terms. | Nothing |
+| Open Definition [cc-by page](https://opendefinition.org/licenses/cc-by/), where every License link goes | Read again: points to CC BY 4.0 and lists versions 1.0 to 4.0; "allows re-distribution and re-use of a licensed work on the condition that the creator is appropriately credited." | Credit |
+| [TED](https://ted.capitol.texas.gov/) | Still renders no text, so its terms, if any, weren't read | Nothing found |
+
+**The reading:** every Council source the plan needs is licensed Creative Commons Attribution, which covers redrawing, simplifying and republishing, commercially or not, with credit, a license link and a note of changes. So the per-year precinct lines and votes for 2010 to 2024, and PLANC2193, can be published once built, with that credit on each page that uses them.
+
+**Gap in the record:** the dataset pages name no license version, as before. The TED API shows no license itself; the per-election datasets that link to it are licensed. Of the per-election pages, only 2018's was opened. Nothing in the zips themselves (readme files, if any) has been read, since nothing was downloaded; read them when step 2 downloads them.
 
 ## 6. Template for another state
 
@@ -402,7 +467,7 @@ This is a reading of the published pages, not legal advice. Each dataset page an
 | PLANH2316, PLANS2168 | Listed as Creative Commons Attribution, linking to the same general [license page](http://www.opendefinition.org/licenses/cc-by) as `VTDs_24PG`, with no version named. | Credit, a license link and a note of changes: in the page's Sources and in each file's `meta` |
 | PLANC2333 | **No license.** The page shows none and its catalog record has an empty license field. The portal's [About page](https://data.capitol.texas.gov/about) describes the portal and has no terms. | Nothing stated. This is silence, not permission, the same standing as the Secretary of State's results. The owner was told and chose on 2026-11-12 to publish the outlines with credit, in the page's Sources and the file's `meta`. |
 
-**Gap in the record:** the Council wasn't asked about PLANC2333. Whether PLANC2193 has a license wasn't read.
+**Gap in the record:** the Council wasn't asked about PLANC2333. PLANC2193 was read on 2026-11-18 and is licensed: see "Texas precincts by year and PLANC2193 terms" in Part 5.
 
 ### Build
 
