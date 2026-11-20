@@ -299,7 +299,7 @@ Every precinct with votes must have a shape. The Texas script stops if one is mi
 
 These are from general knowledge and haven't been checked state by state.
 
-- **Results not reported by county:** Alaska has no ordinary counties, and New England states often report by town. Connecticut's Census geography also changed to planning regions in 2022, which won't match the 2017 county shapes in us-atlas.
+- **Results not reported by county:** Alaska has no ordinary counties, and New England states often report by town. Connecticut switched to planning regions in 2022, but the 2020 Census files still have its 8 counties, which match the 2017 county shapes in us-atlas; its towns are added up by county.
 - **County look-alikes:** Louisiana parishes, Virginia's independent cities and similar units affect name matching, and Texas's "County" suffix handling won't cover them. The pages add a state's `countyWord` after each name (`countyLabel()` in `state.js`): "County" unless set, "Parish" for Louisiana, nothing for Virginia, whose names already say "County" or "City".
 - **Precinct data:** other states may have no equivalent of the Texas Legislative Council's portal. The Voting and Election Science Team (Harvard Dataverse) and the Redistricting Data Hub are places to look, and the Census file includes 2020 voting districts for shapes, though they can be out of date (Part 7). Check each one's license.
 - **Vote-by-mail and countywide votes** may be reported apart from home precincts, which would weaken the placement. Check this first in each state.
@@ -399,6 +399,8 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Louisiana | [`records/louisiana.md`](records/louisiana.md) | County (parishes) | None | None: built 2026-11-19 from results the site marks official |
 | Virginia | [`records/virginia.md`](records/virginia.md) | County and independent city | None | State Board of Elections certification; date not looked up |
 | Alabama | [`records/alabama.md`](records/alabama.md) | County, from precinct files | None | State Canvassing Board certification; date not looked up |
+| New Hampshire | [`records/new-hampshire.md`](records/new-hampshire.md) | County, from towns and wards | None | Recounts or clerks' amendments; the recount schedule wasn't read |
+| Connecticut | [`records/connecticut.md`](records/connecticut.md) | County, from towns | None | The state canvass; date not looked up |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -427,7 +429,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Built: silent, by the owner's choice | Vermont, West Virginia | No license and no limit found. The owner chose them knowing this. Their results sites carry bare copyright footers |
 | Chosen, not built | Maine | No November 2026 results were posted on the Secretary of State's results page when checked on 2026-11-09, only June primary files. Its Census files are saved under `data/raw/me/` |
 | Silent, not chosen | Alaska, North Dakota, New York; Louisiana was here until read again (below) | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
-| Copyright notice only, or not fully read | Maryland, Missouri, New Hampshire, Connecticut, Delaware; Florida, Illinois, Mississippi, Kentucky, Virginia, Alabama and New Jersey were here until read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
+| Copyright notice only, or not fully read | None left: Florida, Illinois, Mississippi, Kentucky, Virginia, Alabama, New Jersey, Maryland, Missouri, New Hampshire, Connecticut and Delaware were all read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
 | Limiting wording | Utah, Hawaii, Indiana, Massachusetts | Utah allows copying only if "not modified in any respect"; Hawaii bars commercial use; Indiana allows personal use only, with no republishing or derivative works; Massachusetts allows only fair use without permission |
 
 **Florida and Illinois, read again on 2026-11-12.** The owner asked why these two weren't built, so their terms were read in full in a browser. This is a reading of the published pages, not legal advice, and neither agency was asked.
@@ -451,6 +453,16 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Alabama | Silent: Alabama.gov's terms limit only material contributed by private parties | Built by the owner's choice, 2026-11-19 (`docs/records/alabama.md`) |
 | New Jersey | **Permission given:** the state's Conditions of Use say anyone may "view, copy or distribute State information" | Not built: no general election results posted yet (`docs/records/new-jersey.md`) |
 | Kentucky | Unclear: Kentucky.gov's legal notice points to Tyler Technologies' terms, which forbid copying data and commercial reuse of Tyler's services | Not built: ask first (`docs/records/kentucky.md`) |
+
+**Delaware, Connecticut, New Hampshire, Missouri and Maryland, read again on 2026-11-20.** The owner asked which states were left, then to check these five. This is a reading of published pages, not legal advice, and no agency was asked.
+
+| State | Reading | Results, 2026-11-20 |
+|---|---|---|
+| Delaware | **Public domain** for the official statewide totals (the open-data portal's "Official Election Results by Office", License: Public Domain); silent for the county figures on the results page | Official. U.S. Senate, U.S. House (at large) and three more statewide races; only 3 counties (`docs/records/delaware.md`) |
+| Connecticut | Silent: the portal's disclaimer is written for data users and limits only the State Seal and the CT.gov logo | Built by the owner's choice, 2026-11-20: Governor, four more statewide races and U.S. House, towns added up by county, each candidate's party lines added together (`docs/records/connecticut.md`) |
+| New Hampshire | Copyright notice only: "All rights reserved", no terms | Built by the owner's choice, 2026-11-20: U.S. Senate, Governor and U.S. House, towns and wards added up by county; the files were saved through a browser, since scripts get 403 (`docs/records/new-hampshire.md`) |
+| Missouri | Conditional, if MO.gov's Data Policy reaches the results: show its set disclaimer, and stop if the State asks | Complete, unofficial; State Auditor is the only statewide race between candidates (`docs/records/missouri.md`) |
+| Maryland | Copyright notice only; the portal's terms are a linking policy (don't frame pages or present content as your own) | Unofficial and partial: two big counties still canvassing; Governor, Comptroller, Attorney General (`docs/records/maryland.md`) |
 
 **Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
 

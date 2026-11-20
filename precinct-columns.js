@@ -95,8 +95,9 @@ export function createPrecinctColumns(parent, P, precincts, palette, other) {
       uniform vec3 uOther; varying vec3 vTop, vLow; varying vec3 vShares; varying float vLight;
       void main() {
         // ranked: each part stands on the parts with fewer votes (ties: runner-up, then others, then winner, from the bottom)
-        float y = vShares.x, lo = vShares.y, ot = vShares.z, w = 1. - lo - ot;
-        float sLo = (ot < lo ? ot : 0.) + (w < lo ? w : 0.), sOt = (lo <= ot ? lo : 0.) + (w < ot ? w : 0.);
+        // w is worked out, so it can land a hair off a share it ties with: it counts as fewer only by half a 255th or more
+        float y = vShares.x, lo = vShares.y, ot = vShares.z, w = 1. - lo - ot, E = .5 / 255.;
+        float sLo = (ot < lo ? ot : 0.) + (w < lo - E ? w : 0.), sOt = (lo <= ot ? lo : 0.) + (w < ot - E ? w : 0.);
         vec3 c = y >= sLo && y < sLo + lo ? vLow : y >= sOt && y < sOt + ot ? uOther : vTop;
         gl_FragColor = vec4(c * vLight, 1.);
         #include <colorspace_fragment>
@@ -136,7 +137,8 @@ export function createPrecinctColumns(parent, P, precincts, palette, other) {
     setValues(values) {
       values.forEach(({ h, top, low, fLow, fMid }, i) => {
         const p = list[i]; p.h = h;
-        const a = Math.round(fLow * 255), b = Math.round(fMid * 255);
+        // shares in 255ths; rounding must never give the runner-up more than the winner (255 - a - b), or a close race stacks upside down
+        const b = Math.round(fMid * 255), a = Math.min(Math.round(fLow * 255), Math.floor((255 - b) / 2));
         for (let k = p.v0; k < p.wallEnd; k += 4) { pos[(k + 2) * 3 + 2] = h; pos[(k + 3) * 3 + 2] = h; }
         for (let k = p.wallEnd; k < p.v1; k++) pos[k * 3 + 2] = h;
         for (let k = p.line0 + 2; k < p.lineEnd; k += 3) line[k] = h;
