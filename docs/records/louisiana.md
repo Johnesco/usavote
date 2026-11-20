@@ -2,7 +2,7 @@
 
 Built 2026-11-19, for the 2026 general election only, and **county-only**: bar view by parish and dot view, with no By precinct view or precinct menu. This has the shape of `docs/PIPELINE.md`, Part 7.
 
-**Parishes are counties.** Louisiana's 64 parishes have county codes in the Census files, and the pages and files call them counties, as the site's other states do. The page and Sources say so; the dot text says "parish".
+**Parishes are counties.** Louisiana's 64 parishes have county codes in the Census files, and the menus and files call them counties, as the site's other states do. The page and Sources say so; the dot text says "parish". Since 2026-11-19, names in sentences and hover cards say "Parish" (`countyWord` in `state.js`; before, the pages wrote "Acadia County").
 
 **One race.** U.S. Senate is the only statewide race between candidates. The six U.S. House races are by district, and Districts 5 and 6 go to a runoff on Dec. 12, 2026.
 
@@ -40,7 +40,7 @@ This is a reading of the published pages, not legal advice. Nobody at the Secret
 
 | # | Command | Writes to `data/la/` | SHA-256 (first 16) |
 |---|---|---|---|
-| 1 | `python scripts/build_la_results.py` | `results-2026.json` | `8a36578e303c3e3d` |
+| 1 | `python scripts/build_la_results.py` | `results-2026.json` | `aafdcfdc82a2adba` (rebuilt 2026-11-19 with Virginia and Alabama, for its sources wording) |
 | 2 | `python scripts/build_cities.py la` | `cities.json` | `d1e9eafbf655d738` |
 | 3 | `python scripts/build_precincts.py la` (reads #1) | `blocks.json.gz` | `729faeca86b87089` |
 | 4 | `python scripts/build_landmask.py la` | `landmask.bin.gz` | `edac31cb1997f72a` |

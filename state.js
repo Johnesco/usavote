@@ -499,6 +499,7 @@ const LOUISIANA = {
   mapLabel: 'LA',
   fips: '22',
   countyCount: 64,       // parishes: Louisiana's counties, with county codes in the Census files
+  countyWord: 'Parish',  // "Acadia Parish" in sentences and hover cards (countyLabel)
   parallels: [29.6, 32.3], // scripts/build_landmask.py must use the same values
   rotate: [91.4, 0],
   middle: [-91.4, 31.0],
@@ -522,8 +523,72 @@ const LOUISIANA = {
   otherVotes: 'third-party votes',
   base: null,            // no precinct shapes here (docs/records/louisiana.md)
 };
+const VIRGINIA = {
+  slug: 'virginia',
+  name: 'Virginia',
+  fips: '51',
+  countyCount: 133,      // 95 counties and 38 independent cities, which the Census counts as county equivalents
+  countyWord: '',        // the names already say "County" or "City" ("Fairfax County", "Fairfax City"), so nothing is added (countyLabel)
+  parallels: [37.0, 39.0], // scripts/build_landmask.py must use the same values
+  rotate: [79.4, 0],
+  middle: [-79.4, 38.0],
+  radiusScaleAt: [-79.4, 38.0], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 U.S. Senate race and U.S. House, by county and independent city. Results are unofficial.',
+  data: {
+    results: 'data/va/results-2026.json',
+    history: null,
+    precincts: 'data/va/blocks.json.gz', // one entry per county or city, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/va/landmask.bin.gz',
+    cities: 'data/va/cities.json',
+  },
+  results: { href: 'virginia.html', title: 'See the results', text: 'U.S. Senate and U.S. House in 2026, by county and independent city. Flat or 3D, or Dots, one per voter.' },
+  flights: [],
+  tour: false,
+  authority: 'the Virginia elections department', // the pages add 's; the department's own name ends in "Elections"
+  returns: 'unofficial returns',
+  unofficialUntil: 'the State Board of Elections certifies them',
+  votesCounted: 'the votes reported in the selected race in each county or city, for every candidate on the ballot, write-ins included.',
+  base: null,            // no precinct shapes here (docs/records/virginia.md)
+};
+const ALABAMA = {
+  slug: 'alabama',
+  name: 'Alabama',
+  mapLabel: 'AL',        // the full name runs into Georgia on the homepage map
+  fips: '01',
+  countyCount: 67,
+  parallels: [31.0, 34.2], // scripts/build_landmask.py must use the same values
+  rotate: [86.7, 0],
+  middle: [-86.7, 32.8],
+  radiusScaleAt: [-86.7, 32.8], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election: U.S. Senate, Governor and the other statewide races, and U.S. House, by county. Results are unofficial.',
+  data: {
+    results: 'data/al/results-2026.json',
+    history: null,
+    precincts: 'data/al/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/al/landmask.bin.gz',
+    cities: 'data/al/cities.json',
+  },
+  results: { href: 'alabama.html', title: 'See the results', text: 'U.S. Senate, Governor and the other statewide races in 2026, and U.S. House. Flat or 3D by county, or Dots, one per voter.' },
+  flights: [],
+  tour: false,
+  authority: 'the Alabama Secretary of State',
+  returns: 'unofficial returns',
+  unofficialUntil: 'the State Canvassing Board certifies them',
+  votesCounted: "the votes reported in the selected race in each county, for every candidate on the ballot, write-ins included, added up from the Secretary of State's precinct files. Over and under votes aren't counted.",
+  otherVotes: 'write-in votes', // every race here had only a Democrat, a Republican and write-ins
+  // the precinct files have no statewide or district totals, so nothing here can say the counties add up to them (docs/records/alabama.md)
+  statewideTotals: "Each county's figures are its precinct, absentee and provisional columns added up. The Secretary of State's files have no statewide totals to check them against.",
+  chamberTotals: "Each district's figures are its counties' columns added up. The Secretary of State's files have no district totals to check them against.",
+  base: null,            // no precinct shapes here (docs/records/alabama.md)
+};
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA, LOUISIANA];
+// what a state calls a county, after its name in sentences and hover cards: "County" unless the state sets countyWord.
+// Louisiana's are parishes; Virginia's names already say "County" or "City", so its word is empty.
+export const countyLabel = c => { const w = STATE.countyWord ?? 'County'; return w ? `${c.name} ${w}` : c.name; };
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA, LOUISIANA, VIRGINIA, ALABAMA];
 // the dot view: a Look on the state's own page (dotlook.js). Its old pages (voters.html, oklahoma-voters.html and the rest) forward there.
 for (const s of STATES) s.dots = `${s.results.href}?look=dots`;
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

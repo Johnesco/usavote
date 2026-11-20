@@ -6,7 +6,7 @@ import { createCityLabels } from './cities.js';
 import { loadPrecincts, loadPrecinctYear, precinctVotes } from './dots.js';
 import { createPrecinctColumns, loadPrecinctShapes } from './precinct-columns.js';
 import { createPlaceMenus, describePlace } from './places.js';
-import { STATE } from './state.js';
+import { STATE, countyLabel } from './state.js';
 import { createBusy } from './busy.js';
 import { createSiteNav } from './sitenav.js';
 import { sourceItems } from './sourcelist.js';
@@ -172,7 +172,7 @@ const renderPlace = () => {
   if (byPrecinct && columns) {
     if (place?.kind === 'precinct') {
       const row = precinctRows[precinctOf.get(place.v)], v = place.v;
-      line = `<b>Precinct ${v.name}, ${place.c.name} County</b>: ${race.year} ${race.label}, ${row ? votesLine(row) : 'loading…'}` +
+      line = `<b>Precinct ${v.name}, ${countyLabel(place.c)}</b>: ${race.year} ${race.label}, ${row ? votesLine(row) : 'loading…'}` +
         (isCounted() || pset?.races ? '' : `. ${BASE.label}: ${BASE.dem} ${fmt(v.d)}, ${BASE.rep} ${fmt(v.r)}, others ${fmt(v.o)}`);
     }
     line += `<span class="place-note">${countedAt() >= 0 ? linesNote() : isCounted() ? BASE.asCounted : `Precinct votes are estimated from the ${BASE.label} pattern.`}</span>`;
@@ -285,7 +285,7 @@ function setRace(id) {
   while (n < asc.length && acc + asc[n].total < big.total) { acc += asc[n].total; accLand += asc[n].landSqMi; n++; }
   const big5 = desc.slice(0, 5), big5v = big5.reduce((s, c) => s + c.total, 0);
   $('harris').innerHTML =
-    `${big.name} County alone cast <b class="hl">${fmt(big.total)}</b> votes, more than the <b class="hl">${n} smallest counties combined</b> ` +
+    `${countyLabel(big)} alone cast <b class="hl">${fmt(big.total)}</b> votes, more than the <b class="hl">${n} smallest counties combined</b> ` +
     `(${fmt(acc)}), which together cover ${pct(accLand, land, 0)} of ${STATE.name}'s land area. ` +
     `The five largest counties by votes cast (${big5.map(c => c.name).join(', ')}) cast ${pct(big5v, S.tot, 0)} of all votes.`;
   $('legRTitle').textContent = `${nm(R)} (R) ${WON} the county`;
@@ -293,7 +293,7 @@ function setRace(id) {
   $('method').innerHTML = `
     <p><b>Votes:</b> ${STATE.votesCounted ?? 'the total votes cast in the selected race in each county, counting every candidate including write-ins.'}
     These are ${STATE.authority}'s ${STATE.returns} as of ${meta.resultsUpdated}, ${STATE.reporting?.(meta, fmt) ?? `with all precincts reporting in all ${counties.length} counties`}.
-    ${STATE.official ? '' : `They are unofficial until ${STATE.unofficialUntil}. `}For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.</p>
+    ${STATE.official ? '' : `They are unofficial until ${STATE.unofficialUntil}. `}${STATE.statewideTotals ?? `For every candidate, the county figures add up exactly to the statewide totals ${STATE.authority} publishes.`}</p>
     <p><b>Column height</b> is proportional to votes cast (linear scale, the same scale for every race). Counties with very few votes get a thin minimum height so they stay visible. Each raised column is stacked by votes, the most on top and the fewest at the bottom: the ${WINNER}'s votes in the county's color, the runner-up's in that party's color and ${OTHER_VOTES} in gray. Columns under about 1% of the tallest are too short to read as a stack and are drawn in one color.</p>
     <p><b>Land area</b> is the Census Bureau's land area for each county (water excluded). The shapes are drawn from the Census Bureau's 2017 simplified county boundaries.</p>
     <p>The data file and the script that builds it are <a href="https://github.com/johnesco/usavote">on GitHub</a>.</p>`;
@@ -393,11 +393,11 @@ function renderChamber(nm) {
   const asc = [...desc].reverse().filter(c => c.total), big = desc[0], small = asc[0];
   const wide = race.districts.reduce((a, d) => d.counties > a.counties ? d : a);
   $('scale').textContent =
-    `${race.label} seats are won district by district, and districts don't follow county lines: ${big.name} County had ` +
+    `${race.label} seats are won district by district, and districts don't follow county lines: ${countyLabel(big)} had ` +
     `${big.districts} ${race.label} district races on its ballot, while District ${wide.district} spans ${wide.counties} counties. This map adds up every district's votes within each county.`;
   $('raiseText').innerHTML =
     `Press <b>3D</b> and each county becomes a column whose height is the number of ${race.label} votes cast there. ` +
-    `${small.name} County cast ${fmt(small.total)}; ${big.name} County cast ${fmt(big.total)}.`;
+    `${countyLabel(small)} cast ${fmt(small.total)}; ${countyLabel(big)} cast ${fmt(big.total)}.`;
   const close = [...race.districts].map(d => {
     const [a, b] = d.candidates; return { d, m: b ? (a.votes - b.votes) / d.total : 1, w: a };
   }).sort((x, y) => x.m - y.m).slice(0, 3);
@@ -442,8 +442,8 @@ function renderHistory(minor, nm) {
       otherLabel ? `Gray: ${otherLabel}, ${sO.toFixed(1)}%` : `Two-candidate race: no third-party or write-in votes were reported.`);
   const asc = [...desc].reverse(), big = desc[0], small = asc[0];
   $('scale').textContent =
-    `On the flat map every county is one block of color, whatever its size in votes: ${small.name} County cast ${fmt(small.total)} votes in this race ` +
-    `and ${big.name} County cast ${fmt(big.total)}.`;
+    `On the flat map every county is one block of color, whatever its size in votes: ${countyLabel(small)} cast ${fmt(small.total)} votes in this race ` +
+    `and ${countyLabel(big)} cast ${fmt(big.total)}.`;
   $('raiseText').innerHTML =
     `Press <b>3D</b> and each county becomes a column whose height is the number of votes cast there in this race. ` +
     `Every year on this page uses the same height scale, so the columns also show how turnout has changed.`;
@@ -452,7 +452,7 @@ function renderHistory(minor, nm) {
   while (n < asc.length && acc + asc[n].total < big.total) { acc += asc[n].total; accLand += asc[n].landSqMi; n++; }
   $('harris').innerHTML =
     `The five counties that cast the most votes (${big5.map(c => c.name).join(', ')}) cast ${pct(big5v, S.tot, 0)} of the total. ` +
-    `${big.name} County alone cast more votes than the ${n} smallest counties combined, which cover ${pct(accLand, land, 0)} of the land area.`;
+    `${countyLabel(big)} alone cast more votes than the ${n} smallest counties combined, which cover ${pct(accLand, land, 0)} of the land area.`;
   $('legRTitle').textContent = `${nm(R)} (R) won the county`;
   $('legDTitle').textContent = `${nm(D)} (D) won the county`;
   $('method').innerHTML = `
@@ -998,7 +998,7 @@ function updateMode() {
   $('alone').setAttribute('aria-pressed', String(alone && canAlone));
   setOff($('alone'), overlayCols() ? 'County alone is for the map by county'
     : !place?.c ? 'Choose a county in Go to, then press County alone to see its column by itself' : '',
-    alone ? 'Raise every county again' : `See ${place?.c?.name} County's column alone, with every other county flat`);
+    alone ? 'Raise every county again' : `See ${place?.c ? countyLabel(place.c) : 'this county'}'s column alone, with every other county flat`);
   $('dragMove').setAttribute('aria-pressed', String(!drag));
   $('dragTurn').setAttribute('aria-pressed', String(drag));
   turnBtn.setAttribute('aria-pressed', String(turning));
@@ -1482,7 +1482,7 @@ function onPointer(e) {
       const rnd = x => fmt(Math.round(x)), sh = x => pct(x, total, actual ? 1 : 0);
       tip.innerHTML = `<div class="n">Precinct ${row.v.name}${actual ? '' : ' · estimate'}</div>` +
         (actual ? '' : `<div class="row m"><span>Estimated from ${BASE.label} votes</span><span></span></div>`) +
-        `<div class="row m"><span>${row.c.name} County</span><span></span></div>
+        `<div class="row m"><span>${countyLabel(row.c)}</span><span></span></div>
         <div class="row m"><span>${race.year} ${race.label}</span><span></span></div>` + (!total ? `<div class="row m"><span>No votes reported</span><span></span></div>` : `
         <div class="row"><span>${D.name} (D)</span><span>${rnd(dem)} · ${sh(dem)}</span></div>
         <div class="row"><span>${R.name} (R)</span><span>${rnd(rep)} · ${sh(rep)}</span></div>
@@ -1505,9 +1505,9 @@ function onPointer(e) {
   if (!hovered) { tip.style.display = 'none'; return; }
   const c = hovered.userData, dWon = c.dem > c.rep;
   tip.innerHTML = !c.total
-    ? `<div class="n">${c.name} County</div><div class="row m"><span>${race.year} ${race.label}</span><span></span></div>
+    ? `<div class="n">${countyLabel(c)}</div><div class="row m"><span>${race.year} ${race.label}</span><span></span></div>
       <div class="row m"><span>No votes reported: ${race.size > race.districts.length ? `no ${race.label} race here this year, or only one with a single candidate` : `every ${race.label} race here had a single candidate`}</span><span></span></div>`
-    : `<div class="n">${c.name} County</div>
+    : `<div class="n">${countyLabel(c)}</div>
     <div class="row m"><span>${race.year} ${race.label}</span><span></span></div>
     <div class="row"><span>${D.name} (D)</span><span>${fmt(c.dem)} · ${pct(c.dem, c.total)}</span></div>
     <div class="row"><span>${R.name} (R)</span><span>${fmt(c.rep)} · ${pct(c.rep, c.total)}</span></div>
