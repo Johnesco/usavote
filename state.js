@@ -493,7 +493,37 @@ const WEST_VIRGINIA = {
   base: null,            // no precinct results or shapes here (docs/records/west-virginia.md)
 };
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA];
+const LOUISIANA = {
+  slug: 'louisiana',
+  name: 'Louisiana',
+  mapLabel: 'LA',
+  fips: '22',
+  countyCount: 64,       // parishes: Louisiana's counties, with county codes in the Census files
+  parallels: [29.6, 32.3], // scripts/build_landmask.py must use the same values
+  rotate: [91.4, 0],
+  middle: [-91.4, 31.0],
+  radiusScaleAt: [-91.4, 31.0], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 U.S. Senate race, by parish. Official results.',
+  data: {
+    results: 'data/la/results-2026.json',
+    history: null,
+    precincts: 'data/la/blocks.json.gz', // one entry per parish, for placing dots: same format as Texas's file
+    precinctShapes: null,                // parish only: no By precinct view or precinct menu
+    land: 'data/la/landmask.bin.gz',
+    cities: 'data/la/cities.json',
+  },
+  results: { href: 'louisiana.html', title: 'See the results', text: 'U.S. Senate in 2026, the one statewide race between candidates, by parish. Flat or 3D, or Dots, one per voter.' },
+  flights: [],
+  tour: false,
+  authority: 'the Louisiana Secretary of State',
+  returns: 'official results',
+  official: true,        // its results site marks the Nov. 3 election "Official Results" (read 2026-11-19)
+  votesCounted: 'the votes reported in the selected race in each parish, for every candidate on the ballot. Louisiana lists no write-in votes.',
+  otherVotes: 'third-party votes',
+  base: null,            // no precinct shapes here (docs/records/louisiana.md)
+};
+
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA, LOUISIANA];
 // the dot view: a Look on the state's own page (dotlook.js). Its old pages (voters.html, oklahoma-voters.html and the rest) forward there.
 for (const s of STATES) s.dots = `${s.results.href}?look=dots`;
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

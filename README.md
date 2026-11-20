@@ -1,6 +1,6 @@
 # How America Votes
 
-A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio, Iowa, New Mexico, Idaho, Georgia, South Dakota, California, Rhode Island, Vermont and West Virginia so far.
+A homepage for the United States ([`index.html`](index.html)), with each state opening up as its data is ready: Texas, Oklahoma, Kansas, South Carolina, Ohio, Iowa, New Mexico, Idaho, Georgia, South Dakota, California, Rhode Island, Vermont, West Virginia and Louisiana so far.
 Other states show as not available yet; [`state.js`](state.js) holds what the pages need to know about a state.
 
 **Check publishing rights before publishing anything.** This repository is public, so pushing any branch publishes it. Before data or anything built from it goes into a commit, read the source's terms and confirm they cover this use; if they're unclear, keep it local and git-ignored. See [`docs/PIPELINE.md`](docs/PIPELINE.md), Part 5.
@@ -23,6 +23,7 @@ These show the Nov. 3, 2026 general election, on the same code as Texas, with ea
 | Rhode Island | [`rhode-island.html`](https://johnesco.github.io/usavote/rhode-island.html), [`rhode-island-voters.html`](https://johnesco.github.io/usavote/rhode-island-voters.html) | By county, from towns | Partial, so pages say "led". Governor is left out: an independent finished second. State terms say compiled information "may be distributed or copied". |
 | Vermont | [`vermont.html`](https://johnesco.github.io/usavote/vermont.html), [`vermont-voters.html`](https://johnesco.github.io/usavote/vermont-voters.html) | By county, from towns | Opens on Governor; no U.S. Senate race this year. Terms are silent on reuse. |
 | West Virginia | [`west-virginia.html`](https://johnesco.github.io/usavote/west-virginia.html), [`west-virginia-voters.html`](https://johnesco.github.io/usavote/west-virginia-voters.html) | By county | U.S. Senate only, the one statewide race between candidates. Terms are silent on reuse. |
+| Louisiana | [`louisiana.html`](https://johnesco.github.io/usavote/louisiana.html) | By parish (the page calls them counties) | U.S. Senate only, the one statewide race between candidates. Official results. Terms are silent on reuse. |
 
 Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked. Oregon was built but kept local, because its terms aren't clear for this use. Maine was chosen next but had posted no November results yet.
 
