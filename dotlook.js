@@ -13,7 +13,7 @@ import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createDots, countyTris, loadPrecincts, loadPrecinctYear, precinctUnits, DOT_C } from './dots.js';
 import { createBusy } from './busy.js';
-import { STATE } from './state.js';
+import { STATE, countyLabel } from './state.js';
 import { createCityLabels } from './cities.js';
 import { describePlace } from './places.js';
 import { createPlayer } from './player.js';
@@ -223,12 +223,12 @@ export async function startDots(opts) {
   // medium: one county, outlined
   const county = (c, kicker, more = '') => ({ fly: 3, hold: 8, focus: c, view: () => countyView(c, 0.12), html: () => `
         <div class="kicker">${kicker}</div>
-        <h2>${c.name} County</h2>
+        <h2>${countyLabel(c)}</h2>
         <div class="big">${fmt(c.total)} voters<small>${perSqMi(c)} per square mile · ${split(c)}</small></div>${more}` });
   // close: the county's most crowded spot, close enough that single voters stand apart
   const close = (c, kicker) => ({ fly: 3, hold: 8, focus: c, dot: gapMiles(c) / 3, view: () => closeView(c), html: v => `
         <div class="kicker">${kicker} · up close</div>
-        <h2>${c.name} County's most crowded spot</h2>
+        <h2>${countyLabel(c)}'s most crowded spot</h2>
         <div class="big">About ${fmt(round2(c.hot.voters))} voters per square mile<small>this view is ${tall(v)} tall and holds about ${fmt(inView(c, v))}</small></div>
         <p>That's ${fmt(round2(c.hot.voters / c.density))} times the county's average. Each dot stands for one voter.</p>
         <p class="note">Spots and colors are estimated.</p>` });
@@ -286,28 +286,28 @@ export async function startDots(opts) {
         <p>Somewhere in here is the most crowded neighborhood in Texas. Let's go down into it, until the blur breaks apart.</p>` : ''),
     { fly: 3, hold: 6, focus: DENSE, view: () => milesView(DENSE.hot, ZOOM_MID), html: v => `
         <h2>Closer…</h2>
-        <p>This view is about ${Math.round(viewMiles(v))} miles from top to bottom, around the most crowded part of ${DENSE.name} County.</p>` },
+        <p>This view is about ${Math.round(viewMiles(v))} miles from top to bottom, around the most crowded part of ${countyLabel(DENSE)}.</p>` },
     { fly: 3, hold: 11, focus: DENSE, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE), html: v => `
         <h2>Every single voter</h2>
         <p>Now each dot stands for one person: about <b class="hl">${fmt(inView(DENSE, v))}</b> voters in a patch of land ${tall(v)} tall,
-        in the most crowded neighborhood in Texas (${DENSE.name} County).</p>
-        <p>Across the whole county, each ${DENSE.name} County voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>
+        in the most crowded neighborhood in Texas (${countyLabel(DENSE)}).</p>
+        <p>Across the whole county, each ${countyLabel(DENSE)} voter has about ${acresTxt(640 / DENSE.density)} of an acre to themselves.</p>
         <p class="note">Spots and colors are estimated.</p>` },
 
     // ---- from the most crowded to the emptiest, at the same zoom ----
     { fly: 3, hold: 11, size: 4, focus: EMPTY, dot: gapMiles(DENSE) / 3, view: () => closeView(DENSE, EMPTY), html: v => {
         const n = EMPTY.density * viewSqMi(v);
         return `
-        <div class="kicker">Same zoom, ${EMPTY.name} County</div>
+        <div class="kicker">Same zoom, ${countyLabel(EMPTY)}</div>
         <h2>Nobody here</h2>
-        <p>This patch of ${EMPTY.name} County, the emptiest in Texas, is the same size as the last one, which held about
+        <p>This patch of ${countyLabel(EMPTY)}, the emptiest in Texas, is the same size as the last one, which held about
         ${fmt(inView(DENSE, v))} voters. On average, a patch this size here holds ${n < 0.1 ? 'less than a tenth' : n.toFixed(1)} of one.</p>
-        <div class="vs"><div><b>${fmt(round2(DENSE.hot.voters))}</b>voters per square mile in that ${DENSE.name} County neighborhood</div>
-        <div><b>1 per ${Math.round(1 / EMPTY.density)}</b>square miles in ${EMPTY.name} County</div></div>`;
+        <div class="vs"><div><b>${fmt(round2(DENSE.hot.voters))}</b>voters per square mile in that ${countyLabel(DENSE)} neighborhood</div>
+        <div><b>1 per ${Math.round(1 / EMPTY.density)}</b>square miles in ${countyLabel(EMPTY)}</div></div>`;
       } },
     { fly: 3, hold: 10, size: 4, focus: EMPTY, view: () => countyView(EMPTY, 0.12), html: () => `
         <div class="kicker">The emptiest county</div>
-        <h2>${EMPTY.name} County</h2>
+        <h2>${countyLabel(EMPTY)}</h2>
         <div class="big">${fmt(EMPTY.total)} voters<small>on ${fmt(Math.round(EMPTY.landSqMi))} square miles of land</small></div>
         <p>Pull back, and that's the whole county: one voter for every ${Math.round(1 / EMPTY.density)} square miles. Each dot you can
         see stands for one person who voted (drawn larger, so you can find them).</p>
@@ -326,12 +326,12 @@ export async function startDots(opts) {
         <h2>${fmt(sumVoters(DFW))} voters</h2>
         <p>${lineup(DFW)}.</p>`),
     county(CROWDED, 'Dallas–Fort Worth · the most crowded county', `
-        <p>About ${fmt(round2(CROWDED.density / EMPTY.density))} times as crowded as ${EMPTY.name} County.</p>`),
+        <p>About ${fmt(round2(CROWDED.density / EMPTY.density))} times as crowded as ${countyLabel(EMPTY)}.</p>`),
     close(CROWDED, 'Dallas–Fort Worth'),
 
     { fly: 9, hold: Infinity, view: () => stateView(), html: () => `
         <h2>Same state, same election, one vote each</h2>
-        <p>${EMPTY.name} County's ${fmt(EMPTY.total)} voters and ${CROWDED.name} County's ${fmt(CROWDED.total)} each cast a vote that counted the
+        <p>${countyLabel(EMPTY)}'s ${fmt(EMPTY.total)} voters and ${countyLabel(CROWDED)}'s ${fmt(CROWDED.total)} each cast a vote that counted the
         same. Statewide, ${D.last} won by <b class="hl">${fmt(D.votes - R.votes)}</b> votes, ${(100 * D.votes / TOT).toFixed(1)}% to ${(100 * R.votes / TOT).toFixed(1)}%.</p>
         <div class="links"><a href="#" id="again">↺ Watch again</a><a href="#" id="toMap">Explore Dots →</a><a href="#" id="toBars">Flat map →</a></div>` },
   ];

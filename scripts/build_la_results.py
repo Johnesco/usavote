@@ -88,7 +88,7 @@ out = dict(
         sources=[
             f"Louisiana Secretary of State, {link(SITE_URL, 'Election Results')}, Nov. 3, 2026 general election: official results by parish, retrieved {RETRIEVED}, with all {COUNTIES} parishes and {page['precincts'][1]:,} precincts reporting, from the site's own download.",
             "Only U.S. Senate is here: it's the one race between candidates on the ballot statewide. The U.S. House races are by district, and Districts 5 and 6 go to a runoff on Dec. 12, 2026. Legislative, local and ballot-question races aren't here either.",
-            "Louisiana's parishes are its counties. This site calls them counties, as the Census Bureau's files do.",
+            "Louisiana's parishes are its counties. Some of this site's menus and labels say county, as the Census Bureau's files do.",
             f"U.S. Census Bureau, {link('https://www.census.gov/programs-surveys/decennial-census/about/rdo/summary-files.html', '2020 Census Redistricting Data')} (P.L. 94-171): parish land area and codes, cities, and each block's location and adults, for placing dots within a parish.",
             f"U.S. Census Bureau, {link('https://www.census.gov/geographies/mapping-files/time-series/geo/tiger-line-file.html', '2020 TIGER/Line&reg; Shapefiles')}, tabulation blocks: where people were counted, for keeping dots off empty land. TIGER/Line&reg; is a registered trademark of the Census Bureau; the land grid here isn't a Census Bureau product.",
             f"U.S. Census Bureau, {link('https://www.census.gov/geographies/mapping-files/time-series/geo/carto-boundary-file.html', 'Cartographic Boundary Files')}, 2017 counties, via {link('https://github.com/topojson/us-atlas', 'us-atlas')} v3.0.1 (counties-10m.json).",

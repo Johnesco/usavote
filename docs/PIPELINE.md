@@ -242,7 +242,7 @@ For the plan in [`texas-precincts-by-year-plan.md`](texas-precincts-by-year-plan
 
 ## 6. Template for another state
 
-**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`, `ca`, `ri`, `vt`, `wv`, `la`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
+**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`, `ca`, `ri`, `vt`, `wv`, `la`, `va`, `al`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -300,7 +300,7 @@ Every precinct with votes must have a shape. The Texas script stops if one is mi
 These are from general knowledge and haven't been checked state by state.
 
 - **Results not reported by county:** Alaska has no ordinary counties, and New England states often report by town. Connecticut's Census geography also changed to planning regions in 2022, which won't match the 2017 county shapes in us-atlas.
-- **County look-alikes:** Louisiana parishes, Virginia's independent cities and similar units affect name matching, and Texas's "County" suffix handling won't cover them.
+- **County look-alikes:** Louisiana parishes, Virginia's independent cities and similar units affect name matching, and Texas's "County" suffix handling won't cover them. The pages add a state's `countyWord` after each name (`countyLabel()` in `state.js`): "County" unless set, "Parish" for Louisiana, nothing for Virginia, whose names already say "County" or "City".
 - **Precinct data:** other states may have no equivalent of the Texas Legislative Council's portal. The Voting and Election Science Team (Harvard Dataverse) and the Redistricting Data Hub are places to look, and the Census file includes 2020 voting districts for shapes, though they can be out of date (Part 7). Check each one's license.
 - **Vote-by-mail and countywide votes** may be reported apart from home precincts, which would weaken the placement. Check this first in each state.
 - **Other race shapes:** runoffs, ranked-choice voting, top-two primaries and races without exactly one Democrat and one Republican. `build_data.py` skips those races.
@@ -397,6 +397,8 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Vermont | [`records/vermont.md`](records/vermont.md) | County, from towns | None | State canvassing committee; date not looked up |
 | West Virginia | [`records/west-virginia.md`](records/west-virginia.md) | County | None | County canvasses and state certification; dates not looked up |
 | Louisiana | [`records/louisiana.md`](records/louisiana.md) | County (parishes) | None | None: built 2026-11-19 from results the site marks official |
+| Virginia | [`records/virginia.md`](records/virginia.md) | County and independent city | None | State Board of Elections certification; date not looked up |
+| Alabama | [`records/alabama.md`](records/alabama.md) | County, from precinct files | None | State Canvassing Board certification; date not looked up |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -425,7 +427,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Built: silent, by the owner's choice | Vermont, West Virginia | No license and no limit found. The owner chose them knowing this. Their results sites carry bare copyright footers |
 | Chosen, not built | Maine | No November 2026 results were posted on the Secretary of State's results page when checked on 2026-11-09, only June primary files. Its Census files are saved under `data/raw/me/` |
 | Silent, not chosen | Alaska, North Dakota, New York; Louisiana was here until read again (below) | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
-| Copyright notice only, or not fully read | Kentucky, Virginia, Maryland, Alabama, New Jersey, Missouri, New Hampshire, Connecticut, Delaware; Florida, Illinois and Mississippi were here until read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
+| Copyright notice only, or not fully read | Maryland, Missouri, New Hampshire, Connecticut, Delaware; Florida, Illinois, Mississippi, Kentucky, Virginia, Alabama and New Jersey were here until read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
 | Limiting wording | Utah, Hawaii, Indiana, Massachusetts | Utah allows copying only if "not modified in any respect"; Hawaii bars commercial use; Indiana allows personal use only, with no republishing or derivative works; Massachusetts allows only fair use without permission |
 
 **Florida and Illinois, read again on 2026-11-12.** The owner asked why these two weren't built, so their terms were read in full in a browser. This is a reading of the published pages, not legal advice, and neither agency was asked.
@@ -440,6 +442,15 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 **Mississippi, read again on 2026-11-13.** The owner asked why it wasn't built. Its terms are silent: a disclaimer and "All rights reserved" footers, with no license and no limit on reuse, the same standing as Vermont and West Virginia. It isn't built, because the state posts no results table: only each county's certified precinct sheets, as scanned PDFs with no text, and 24 of 82 counties had posted. `docs/records/mississippi.md` has the reading and what building it would take.
 
 **Louisiana and New York, read again on 2026-11-19.** The owner asked which states were ready, then to check these two. Both are silent, the same standing as Vermont and West Virginia. Louisiana's results were complete and marked official, and the owner chose to build it that day (`docs/records/louisiana.md`). New York isn't built: its election-night results were still short of Westchester, Chautauqua and Fulton counties, its certified results weren't posted, and its results site is behind a browser check (`docs/records/new-york.md`).
+
+**Kentucky, Alabama, Virginia and New Jersey, read again on 2026-11-19.** The owner asked which other states could go ahead, then to check these four. This is a reading of published pages, not legal advice, and no agency was asked.
+
+| State | Reading | Outcome |
+|---|---|---|
+| Virginia | Copyright notice only: "All rights reserved" from the Department of Elections, no terms. The portal's fair-use wording covers virginia.gov pages only | Built by the owner's choice, 2026-11-19 (`docs/records/virginia.md`) |
+| Alabama | Silent: Alabama.gov's terms limit only material contributed by private parties | Built by the owner's choice, 2026-11-19 (`docs/records/alabama.md`) |
+| New Jersey | **Permission given:** the state's Conditions of Use say anyone may "view, copy or distribute State information" | Not built: no general election results posted yet (`docs/records/new-jersey.md`) |
+| Kentucky | Unclear: Kentucky.gov's legal notice points to Tyler Technologies' terms, which forbid copying data and commercial reuse of Tyler's services | Not built: ask first (`docs/records/kentucky.md`) |
 
 **Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
 

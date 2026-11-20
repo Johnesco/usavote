@@ -5,7 +5,7 @@
 // onChoose gets null (nothing chosen) or { kind: 'city' | 'county' | 'precinct', view: { x, y, halfW, halfH } in map units:
 // the area to show, and for each kind: city: name, people; county: c; precinct: c, v (from loadPrecincts), boxEdges: a box
 // around its census blocks, for a line drawing (the pages don't have precinct boundaries) }.
-import { STATE } from './state.js';
+import { STATE, countyLabel } from './state.js';
 
 const fmt = n => n.toLocaleString('en-US');
 const pct = (a, b) => (100 * a / b).toFixed(0) + '%';
@@ -20,7 +20,7 @@ export function createPlaceMenus({ counties, P, upm, cityUrl, getVtds, onChoose 
     if (!getVtds) return;
     vtds = list;
     $('goPrecinct').disabled = !list.length;
-    $('goPrecinct').title = list.length ? `Go to a precinct in ${c.name} County` : 'Pick a county first';
+    $('goPrecinct').title = list.length ? `Go to a precinct in ${countyLabel(c)}` : 'Pick a county first';
     $('goPrecinct').innerHTML = `<option value="">${waiting ? 'Loading…' : 'Precinct…'}</option>` +
       list.map((v, i) => [v.name, i]).sort((a, b) => a[0].localeCompare(b[0], 'en', { numeric: true }))
         .map(([n, i]) => `<option value="${i}">${n}</option>`).join('');
@@ -84,9 +84,9 @@ export function createPlaceMenus({ counties, P, upm, cityUrl, getVtds, onChoose 
 export function describePlace(p, race, votesOf) {
   if (!p) return '';
   if (p.kind === 'city') return `<b>${p.name}</b>: ${fmt(p.people)} people in the 2020 Census`;
-  if (p.kind === 'precinct') return `<b>Precinct ${p.v.name}, ${p.c.name} County</b> (box shows its rough extent): ` +
+  if (p.kind === 'precinct') return `<b>Precinct ${p.v.name}, ${countyLabel(p.c)}</b> (box shows its rough extent): ` +
     `${STATE.base.label}, ${STATE.base.dem} ${fmt(p.v.d)}, ${STATE.base.rep} ${fmt(p.v.r)}, others ${fmt(p.v.o)}`;
   const [dem, rep, tot] = votesOf(p.c), who = party => race.candidates.find(k => k.party === party).last;
   const d = race.chamber ? 'Democrats' : who('DEM'), r = race.chamber ? 'Republicans' : who('REP');
-  return `<b>${p.c.name} County</b>: ${fmt(tot)} voters · ` + (tot ? `${d} ${pct(dem, tot)}, ${r} ${pct(rep, tot)}` : 'no votes reported in this race');
+  return `<b>${countyLabel(p.c)}</b>: ${fmt(tot)} voters · ` + (tot ? `${d} ${pct(dem, tot)}, ${r} ${pct(rep, tot)}` : 'no votes reported in this race');
 }
