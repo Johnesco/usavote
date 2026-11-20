@@ -242,7 +242,7 @@ For the plan in [`texas-precincts-by-year-plan.md`](texas-precincts-by-year-plan
 
 ## 6. Template for another state
 
-**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`, `ca`, `ri`, `vt`, `wv`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
+**Status:** used for Oklahoma (Part 7) and for the states in Part 8. `build_precincts.py`, `build_cities.py` and `build_landmask.py` take a state (`ok`, `ks`, `sc`, `oh`, `ia`, `nm`, `id`, `or`, `ga`, `sd`, `ca`, `ri`, `vt`, `wv`, `la`; no argument means Texas), so the table below shows where another state plugs in. Results and precinct readers are still written per state.
 
 ### Reusable as is
 
@@ -396,6 +396,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Rhode Island | [`records/rhode-island.md`](records/rhode-island.md) | County, from towns | None | Board of Elections certification; date not looked up |
 | Vermont | [`records/vermont.md`](records/vermont.md) | County, from towns | None | State canvassing committee; date not looked up |
 | West Virginia | [`records/west-virginia.md`](records/west-virginia.md) | County | None | County canvasses and state certification; dates not looked up |
+| Louisiana | [`records/louisiana.md`](records/louisiana.md) | County (parishes) | None | None: built 2026-11-19 from results the site marks official |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -423,7 +424,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Built: terms say information may be copied | California, Rhode Island | California's [Conditions of Use](https://www.ca.gov/use/) call site information public domain "unless otherwise indicated"; its results site's footer says "© California Secretary of State". Rhode Island's [copyright policy](https://www.ri.gov/policies/copyright/) says compiled information "may be distributed or copied" and asks for credit. In both, applying portal terms to the results site is inferred |
 | Built: silent, by the owner's choice | Vermont, West Virginia | No license and no limit found. The owner chose them knowing this. Their results sites carry bare copyright footers |
 | Chosen, not built | Maine | No November 2026 results were posted on the Secretary of State's results page when checked on 2026-11-09, only June primary files. Its Census files are saved under `data/raw/me/` |
-| Silent, not chosen | Alaska, Louisiana, North Dakota, New York | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
+| Silent, not chosen | Alaska, North Dakota, New York; Louisiana was here until read again (below) | Accuracy or link disclaimers only. Alaska reports by House district, not county; North Dakota had no Governor or U.S. Senate race |
 | Copyright notice only, or not fully read | Kentucky, Virginia, Maryland, Alabama, New Jersey, Missouri, New Hampshire, Connecticut, Delaware; Florida, Illinois and Mississippi were here until read again (below) | "All rights reserved" or a bare copyright line with no reuse terms found, or pages that wouldn't load |
 | Limiting wording | Utah, Hawaii, Indiana, Massachusetts | Utah allows copying only if "not modified in any respect"; Hawaii bars commercial use; Indiana allows personal use only, with no republishing or derivative works; Massachusetts allows only fair use without permission |
 
@@ -437,6 +438,8 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 **Gap in the record:** Illinois's county clerks' sites, which may post election-night results under their own terms, weren't read, and precinct data wasn't looked for in either state. The Board's inner pages weren't searched for terms beyond the two named.
 
 **Mississippi, read again on 2026-11-13.** The owner asked why it wasn't built. Its terms are silent: a disclaimer and "All rights reserved" footers, with no license and no limit on reuse, the same standing as Vermont and West Virginia. It isn't built, because the state posts no results table: only each county's certified precinct sheets, as scanned PDFs with no text, and 24 of 82 counties had posted. `docs/records/mississippi.md` has the reading and what building it would take.
+
+**Louisiana and New York, read again on 2026-11-19.** The owner asked which states were ready, then to check these two. Both are silent, the same standing as Vermont and West Virginia. Louisiana's results were complete and marked official, and the owner chose to build it that day (`docs/records/louisiana.md`). New York isn't built: its election-night results were still short of Westchester, Chautauqua and Fulton counties, its certified results weren't posted, and its results site is behind a browser check (`docs/records/new-york.md`).
 
 **Read terms directly.** An early survey quoted Washington's policy through a summarizing tool, which dropped the sentence recommending permission. Read the whole page.
 
