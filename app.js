@@ -1714,9 +1714,24 @@ if (!FRAMED) {
   cmp.className = 'compare-link'; cmp.textContent = 'Compare ⇆';
   cmp.title = 'This map beside another Look of it (the dots, or with Dots the flat map), moving together. Each side keeps its own look, race and color';
   document.querySelector('.bar-groups').append(cmp);
+  // where the camera is now, as ?at= carries it, in Dots or Flat and 3D
+  const viewAt = () => { const v = dotsOn && dots?.view(); return v ? [v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',') : atParam(); };
+  // Copy link: the address of this view just as it is, camera and all. The address bar has the rest (saveUrl) but not the
+  // camera, which would change it on every move, and not the tour.
+  const copy = document.createElement('button');
+  copy.type = 'button'; copy.className = 'compare-link copy-link'; copy.textContent = 'Copy link';
+  copy.title = 'Copy a link that opens this map just as it is now: race, Look, By, color and where the camera is';
+  cmp.before(copy);
+  copy.onclick = async () => {
+    const q = new URLSearchParams(location.search);
+    for (const k of ['at', 'tour', 'scene']) q.delete(k);
+    const link = `${location.origin}${location.pathname}?${q}&at=${viewAt()}`;
+    try { await navigator.clipboard.writeText(link); say('Link copied. It opens this map just as it is now.'); }
+    catch { say(`Copy this link: ${link}`); }
+  };
   // a real href from the start, so the link is in the tab order; brought up to date with the camera as it's used
   const cmpHref = () => {
-    const v = dotsOn && dots?.view(), at = v ? [v.x, v.y, v.d, v.tilt, v.heading].map(n => +n.toFixed(3)).join(',') : atParam();
+    const at = viewAt();
     const flatAt = at.split(',').slice(0, 3).concat([0, 0]).join(',');
     const barsUrl = `${STATE.results.href}?race=${race.id}${byParam()}${colorParam()}`;
     const dotsUrl = `${STATE.dots}&race=${race.id}${perAsked > 1 ? `&per=${perAsked}` : ''}`;
