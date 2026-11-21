@@ -72,6 +72,7 @@ NAME, FIPS, FOLDER, OUT, P1, P2, ROT = {
     "al": ("Alabama", "01", "al/census", "data/al/landmask.bin.gz", 31.0, 34.2, 86.7),
     "nh": ("New Hampshire", "33", "nh/census", "data/nh/landmask.bin.gz", 43.2, 44.8, 71.6),
     "ct": ("Connecticut", "09", "ct/census", "data/ct/landmask.bin.gz", 41.2, 41.9, 72.7),
+    "de": ("Delaware", "10", "de/census", "data/de/landmask.bin.gz", 38.7, 39.6, 75.4),
 }[ST]
 ZIP = ROOT / "data" / "raw" / FOLDER / f"tl_2020_{FIPS}_tabblock20.zip"
 URL = f"https://www2.census.gov/geo/tiger/TIGER2020/TABBLOCK20/tl_2020_{FIPS}_tabblock20.zip"
