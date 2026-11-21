@@ -78,7 +78,7 @@
   .seg > :is(:disabled, [aria-disabled]) { opacity: .5; cursor: default; }
   /* what a turned-off choice says when it's pressed (app.js), just above the control bar */
   .off-note { position: absolute; left: 50%; bottom: 80px; transform: translateX(-50%); z-index: 3; width: max-content; max-width: min(460px, calc(100% - 32px));
-    padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(21,26,34,.96); color: var(--text); font-size: 13px; line-height: 1.4; text-align: center; }
+    padding: 8px 12px; border: 1px solid var(--accent); border-radius: 10px; background: rgba(21,26,34,.96); color: var(--text); font-size: 13px; line-height: 1.4; text-align: center; overflow-wrap: anywhere; }
   .off-note[hidden] { display: none; }
   /* whenever the map shows estimates rather than counts (app.js, estimateNote): a strip along its bottom edge, with the
      control bar raised above it by the strip's height (--est-h); on a phone, just below the map instead */
@@ -246,8 +246,11 @@ button.flight + .ghost { margin: -2px 0 8px; font-size: 13px; padding: 5px 12px;
 /* Compare ⇆, last in the top strip of both views: this map beside the other view (compare.html) */
 .compare-link { font-size: 12.5px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 11px; text-decoration: none; white-space: nowrap; }
 .compare-link:hover, .compare-link:focus-visible { background: var(--accent); color: #111; }
+/* Copy link, just before Compare: the same pill, as a button */
+.copy-link { background: none; font: inherit; font-size: 12.5px; font-weight: 600; line-height: inherit; cursor: pointer; }
+.bar-groups > .copy-link + .compare-link { margin-left: 6px; }
 /* a view inside compare.html (panel.js marks it .framed): no panel, no ways out (the compare page has them), and the map fills the frame */
-.framed aside, .framed .panel-toggle, .framed .compare-link, .framed .site-home { display: none !important; }
+.framed aside, .framed .panel-toggle, .framed .compare-link, .framed .copy-link, .framed .site-home { display: none !important; }
 .framed .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100vh; }
 .framed .map-area { flex: 1; height: auto; min-height: 0; }
 .framed .voters.exploring { height: 100vh; min-height: 0; }
