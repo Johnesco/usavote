@@ -644,12 +644,43 @@ const CONNECTICUT = {
   votesCounted: "the votes reported in the selected race in each county, for every candidate on the ballot and write-ins, added up from its towns. A candidate nominated by more than one party has their lines added together. Blank votes and overvotes aren't counted.",
   base: null,            // no precinct results or shapes here (docs/records/connecticut.md)
 };
+const DELAWARE = {
+  slug: 'delaware',
+  name: 'Delaware',
+  mapLabel: 'DE',        // the full name doesn't fit inside the state on the homepage map
+  fips: '10',
+  countyCount: 3,
+  parallels: [38.7, 39.6], // scripts/build_landmask.py must use the same values
+  rotate: [75.4, 0],
+  middle: [-75.4, 39.1],
+  radiusScaleAt: [-75.4, 39.1], // where dots.js measures a block's radius
+  summary: 'The Nov. 3, 2026 general election: U.S. Senate, U.S. House and three statewide races, by county. Official results.',
+  data: {
+    results: 'data/de/results-2026.json',
+    history: null,
+    precincts: 'data/de/blocks.json.gz', // one entry per county, for placing dots: same format as Texas's file
+    precinctShapes: null,                // county only: no By precinct view or precinct menu
+    land: 'data/de/landmask.bin.gz',
+    cities: 'data/de/cities.json',
+  },
+  results: { href: 'delaware.html', title: 'See the results', text: 'U.S. Senate, U.S. House and three statewide races in 2026, official. Flat or 3D by county, or Dots, one per voter.' },
+  flights: [],
+  tour: false,
+  authority: 'the Delaware elections department', // the pages add 's; the department's own name ends in "Elections"
+  returns: 'official results',
+  official: true,        // its results page reads "OFFICIAL RESULTS", data as of Nov. 10, 2026 (docs/records/delaware.md)
+  reporting: (meta, fmt) => `with all ${meta.reporting.precincts} election districts reporting in all 3 counties`,
+  votesCounted: "the votes reported in the selected race in each county, for every candidate on the ballot. Write-in votes are in the Department of Elections' separate write-in report and aren't counted here.",
+  twoCandidates: "Two candidates on the ballot. Write-in votes are in a separate report and aren't counted here.",
+  statewideTotals: "For every candidate, the county figures add up exactly to the statewide totals the Department of Elections publishes, including its public-domain results file.",
+  base: null,            // no precinct results or shapes here (docs/records/delaware.md)
+};
 
 // what a state calls a county, after its name in sentences and hover cards: "County" unless the state sets countyWord.
 // Louisiana's are parishes; Virginia's names already say "County" or "City", so its word is empty.
 export const countyLabel = c => { const w = STATE.countyWord ?? 'County'; return w ? `${c.name} ${w}` : c.name; };
 
-export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA, LOUISIANA, VIRGINIA, ALABAMA, NEW_HAMPSHIRE, CONNECTICUT];
+export const STATES = [TEXAS, OKLAHOMA, KANSAS, SOUTH_CAROLINA, OHIO, IOWA, NEW_MEXICO, IDAHO, GEORGIA, SOUTH_DAKOTA, CALIFORNIA, RHODE_ISLAND, VERMONT, WEST_VIRGINIA, LOUISIANA, VIRGINIA, ALABAMA, NEW_HAMPSHIRE, CONNECTICUT, DELAWARE];
 // the dot view: a Look on the state's own page (dotlook.js). Its old pages (voters.html, oklahoma-voters.html and the rest) forward there.
 for (const s of STATES) s.dots = `${s.results.href}?look=dots`;
 export const STATE = STATES.find(s => s.slug === document.documentElement.dataset.state) ?? TEXAS;

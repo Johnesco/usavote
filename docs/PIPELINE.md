@@ -401,6 +401,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 | Alabama | [`records/alabama.md`](records/alabama.md) | County, from precinct files | None | State Canvassing Board certification; date not looked up |
 | New Hampshire | [`records/new-hampshire.md`](records/new-hampshire.md) | County, from towns and wards | None | Recounts or clerks' amendments; the recount schedule wasn't read |
 | Connecticut | [`records/connecticut.md`](records/connecticut.md) | County, from towns | None | The state canvass; date not looked up |
+| Delaware | [`records/delaware.md`](records/delaware.md) | County | None | None: built 2026-11-21 from results the site marks official |
 
 **Census terms:** Parts 5 and 7 say no license was found for the Census files. The [TIGER/Line 2020 technical documentation](https://www2.census.gov/geo/pdfs/maps-data/data/tiger/tgrshp2020pl/TGRSHP2020PL_TechDoc_Ch1.pdf), Chapter 1, read 2026-11-09, covers this: U.S. Government works have no copyright, so "you are free to reproduce census materials as you see fit". It asks that the Census Bureau be cited, and that repackaged TIGER/Line data carry a conspicuous trademark statement on the first page of the website, which `index.html` now has.
 
@@ -458,7 +459,7 @@ Built 2026-11-08 and 2026-11-09, for the 2026 general election only. Each state'
 
 | State | Reading | Results, 2026-11-20 |
 |---|---|---|
-| Delaware | **Public domain** for the official statewide totals (the open-data portal's "Official Election Results by Office", License: Public Domain); silent for the county figures on the results page | Official. U.S. Senate, U.S. House (at large) and three more statewide races; only 3 counties (`docs/records/delaware.md`) |
+| Delaware | **Public domain** for the official statewide totals (the open-data portal's "Official Election Results by Office", License: Public Domain); silent for the county figures on the results page | Built 2026-11-21 by the owner's choice: official, U.S. Senate, U.S. House (at large) and three more statewide races, checked against the public-domain file; only 3 counties (`docs/records/delaware.md`) |
 | Connecticut | Silent: the portal's disclaimer is written for data users and limits only the State Seal and the CT.gov logo | Built by the owner's choice, 2026-11-20: Governor, four more statewide races and U.S. House, towns added up by county, each candidate's party lines added together (`docs/records/connecticut.md`) |
 | New Hampshire | Copyright notice only: "All rights reserved", no terms | Built by the owner's choice, 2026-11-20: U.S. Senate, Governor and U.S. House, towns and wards added up by county; the files were saved through a browser, since scripts get 403 (`docs/records/new-hampshire.md`) |
 | Missouri | Conditional, if MO.gov's Data Policy reaches the results: show its set disclaimer, and stop if the State asks | Complete, unofficial; State Auditor is the only statewide race between candidates (`docs/records/missouri.md`) |

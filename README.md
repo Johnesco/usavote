@@ -28,6 +28,7 @@ These show the Nov. 3, 2026 general election, on the same code as Texas, with ea
 | Alabama | [`alabama.html`](https://johnesco.github.io/usavote/alabama.html) | By county, from precincts | U.S. Senate, Governor and nine more statewide races, and U.S. House. No statewide totals in the files to check against. Terms are silent on reuse. |
 | New Hampshire | [`new-hampshire.html`](https://johnesco.github.io/usavote/new-hampshire.html) | By county, from towns and wards | U.S. Senate, Governor, and U.S. House added up by county. The Secretary of State's footer says "All rights reserved" with no terms; the owner chose to build it. |
 | Connecticut | [`connecticut.html`](https://johnesco.github.io/usavote/connecticut.html) | By county, from towns | Opens on Governor; no U.S. Senate race this year. Governor and four more statewide races, and U.S. House; cross-endorsed candidates' lines added together. Terms are silent on reuse. |
+| Delaware | [`delaware.html`](https://johnesco.github.io/usavote/delaware.html) | By county | U.S. Senate, U.S. House and three statewide races, official. Only three counties. Statewide totals checked against the state's public-domain results file. |
 
 Each state's sources, terms, hashes and checks are in [`docs/records/`](docs/records/). North Carolina is on hold: its state terms say "without alteration", and the election board hasn't been asked. Oregon was built but kept local, because its terms aren't clear for this use. Maine was chosen next but had posted no November results yet.
 
