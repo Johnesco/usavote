@@ -179,6 +179,18 @@
     .controls .seg > * { padding: 7px 8px; }
     #goRow select { padding: 5px 8px; }
     #goRow .pick-label { display: none; }
+    /* the control bar docks under the map instead of covering its bottom: the map area grows by the bar's height (--bar-h,
+       from app.js) and its layers stop above it. Each group's label is a small caption over its buttons. Not in Compare's frames. */
+    html:not(.framed) .map-area { height: calc(58vh + var(--bar-h, 0px)); min-height: calc(300px + var(--bar-h, 0px)); }
+    html:not(.framed) .map-area > :is(#stage, .city-layer, .dot-layer, #loading) { bottom: var(--bar-h, 0px); }
+    html:not(.framed) .controls { left: 0; right: 0; bottom: 0; transform: none; width: auto; max-width: none; justify-content: flex-start;
+      align-items: flex-end; gap: 8px 14px; padding: 8px 12px 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0;
+      background: var(--panel); backdrop-filter: none; }
+    html:not(.framed) .controls .vb-group { display: grid; grid-template-rows: auto auto; grid-auto-flow: column; justify-content: start; gap: 3px 6px; }
+    html:not(.framed) .controls .vb-group[hidden] { display: none; }
+    html:not(.framed) .controls .vb-group > * { grid-row: 2; }
+    html:not(.framed) .controls > #g3d { order: 1; } /* last, so Whole state fits on a row before it */
+    html:not(.framed) .controls .vb-label { display: block; grid-row: 1; grid-column: 1 / -1; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
     .info-row { font-size: 12px; }
     button { padding: 8px 12px; }
   }
