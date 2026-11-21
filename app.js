@@ -115,6 +115,10 @@ const DISTRICTS = STATE.data.districts || {};
   $('turnWrap').insertAdjacentHTML('beforebegin', '<div class="vb-group" id="g3d" hidden><span class="vb-label">3D</span></div>');
   $('g3d').append($('turnWrap'));
   $('turn').textContent = 'Rotate';
+  // On phones the bar docks under the map instead of covering its bottom (style.css): the map area grows by the bar's height,
+  // --bar-h, and keeps it clear. (0 while the bar is hidden, as on the tour.)
+  const bar = document.querySelector('.map-area .controls');
+  new ResizeObserver(() => bar.parentElement.style.setProperty('--bar-h', `${bar.offsetHeight}px`)).observe(bar);
   // what a choice that's turned off says when it's pressed (say)
   $('stage').insertAdjacentHTML('afterend', '<div class="off-note" id="offNote" role="status" aria-live="polite" hidden></div>');
   // what on the map is estimated rather than counted, whenever any of it is (estimateNote)
@@ -873,7 +877,8 @@ const DEFAULT_TILT = { phi: 0.98, theta: -0.22, r: 1.08 };
 const RAISED_SHIFT = 0.6; // tilted, the ground is foreshortened, so centering in the clear part of the screen takes a longer shift
 // screen space kept clear of the map in the flat view: a margin at the top, the Flat / 3D controls at the bottom
 // (and the estimate strip below them, when it shows: estH, from estimateNote)
-const PAD = { top: 16, get bottom() { return 84 + estH; }, side: 16 };
+const DOCKED = !FRAMED && matchMedia('(max-width: 820px)'); // the bar is under the map, not over it (style.css)
+const PAD = { top: 16, get bottom() { return (DOCKED?.matches ? 16 : 84) + estH; }, side: 16 };
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const clamp01 = x => Math.min(1, Math.max(0, x));
 const flatBtn = $('viewFlat'), raisedBtn = $('view3d'), turnBtn = $('turn');
