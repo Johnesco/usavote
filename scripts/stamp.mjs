@@ -8,7 +8,7 @@
 //   - its <script type="module" src="x.js"> and <link rel="stylesheet" href="x.css"> as x.js?v=… and x.css?v=…
 //   - an import map (one is added if the page has none) mapping every script and style of this site, "./x.js", to
 //     "./x.js?v=…", so the scripts' imports of each other (import … from './x.js'), their import()s, and anything a script
-//     loads by import.meta.resolve (dots.js, the dot worker; app.js, dotlook.css) get the stamped address without the
+//     loads by import.meta.resolve (dots.js, the dot worker; app.js, flight.css and dotlook.css) get the stamped address without the
 //     scripts themselves changing.
 // A page's own entries in the map (three, d3-geo, …) stay as they are. Pages in scripts/ are tools for making images, not
 // pages people visit, and are left alone.
