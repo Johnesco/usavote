@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { geoConicEqualArea, geoCentroid } from 'd3-geo';
 import { feature } from 'topojson-client';
 import { createCityLabels } from './cities.js';
-import { loadPrecincts, loadPrecinctYear, precinctVotes } from './dots.js';
+import { loadPrecincts, loadPrecinctYear, precinctVotes, warmDots } from './dots.js';
 import { createPrecinctColumns, loadPrecinctShapes } from './precinct-columns.js';
 import { createPlaceMenus, describePlace } from './places.js';
 import { STATE, countyLabel } from './state.js';
@@ -1044,6 +1044,9 @@ function setRaised(on) { // Flat or 3D: the columns sink or rise, and in 3D the 
 flatBtn.onclick = () => setLook('flat');
 raisedBtn.onclick = () => setLook('3d');
 $('dotLink').onclick = () => setLook('dots');
+// the dots' files start downloading as soon as the reader heads for Dots, before it's pressed (dots.js)
+const warm = () => warmDots(STATE.data.precincts, STATE.data.land);
+for (const ev of ['pointerenter', 'focus', 'touchstart']) $('dotLink').addEventListener(ev, warm, { once: true, passive: true });
 turnBtn.onclick = () => { turning = !turning; updateMode(); };
 $('dragTurn').onclick = () => { dragTurns = !dragTurns; updateMode(); };
 document.getElementById('reset').onclick = () => { clearPlace(); if (dotsOn) dots?.home(); else startAnim(progress, 700); };
