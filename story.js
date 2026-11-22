@@ -126,13 +126,13 @@ const STEPS = [
     <div class="stat-row"><div class="stat"><b>${fmt(big.total)}</b><span>votes in ${big.name} County</span></div>
       <div class="stat"><b>${fmt(accSmall)}</b><span>votes in the ${nSmall} smallest, together</span></div></div>
     <p>Those ${nSmall} counties cover ${pct(landSmall, land)} of Texas's land.</p>
-    <p>Each column is also split by how its county voted: the runner-up's votes at the bottom, third-party and write-in votes in gray, and the winner's votes on top.</p>` },
+    <p>Each column is also split by how its county voted, stacked by votes: the winner's on top, the runner-up's below them, and third-party and write-in votes in gray, usually a thin band at the bottom.</p>` },
   { view: big5, raise: 1, phi: 1.0, theta: 0.45, zoom: 1.15, color: 'winner', hi: big5, labels: big5, label: c => `${vs(c)} · ${mg(c.m)}`, card: () => `
     <div class="kicker">The Texas Triangle</div>
     <h2>Five counties, ${pct(big5v, S.tot)} of the vote</h2>
     <p>${list(big5.map(c => c.name))} cast <b class="hl">${fmt(big5v)}</b> votes between them. ${D.last} carried all five${big5.every(c => c.m > 0) ? '' : ' but one'}.</p>
     <p>Together they gave him a lead of <b class="hl">${fmt(big5.reduce((s, c) => s + c.dem - c.rep, 0))}</b> votes; his statewide lead was ${fmt(S.dem - S.rep)}.</p>
-    <p>They aren't one-party places. The red at the base of each column is ${R.last}'s share: <b class="hl">${fmt(big5R)}</b> votes in these five,
+    <p>They aren't one-party places. The red in each column is ${R.last}'s share: <b class="hl">${fmt(big5R)}</b> votes in these five,
       ${pct(big5R, S.rep)} of all his votes in Texas, more than he got in the ${nR} counties where he got the fewest votes, combined.</p>` },
   { view: DFW, raise: 1, phi: 0.92, theta: -0.6, zoom: 1.25, color: 'winner', hi: DFW, labels: DFW, label: c => `${mg(c.m0)} → ${mg(c.m)}`, card: () => `
     <div class="kicker">Dallas–Fort Worth</div>
@@ -209,7 +209,8 @@ const camera = new THREE.PerspectiveCamera(30, 1, 5, 20000);
 scene.add(new THREE.HemisphereLight(0xffffff, 0x334455, 1.1));
 const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-600, 900, 700); scene.add(sun);
 
-// Columns are stacked by vote (map3d.js): runner-up at the bottom, third-party and write-ins in gray, winner on top.
+// Columns are stacked by votes (map3d.js), the most on top and the fewest at the bottom: usually the winner on top, the runner-up
+// below and third-party and write-ins, in gray, at the bottom.
 const { mapGroup, pickables, P } = buildMap(scene, us, counties, { maxTotal: big.total, edgeOpacity: 0.45 });
 for (const c of counties) Object.assign(c, { color: new THREE.Color(winnerColor(c)), lit: 1,
   lowerColor: new THREE.Color(c.dem > c.rep ? LOSER_C.rep : LOSER_C.dem), middleColor: new THREE.Color(OTHER_C) });
