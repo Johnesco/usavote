@@ -110,7 +110,7 @@ const DISTRICTS = STATE.data.districts || {};
   $('byCounty')?.closest('.seg')?.remove();
   if ($('viewRow') && !$('viewRow').children.length) $('viewRow').remove();
   document.querySelector('.map-area .controls').insertAdjacentHTML('afterbegin', viewBarGroups());
-  // the switches that are only for 3D, under one label and shown only in 3D (updateMode): Rotate, then Drag moves / Drag turns
+  // the switches that are only for 3D, under one label and shown only in 3D (updateMode): Rotate, then Drag turns
   // and County alone, which are added after it below
   $('turnWrap').insertAdjacentHTML('beforebegin', '<div class="vb-group" id="g3d" hidden><span class="vb-label">3D</span></div>');
   $('g3d').append($('turnWrap'));
@@ -948,9 +948,9 @@ function frameColumn(c) {
   going = { from, to: { r, phi, theta, target }, start: performance.now(), dur: REDUCED ? 1 : 1500 };
   updateMode();
 }
-$('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" role="group" aria-label="What dragging the map does" hidden>
-  <button type="button" id="dragMove" aria-pressed="true" title="Dragging slides the map. Right-drag or Shift-drag turns it.">Drag moves</button>
-  <button type="button" id="dragTurn" aria-pressed="false" title="Dragging turns and tilts the map. Right-drag or Shift-drag slides it.">Drag turns</button></div>`);
+// (one switch, not a Drag moves / Drag turns pair, so the bar fits on one line beside the details panel)
+$('turnWrap').insertAdjacentHTML('afterend', `<div class="seg" id="dragMode" hidden>
+  <button type="button" id="dragTurn" aria-pressed="false">Drag turns</button></div>`);
 // In 3D, by county, the bar's Shape (in Color's place): each column in its county's own shape, or every column the same small
 // square standing on its county
 $('shapeCounty').onclick = () => setSquares(false);
@@ -976,7 +976,7 @@ function applyProgress(p, pose = null) {
   flatBtn.setAttribute('aria-pressed', String(!dotsOn && p <= 0.5));
   raisedBtn.setAttribute('aria-pressed', String(!dotsOn && p > 0.5));
 }
-// Drag moves the map and scroll or pinch zooms. In 3D the Drag moves / Drag turns switch can make a drag turn and tilt it instead; a
+// Drag moves the map and scroll or pinch zooms. In 3D the Drag turns switch can make a drag turn and tilt it instead; a
 // right-drag, a Shift-drag (OrbitControls swaps the two when Shift, Ctrl or ⌘ is held) or two fingers does whichever a plain drag doesn't.
 function updateMode() {
   const flat = progress === 0, raised = progress === 1;
@@ -1004,8 +1004,9 @@ function updateMode() {
   setOff($('alone'), overlayCols() ? 'County alone is for the map by county'
     : !place?.c ? 'Choose a county in Go to, then press County alone to see its column by itself' : '',
     alone ? 'Raise every county again' : `See ${place?.c ? countyLabel(place.c) : 'this county'}'s column alone, with every other county flat`);
-  $('dragMove').setAttribute('aria-pressed', String(!drag));
   $('dragTurn').setAttribute('aria-pressed', String(drag));
+  $('dragTurn').title = drag ? 'Dragging turns and tilts the map; right-drag or Shift-drag slides it. Press to make dragging slide the map'
+    : 'Dragging slides the map; right-drag or Shift-drag turns it. Press to make dragging turn and tilt the map';
   turnBtn.setAttribute('aria-pressed', String(turning));
   turnBtn.title = turning ? 'The map is turning slowly. Press to stop it' : 'Turn the map slowly';
   const what = districtCols() ? 'district' : byPrecinct ? 'precinct' : 'county';
@@ -1044,8 +1045,7 @@ flatBtn.onclick = () => setLook('flat');
 raisedBtn.onclick = () => setLook('3d');
 $('dotLink').onclick = () => setLook('dots');
 turnBtn.onclick = () => { turning = !turning; updateMode(); };
-$('dragMove').onclick = () => { dragTurns = false; updateMode(); };
-$('dragTurn').onclick = () => { dragTurns = true; updateMode(); };
+$('dragTurn').onclick = () => { dragTurns = !dragTurns; updateMode(); };
 document.getElementById('reset').onclick = () => { clearPlace(); if (dotsOn) dots?.home(); else startAnim(progress, 700); };
 
 // ---------- Dots: the dot look (dotlook.js), on this page ----------
