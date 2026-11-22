@@ -32,14 +32,31 @@ export function countyTris(shapes) {
 // The file is stored gzipped to keep the site small; it's unzipped here unless the server already did (as when it's sent
 // with Content-Encoding: gzip).
 export async function fetchJsonGz(url) {
-  const res = await fetch(url); if (!res.ok) throw new Error(res.status);
-  const buf = new Uint8Array(await res.arrayBuffer());
+  const buf = await getBytes(url);
   const zipped = buf[0] === 0x1f && buf[1] === 0x8b;
   const text = zipped ? await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).text()
     : new TextDecoder().decode(buf);
   return JSON.parse(text);
 }
+// The dots' two files, asked for before Dots is pressed (warmDots, as the reader reaches for the button), so pressing it doesn't
+// start the wait. Each is handed over once, to the first load that asks for it.
+const early = new Map();
+export function warmDots(url = 'data/precincts.json.gz', landUrl = 'data/landmask.bin.gz') {
+  for (const u of [url, landUrl]) {
+    if (!u || early.has(u)) continue;
+    const p = fetch(u).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); });
+    p.catch(() => {}); // (a failed early download is just asked for again)
+    early.set(u, p);
+  }
+}
+async function getBytes(url) {
+  const p = early.get(url);
+  if (p) { early.delete(url); try { return new Uint8Array(await p); } catch {} }
+  const res = await fetch(url); if (!res.ok) throw new Error(res.status);
+  return new Uint8Array(await res.arrayBuffer());
+}
 export async function loadPrecincts(P, url = 'data/precincts.json.gz', landUrl = 'data/landmask.bin.gz') {
+  const land = landUrl ? loadLand(P, landUrl) : null; // downloading alongside the precincts (it never fails: null if it doesn't load)
   const data = await fetchJsonGz(url);
   // map units per meter, from 0.1 degree of latitude (about 11.1 km) in the middle of the state
   const [lon, lat] = STATE.radiusScaleAt ?? [-99.5, 31];
@@ -61,7 +78,7 @@ export async function loadPrecincts(P, url = 'data/precincts.json.gz', landUrl =
     });
     out.set(fips, { vtds: list, D, R, O, adults: list.reduce((s, v) => s + v.adults, 0) });
   }
-  return { byFips: out, hot: data.hot, meta: data.meta, land: landUrl ? await loadLand(P, landUrl) : null };
+  return { byFips: out, hot: data.hot, meta: data.meta, land: await land };
 }
 
 // One election's own precincts, for a state with precinct lines and counted votes by year (Texas, 2008 to 2024: state.js
@@ -127,8 +144,7 @@ async function readPrecinctYear(P, years, year) {
 // grid cell (ox + x * sx, oy + y * sy). Dots are placed without it (null) if it doesn't load.
 async function loadLand(P, url) {
   try {
-    const res = await fetch(url); if (!res.ok) throw new Error(res.status);
-    const gz = new Uint8Array(await res.arrayBuffer());
+    const gz = await getBytes(url);
     const zipped = gz[0] === 0x1f && gz[1] === 0x8b;
     const b = zipped ? new Uint8Array(await new Response(new Blob([gz]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer()) : gz;
     const n = new DataView(b.buffer, b.byteOffset).getUint32(0, true);
