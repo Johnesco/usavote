@@ -1553,12 +1553,22 @@ renderer.domElement.addEventListener('wheel', stopGoing, { passive: true });
 // A click or tap (a press that doesn't move) on a county chooses it, as Go to's County menu does, and the camera goes there. By precinct
 // or district, it shows what was tapped without choosing. A touch screen has no hover, so there the card of numbers the mouse shows
 // stays pinned in the map's top corner, until it's tapped, the map is pressed again, or another place, race or Look is chosen.
+// On a phone it's pinned at the top of the strip under the map instead (DOCKED, style.css), so it covers none of the map, and the
+// page scrolls just enough to show it. (--bar-h is set here, not left to the ResizeObserver, so the strip has room for it at once.)
+const tipHome = tip.parentElement, tipBar = document.querySelector('.map-area .controls');
 function pinTip(on) {
   tipPinned = on;
   tip.classList.toggle('pinned', on);
+  if (on && DOCKED?.matches) {
+    tipBar.prepend(tip);
+    tipBar.parentElement.style.setProperty('--bar-h', `${tipBar.offsetHeight}px`);
+    tip.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+  else if (tip.parentElement !== tipHome) tipBar.before(tip);
   if (!on) { tip.style.display = 'none'; setHover(null); columns?.setHover(-1); dist?.cols.setHover(-1); squareCols?.setHover(-1); }
 }
 tip.addEventListener('click', () => pinTip(false));
+DOCKED?.addEventListener('change', () => { if (tipPinned) pinTip(false); }); // (a phone turned sideways, past 820px)
 function chooseCounty(c) {
   const sel = $('goCounty');
   if (sel.value === c.fips) { if (place?.kind === 'county') flyTo(place.view); return; } // already chosen: go back to it

@@ -196,6 +196,10 @@
       align-items: flex-end; gap: 8px 14px; padding: 8px 12px 10px; border: 0; border-top: 1px solid var(--line); border-radius: 0;
       background: var(--panel); backdrop-filter: none; }
     html:not(.framed) .controls > #g3d { order: 1; } /* last, so Whole state fits on a row before it */
+    /* a tapped place's card, pinned at the top of the strip rather than over the map (app.js) */
+    html:not(.framed) .controls > #tip.pinned { position: static; order: -1; flex-basis: 100%; min-width: 0; max-width: none;
+      margin: 0 0 2px; padding: 7px 30px 7px 10px; background: var(--bg); box-shadow: none; font-size: 12px; line-height: 1.35; }
+    html:not(.framed) .controls > #tip.pinned .n { font-size: 13px; margin-bottom: 2px; }
     .info-row { font-size: 12px; }
     button { padding: 8px 12px; }
   }
