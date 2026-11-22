@@ -45,7 +45,7 @@ function outlineGeometry(shapes) {
 }
 
 // Adds Texas's counties to `scene`. `counties` are objects with fips, dem, rep, other and total; each gets
-// lower / middle / mesh (its column segments: runner-up, third-party, winner), box, cx/cy and target (full height).
+// lower / middle / mesh (its column segments: runner-up, third-party, winner; layout stacks them by votes), box, cx/cy and target (full height).
 export function buildMap(scene, us, counties, { maxTotal, edgeOpacity = 0.55 } = {}) {
   const byFips = new Map(counties.map(c => [c.fips, c]));
   const geo = feature(us, us.objects.counties);
@@ -100,9 +100,11 @@ export function layout(c, h) {
     c.mesh.position.z = 0; c.mesh.scale.z = h;
     return;
   }
-  const a = h * c.fLower, b = h * c.fMiddle;
-  c.lower.visible = a > 0; c.lower.scale.z = Math.max(a, 1e-4);
-  c.middle.visible = b > 0; c.middle.position.z = a; c.middle.scale.z = Math.max(b, 1e-4);
-  c.mesh.position.z = a + b; c.mesh.scale.z = Math.max(h - a - b, 1e-4);
+  // ranked, as on the state map (app.js): each part stands on the parts with fewer votes (ties: runner-up, then others, then
+  // winner, from the bottom)
+  const a = h * c.fLower, b = h * c.fMiddle, w = h - a - b;
+  c.lower.visible = a > 0; c.lower.position.z = (b < a ? b : 0) + (w < a ? w : 0); c.lower.scale.z = Math.max(a, 1e-4);
+  c.middle.visible = b > 0; c.middle.position.z = (a <= b ? a : 0) + (w < b ? w : 0); c.middle.scale.z = Math.max(b, 1e-4);
+  c.mesh.position.z = (a <= w ? a : 0) + (b <= w ? b : 0); c.mesh.scale.z = Math.max(w, 1e-4);
 }
 export const paint = (m, color) => { m.material[0].color.copy(color); m.material[1].color.copy(color).multiplyScalar(0.8); };
