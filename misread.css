@@ -1,4 +1,4 @@
-/* Misreading the Map: the page, caption and player come from voters.css and story.css. This adds the list of misreadings
+/* Misreading the Map: the page comes from voters.css and story.css, the caption and player from flight.css. This adds the list of misreadings
    down the right side, and the key for the flat map. */
 .caption { transition: none; }
 .caption:empty { display: none; }

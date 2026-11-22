@@ -1,4 +1,4 @@
-/* County Flythrough: the page, caption and player come from voters.css. This adds what its cards and 3D map need. */
+/* County Flythrough: the page comes from voters.css, the caption and player from flight.css. This adds what its cards and 3D map need. */
 #stage canvas { cursor: default; }
 .caption { max-height: calc(100svh - var(--bar, 0px) - 110px); overflow-y: auto; }
 .caption .links { display: grid; gap: 8px; }
@@ -19,7 +19,7 @@
 .split-key i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .label { transition: opacity .25s; }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .caption { max-height: 40svh; }
   .key { top: calc(var(--bar, 0px) + 8px); right: 10px; left: auto; width: 200px; padding: 6px 8px; font-size: 9.5px; }
   .key .legend { font-size: 9px; }

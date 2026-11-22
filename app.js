@@ -130,8 +130,10 @@ const DISTRICTS = STATE.data.districts || {};
   // the key on the map for Flat and 3D (mapKey); Dots has its own. Folded on phones, where it would cover the map.
   $('stage').insertAdjacentHTML('afterend', `<details class="map-key" id="mapKey"${matchMedia('(max-width: 600px)').matches ? '' : ' open'}>` +
     `<summary id="mapKeyHead">Key</summary><div id="mapKeyBody"></div></details>`);
-  // (through the import map, for the version stamp: scripts/stamp.mjs)
-  document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${import.meta.resolve('./dotlook.css')}" />`);
+  // Dots' styles, after the tour's caption card and player that it shares with the other flights (through the import map, for the
+  // version stamp: scripts/stamp.mjs)
+  for (const css of ['./flight.css', './dotlook.css'])
+    document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${import.meta.resolve(css)}" />`);
 }
 // Dots (dotlook.js): started the first time it's chosen, then kept, hidden while Flat or 3D is on screen
 let dotsOn = false;     // Dots is the Look on screen (or on its way)
