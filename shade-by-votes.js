@@ -133,7 +133,8 @@ $('legRel').innerHTML = `<div class="t">County's lead in votes</div>` +
   `<div class="ticks"><span></span><div class="pos">${TICKS.map(v => `<span style="left:${(100 * relT(v)).toFixed(1)}%">${tickLabel(v)}</span>`).join('')}</div></div>`;
 // Vote mix: one grid for both parties, the split across, votes cast down
 const MIX_ROWS = mixRows(MAX_TOTAL);
-$('legMix').innerHTML = `<div class="t">Democratic and Republican votes mixed across, solid by votes cast down</div>` +
+$('legMix').innerHTML = `<div class="t"><span class="t-long">Democratic and Republican votes mixed</span><span class="t-short">Two-party split</span> across, ` +
+  `solid by votes cast down</div>` + // (the short one on phones, to fit one line)
   `<div class="mixgrid">${MIX_ROWS.map((v, r) => `<span>${r === MIX_ROWS.length - 1 ? 'fewest' : tickLabel(Math.round(v))}</span>` +
     MIX_SPLITS.map(s => `<i style="background:rgb(${mixRGB(s, 1 - s, v, MAX_TOTAL).map(Math.round).join(',')})"></i>`).join('')).join('')}` +
   `<span></span>${MIX_SPLIT_LABELS.map(l => `<span>${l}</span>`).join('')}</div>`;
