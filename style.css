@@ -66,11 +66,16 @@
   html:not(.framed) .controls .vb-group > * { grid-row: 2; }
   html:not(.framed) .controls .vb-label { display: block; grid-row: 1; grid-column: 1 / -1; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
   .controls .seg > * { padding: 5px 9px; }
-  .controls select { font: inherit; font-size: 13px; font-weight: 600; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 8px; cursor: pointer; }
-  .controls select:disabled { opacity: .5; cursor: default; }
+  .controls select { font-weight: 600; padding: 5px 8px; }
   .controls { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center;
     background: rgba(21,26,34,.88); border: 1px solid var(--line); border-radius: 999px; padding: 8px 10px 8px 8px; backdrop-filter: blur(6px);
     max-width: calc(100% - 32px); }
+  /* every select is a pill like this one; where it sits sets only what differs (.controls, .site-nav, voters.css .topnav) */
+  select { font: inherit; font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+    padding: 5px 10px; cursor: pointer; }
+  select:disabled { opacity: .5; cursor: default; }
+  select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select option, select optgroup { background: var(--panel); color: var(--text); }
   button { font: inherit; font-weight: 600; color: #111; background: var(--accent); border: 0; border-radius: 999px; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); padding: 8px 14px; }
   button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -118,11 +123,6 @@
   .place-info b { color: var(--text); }
   .hint { margin-left: auto; font-size: 12px; white-space: nowrap; }
   @media (max-width: 1200px) { .place-info:not(:empty) + .hint { display: none; } }
-  .races select { font: inherit; font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--line);
-    border-radius: 999px; padding: 5px 10px; cursor: pointer; }
-  .races select:disabled { opacity: .5; cursor: default; }
-  .races select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .races select option, .races select optgroup { background: var(--panel); color: var(--text); }
   /* the key on the map (app.js mapKey), top left, for Flat and 3D; Dots has its own */
   .map-key { position: absolute; top: 12px; left: 14px; z-index: 2; width: 250px; max-width: calc(100% - 28px); background: rgba(21,26,34,.88);
     border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px 8px; font-size: 11.5px; color: var(--muted); }
@@ -285,9 +285,9 @@ body:not(.panel-hidden) .panel-toggle { display: none; }
 /* the dot tour's card in the dot view is a button that plays it */
 button.flight { width: 100%; text-align: left; font: inherit; white-space: normal; }
 button.flight + .ghost { margin: -2px 0 8px; font-size: 13px; padding: 5px 12px; }
-/* Compare ⇆, last in the top strip of both views: this map beside the other view (compare.html) */
-.compare-link { font-size: 12.5px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 11px; text-decoration: none; white-space: nowrap; }
-.compare-link:hover, .compare-link:focus-visible { background: var(--accent); color: #111; }
+/* Compare ⇆, last in the top strip of both views: this map beside the other view (compare.html); the dot view's tour link is the same pill */
+.compare-link, .flight-link { font-size: 12.5px; font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 11px; text-decoration: none; white-space: nowrap; }
+:is(.compare-link, .flight-link):hover, :is(.compare-link, .flight-link):focus-visible { background: var(--accent); color: #111; }
 /* Copy link, just before Compare: the same pill, as a button */
 .copy-link { background: none; font: inherit; font-size: 12.5px; font-weight: 600; line-height: inherit; cursor: pointer; }
 .bar-groups > .copy-link + .compare-link { margin-left: 6px; }
@@ -304,10 +304,7 @@ button.flight + .ghost { margin: -2px 0 8px; font-size: 13px; padding: 5px 12px;
 /* the site's header (sitenav.js): on a state page it starts the top bar; elsewhere mountSiteHeader puts it at the top of the page */
 .site-header { display: flex; align-items: center; padding: 0 0 12px; margin: 0 0 18px; border-bottom: 1px solid var(--line); font-size: 13px; }
 .site-header .site-nav { flex-wrap: wrap; }
-.site-nav select { font: inherit; font-size: 13px; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
-  padding: 5px 10px; cursor: pointer; min-width: 0; max-width: 180px; }
-.site-nav select option { background: var(--panel); color: var(--text); }
-.site-nav select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.site-nav select { min-width: 0; max-width: 180px; }
 /* Explainers: a button that opens a list of links over the page */
 .site-menu { position: relative; }
 .site-menu summary { list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text); padding: 5px 12px;

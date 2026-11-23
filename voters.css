@@ -10,16 +10,12 @@
 .nav-group { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .nav-group label { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
 .nav-label { color: var(--muted); white-space: nowrap; }
-.topnav select { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; min-width: 0; max-width: 210px; }
-.topnav select:disabled { opacity: .5; cursor: default; }
-.topnav select option, .topnav select optgroup { background: var(--panel); color: var(--text); }
-.topnav select:focus-visible, .topnav summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.topnav select { font-size: inherit; min-width: 0; max-width: 210px; } /* (the pill itself: style.css) */
+.topnav summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .topnav button { font-size: 13px; padding: 5px 12px; }
 .back { color: var(--text); text-decoration: none; white-space: nowrap; }
 .back:hover { color: var(--accent); }
 .nav-flight { margin-left: auto; }
-.flight-link { font-weight: 600; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 12px; text-decoration: none; white-space: nowrap; }
-.flight-link:hover, .flight-link:focus-visible { background: var(--accent); color: #111; }
 .nav-info { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; margin-top: 6px; font-size: 12.5px; color: var(--muted); }
 #raceCount b, #placeInfo b { color: var(--text); }
 .how summary { cursor: pointer; color: var(--accent); }
