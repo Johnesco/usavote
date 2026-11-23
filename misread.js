@@ -230,7 +230,7 @@ const label = (c, line) => [c, `${c.name}<small>${line}</small>`];
 const splitTxt = c => `${D.last} ${pct(c.dem, c.total)}, ${R.last} ${pct(c.rep, c.total)}`;
 const myth = n => `<div class="kicker">Misreading ${n} of ${MISREADINGS.length}</div><p class="myth">“${MISREADINGS[n - 1]}.”</p>`;
 const flatArea = pct(sum(RWON, c => c.landSqMi), LAND);
-const midHarris = () => HARRIS.hot; // the precinct and block steps zoom straight down toward the county's most crowded spot
+const midHarris = () => HARRIS.hot; // once the dots are placed by block, the zoom goes straight down toward the county's most crowded spot
 
 const scenes = [
   { fly: 0, hold: 13, fill: 1, view: () => stateView(), html: () => `
@@ -291,20 +291,26 @@ const scenes = [
       <p>Placed the flat map's way, every corner of the county gets the same mix: an even purple haze, over neighborhoods, the
       Ship Channel, the airports and the lakes alike.</p>` },
 
-  { step: 5, fly: 3, hold: 13, mix: 4, fill: 0, dots: 'precinct', focus: [HARRIS], dot: 0.012, view: () => milesView(midHarris(), 24), html: () => `
+  { step: 5, fly: 1, hold: 13, mix: 3, fill: 0, dots: 'precinct', focus: [HARRIS], view: () => boxView([HARRIS], 0.0001, 0, 1.15), html: () => `
       <div class="kicker">Refine: by precinct</div>
       <h2>${fmt(HARRIS.precincts || 0)} precincts</h2>
-      <p>Now each party's ${HARRIS.name} County votes are shared among its precincts by how each one voted in 2024, and spread
-      evenly over each precinct.</p>
+      <p>Same view, same voters, placed with more detail: each party's ${HARRIS.name} County votes are now shared among its
+      precincts by how each one voted in 2024, and spread evenly over each precinct.</p>
       <p>The haze splits apart. The county's ${pct(HARRIS.dem, HARRIS.total)} blue was never one color: it's
       bluer neighborhoods next to redder ones.</p>` },
 
-  { step: 5, fly: 3, hold: 13, mix: 4, fill: 0, dots: 'block', focus: [HARRIS], dot: 0.022, view: () => milesView(midHarris(), 10), html: () => `
+  { step: 5, fly: 1, hold: 13, mix: 3, fill: 0, dots: 'block', focus: [HARRIS], view: () => boxView([HARRIS], 0.0001, 0, 1.15), html: () => `
       <div class="kicker">Refine: by census block</div>
       <h2>Where people live</h2>
-      <p>Inside each precinct, voters now go where the 2020 Census counted adults, block by block, and stay off land where it
-      counted no one.</p>
-      <p>Parks, rail yards, the bayous and the freeways open up. The dots follow the streets.</p>` },
+      <p>One more step of detail: inside each precinct, voters now go where the 2020 Census counted adults, block by block, and
+      stay off land where it counted no one.</p>
+      <p>The lakes, the Ship Channel and the airports empty out. This is how the dots stay placed from here on.</p>` },
+
+  { step: 5, fly: 3, hold: 12, fill: 0, dots: 'block', focus: [HARRIS], dot: 0.022, view: () => milesView(midHarris(), 10), html: () => `
+      <div class="kicker">Zoom in</div>
+      <h2>The dots follow the streets</h2>
+      <p>Closer in, nothing about the dots changes but the size of the view.</p>
+      <p>Parks, rail yards, the bayous and the freeways open up between the neighborhoods.</p>` },
 
   { step: 5, fly: 3, hold: 12, fill: 0, dots: 'block', focus: [HARRIS], dot: gapMiles(HARRIS) / 3,
     view: () => milesView(HARRIS.hot, closeMiles(HARRIS)), html: v => `
@@ -323,12 +329,18 @@ const scenes = [
       <p>Solid red on the flat map. Spread evenly, a pinkish haze. But <span class="d">${fmt(RED_CITY.dem)}</span> people here voted
       for ${D.last}.</p>` },
 
-  { step: 5, fly: 3, hold: 12, mix: 4, fill: 0, dots: 'block', focus: [RED_CITY], dot: 0.022, view: () => milesView(RED_CITY.hot, 12),
+  { step: 5, fly: 1, hold: 12, mix: 3, fill: 0, dots: 'block', focus: [RED_CITY], view: () => boxView([RED_CITY], 0.0001, 0, 1.2),
     html: () => `
-      <div class="kicker">${RED_CITY.name} County · by census block</div>
+      <div class="kicker">${RED_CITY.name} County · by precinct and block</div>
       <h2>Not one color either</h2>
-      <p>Placed by precinct and block, ${RED_CITY.name}'s ${D.last} voters gather in parts of the city, and ${R.last}'s fill the
-      rest of it and the farms around it.</p>
+      <p>Same view, now placed as in ${HARRIS.name}: by precinct, then by census block. ${RED_CITY.name}'s ${D.last} voters gather
+      in parts of the city, and ${R.last}'s fill the rest of it and the farms around it.</p>` },
+
+  { step: 5, fly: 3, hold: 11, fill: 0, dots: 'block', focus: [RED_CITY], dot: 0.022, view: () => milesView(RED_CITY.hot, 12),
+    html: () => `
+      <div class="kicker">Zoom in</div>
+      <h2>Blue streets in a red county</h2>
+      <p>Closer in, the same dots: whole neighborhoods of ${D.last} voters, inside a county the flat map paints solid red.</p>
       <p>A red county is a place where one side got more votes, not a place where everyone voted one way.</p>
       <p class="note">Spots and colors are estimated.</p>` },
 
