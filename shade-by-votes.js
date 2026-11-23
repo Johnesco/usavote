@@ -116,8 +116,8 @@ fill('s9', `Each county mixes its ${name(D)} and ${name(R)} votes into one color
   `Then it's drawn see-through over the dark map, the more so the fewer votes it cast, against the biggest county, ${BIG.name}, with ${short(BIG.total)} voters. ` +
   `<b>The color says how a county split; how solid it is says how many voted.</b>`);
 fill('s10', `<b>${TINY.name} County</b> went ${twoParty(TINY)}, so it's ${hueName(TINY)}, but with ${num(TINY.total)} voters it's drawn only ${solid(TINY)} solid: ` +
-  `you can still see which way it went, faintly. <b>${BIG.name} County</b>, ${twoParty(BIG)}, is ${hueName(BIG)} at full strength.` +
-  `<span class="big">${solid(TINY)} vs. ${solid(BIG)}</span>Unlike Vote lead, the small county doesn't vanish; unlike Vote share, it doesn't outshine the city.`);
+  `close to the background, with only a trace of which way it went. <b>${BIG.name} County</b>, ${twoParty(BIG)}, is ${hueName(BIG)} at full strength.` +
+  `<span class="big">${solid(TINY)} vs. ${solid(BIG)}</span>Unlike Vote share, the small county doesn't outshine the city; unlike Vote lead, it still keeps a trace of its side.`);
 fill('s11', `<b>${CLOSE_BIG.name} County</b> went ${twoParty(CLOSE_BIG)}, so it's ${hueName(CLOSE_BIG)}, drawn ${solid(CLOSE_BIG)} solid because ${short(CLOSE_BIG.total)} people voted there. ` +
   `Bright purple is a close race in a big place; faint purple is a close race in a small one.`);
 $('src').textContent = `Results: ${res.meta.resultsSource}, as of ${res.meta.resultsUpdated}.`;

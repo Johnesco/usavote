@@ -14,9 +14,9 @@
 <meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Vote mix shade each county by how much its votes counted." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="stylesheet" href="style.css?v=a52542b1f0" />
-<link rel="stylesheet" href="why.css?v=567d710f09" />
-<link rel="stylesheet" href="shade-by-votes.css?v=d6e8e8a936" />
+<link rel="stylesheet" href="style.css?v=ab974c9205" />
+<link rel="stylesheet" href="why.css?v=ef8e440c7a" />
+<link rel="stylesheet" href="shade-by-votes.css?v=2a57a1c7d6" />
 <script type="importmap">
 { "imports": {
   "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
@@ -24,7 +24,7 @@
   "./app.js": "./app.js?v=dadc89e19e",
   "./busy.js": "./busy.js?v=386b779ab5",
   "./cities.js": "./cities.js?v=0d0b35869f",
-  "./colors.js": "./colors.js?v=aa7ea4f5fa",
+  "./colors.js": "./colors.js?v=00afe1d9c2",
   "./compare.js": "./compare.js?v=318faa6e94",
   "./dotlook.js": "./dotlook.js?v=f60bd179cf",
   "./dots-how.js": "./dots-how.js?v=2b9a638ee9",
@@ -37,7 +37,7 @@
   "./places.js": "./places.js?v=c346d0411f",
   "./player.js": "./player.js?v=3c976be25d",
   "./precinct-columns.js": "./precinct-columns.js?v=0f09f790a1",
-  "./shade-by-votes.js": "./shade-by-votes.js?v=3b6a5d14bf",
+  "./shade-by-votes.js": "./shade-by-votes.js?v=ef0890a1fa",
   "./sitenav.js": "./sitenav.js?v=e059a02a7b",
   "./sourcelist.js": "./sourcelist.js?v=2193e8e9eb",
   "./sources.js": "./sources.js?v=9431e8015d",
@@ -47,15 +47,15 @@
   "./volume.js": "./volume.js?v=6bc7e429a8",
   "./compare.css": "./compare.css?v=9826631cb5",
   "./dotlook.css": "./dotlook.css?v=74c9d9598d",
-  "./flight.css": "./flight.css?v=8a4a35a371",
-  "./home.css": "./home.css?v=cd8cab2228",
+  "./flight.css": "./flight.css?v=57a5930251",
+  "./home.css": "./home.css?v=d8041113cd",
   "./misread.css": "./misread.css?v=827456104e",
-  "./shade-by-votes.css": "./shade-by-votes.css?v=d6e8e8a936",
-  "./sources.css": "./sources.css?v=5666c47939",
+  "./shade-by-votes.css": "./shade-by-votes.css?v=2a57a1c7d6",
+  "./sources.css": "./sources.css?v=fb32e4ccd5",
   "./story.css": "./story.css?v=f4448ec5e4",
-  "./style.css": "./style.css?v=a52542b1f0",
+  "./style.css": "./style.css?v=ab974c9205",
   "./voters.css": "./voters.css?v=587adb2f13",
-  "./why.css": "./why.css?v=567d710f09"
+  "./why.css": "./why.css?v=ef8e440c7a"
 } }
 </script>
 </head>
@@ -149,7 +149,7 @@
         <span class="n">9</span>
         <h2>Vote mix</h2>
         <p id="s9">Each county mixes its Democratic and Republican votes into one color, blue through purple to red, and is drawn fainter the fewer votes it cast.</p>
-        <p class="rel-how">Three choices keep this honest. The colors from blue through purple to red are all equally light and equally strong (they're picked in OKLCH, a color space made to match how people see), so an even county is a clear purple rather than a muddy one, and no split looks darker or louder than another. That leaves darkness free to mean one thing only: few voters. And no county fades away entirely: the smallest is still 40% solid, so you can still see its color. How solid a county is goes on a square-root scale, like Vote lead's. Other candidates' votes are left out of the mix. Read it with the key: the split across, votes cast down.</p>
+        <p class="rel-how">Three choices keep this readable. The hues from red through purple to blue are evenly spaced in OKLCH, a color space made to match how people see, and each is as strong as a screen can show, so an even county is a vivid purple rather than a muddy one. (At full strength, blue is a darker color than red or purple on any screen; compare a county with the top row of the key, not with its neighbors.) Fewer voters means more see-through, down to nearly the background, but never all the way: the smallest is still 12% solid, so up close you can still make out its hue. How solid a county is goes on a square-root scale, like Vote lead's. Other candidates' votes are left out of the mix. Read it with the key: the split across, votes cast down.</p>
       </section>
 
       <section class="rel-step" data-mode="mix" data-focus="tiny,big">
@@ -192,7 +192,7 @@
     <p><a href="sources.html">Sources and credits for every state →</a> · <a href="about.html">About me →</a></p>
   </footer>
 </div>
-<script type="module" src="shade-by-votes.js?v=3b6a5d14bf"></script>
+<script type="module" src="shade-by-votes.js?v=ef0890a1fa"></script>
 <script id="gc" data-goatcounter="https://texaslooksred.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
