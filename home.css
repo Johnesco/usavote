@@ -16,7 +16,7 @@ html, body { height: auto; }
 .hero-pic:hover, .hero-pic:focus-visible { border-color: var(--accent); }
 
 .start { margin-bottom: 30px; }
-.start h2, .states-h { margin-top: 0; }
+.start h2, h2.states-h { margin-top: 0; }
 .start-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 /* link cards (style.css), here on the panel's color */
 .start-card { display: flex; flex-direction: column; gap: 4px; padding: 14px 15px; background: var(--panel); border-radius: 12px; }
@@ -37,7 +37,7 @@ a:focus-visible .st.on { stroke: #fff; stroke-width: 2; }
 #status { min-height: 22px; font-size: 13.5px; color: var(--muted); margin: 8px 0 0; }
 
 .state-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
-.state-card h2 { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; text-transform: none; margin: 2px 0 6px; }
+.state-card h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 2px 0 6px; }
 .summary { font-size: 14px; color: var(--muted); margin: 0 0 14px; }
 .view { padding: 11px 13px; }
 .view b { font-size: 15px; }

@@ -4,7 +4,7 @@
 .src .lead { font-size: 18px; margin: 0; }
 
 .src > section { margin-top: 36px; padding-top: 24px; border-top: 1px solid var(--line); }
-.src h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; text-transform: none; color: var(--text); margin: 0 0 12px; }
+.src h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 12px; }
 .src p, .src li { font-size: 15px; line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
 .src p { margin: 0 0 10px; }
 .src ul, .src ol { margin: 0; padding-left: 20px; }

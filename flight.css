@@ -9,7 +9,7 @@
 .caption.fade { opacity: 0; }
 .caption .kicker { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--accent); font-weight: 650; margin-bottom: 6px; }
 .caption h1 { font-size: 30px; line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 10px; }
-.caption h2 { text-transform: none; color: var(--text); font-weight: 700; font-size: 21px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 8px; }
+.caption h2 { font-weight: 700; font-size: 21px; line-height: 1.2; letter-spacing: -0.01em; margin: 0 0 8px; }
 .caption p { margin: 0 0 8px; font-size: 15px; }
 .caption p:last-child { margin-bottom: 0; }
 .caption .big { font-size: 38px; font-weight: 750; letter-spacing: -0.02em; line-height: 1.05; color: var(--accent); margin: 2px 0 6px; }

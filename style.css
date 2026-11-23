@@ -25,7 +25,8 @@
   #stage canvas { display: block; touch-action: none; }
   h1 { font-size: 22px; line-height: 1.2; margin: 0 0 4px; letter-spacing: -0.01em; }
   .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
-  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 10px; font-weight: 600; }
+  /* the side panel's small headings, and the same look elsewhere as .label-heading (the home page's "Start here") */
+  aside h2, h2.label-heading { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 10px; font-weight: 600; }
   p { margin: 0 0 10px; }
   b.hl { color: var(--accent); font-weight: 650; }
   .bars { display: grid; gap: 12px; }
