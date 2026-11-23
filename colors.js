@@ -33,25 +33,38 @@ export function leadTicks(maxLead) {
 }
 // Vote mix color (value by alpha): two things, each in a channel of its own.
 //   The split is the hue: the Democratic and Republican votes mixed, from blue through purple to red, by the Democrat's
-//   share of the two (others left out). The mix runs along a circle of hues in OKLCH, a color space made to match how
-//   people see, at one lightness and one strength all the way, so an even county is a clear purple, not a muddy one, and
-//   no split looks darker or louder than another.
+//   share of the two (others left out). The hues are spaced evenly in OKLCH, a color space made to match how people see,
+//   and each is drawn as strong as a screen can show it: green off, red or blue full (pure red, through magenta, to pure
+//   blue), so an even county is a vivid purple, not a muddy one. At full strength blue is a darker color than red or
+//   magenta, as it is on any screen.
 //   Votes cast is how solid the color is: a county is drawn see-through over the map's dark background, the more so the fewer
-//   votes it cast, against the race's biggest county, on the same square-root scale as Vote lead. Since every split has
-//   the same lightness, dim only ever means few votes; and never fully see-through, so even the smallest shows its hue.
+//   votes it cast, against the race's biggest county, on the same square-root scale as Vote lead. The smallest are nearly
+//   the background, but never quite, so their hue still shows up close.
 export const MAP_BG = '#0e1116';            // the map's background (style.css --bg, app.js scene.background)
-const MIX_L = 0.6, MIX_C = 0.215;           // lightness and strength: the most that stays inside sRGB at every hue below
 const H_DEM = 265, H_REP = 27 + 360;        // blue, and red, going the short way round through purple (about 326)
-export const MIX_FLOOR = 0.4;               // how solid the smallest county is: dim, but its hue still shows
+export const MIX_FLOOR = 0.12;              // how solid the smallest county is: almost the background, with a trace of its hue
 export const mixT = (total, maxTotal) => MIX_FLOOR + (1 - MIX_FLOOR) * (maxTotal > 0 ? Math.sqrt(Math.min(1, total / maxTotal)) : 0);
+// the OKLCH hue of a linear-light color, in degrees, counted from 180 to 540 so red (about 389) sits above blue (264)
+function hueOf([r, g, b]) {
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b),
+    s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const h = Math.atan2(0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s) * 180 / Math.PI;
+  return h < 180 ? h + 360 : h;
+}
+// the strongest color at a hue between blue and red: on the edge of what a screen shows, with green off. u runs 0 to 2,
+// red (1, 0, 0) to magenta (1, 0, 1) to blue (0, 0, 1), and the hue falls all the way, so a halving search finds it.
+const edge = u => u < 1 ? [1, 0, u] : [2 - u, 0, 1];
+const toSRGB = v => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+const SPLIT_STEPS = 256, SPLIT_TABLE = Array.from({ length: SPLIT_STEPS + 1 }, (_, i) => {
+  const want = H_REP + (H_DEM - H_REP) * i / SPLIT_STEPS;
+  let lo = 0, hi = 2;
+  for (let k = 0; k < 30; k++) { const mid = (lo + hi) / 2; hueOf(edge(mid)) > want ? lo = mid : hi = mid; }
+  return edge((lo + hi) / 2).map(toSRGB);
+});
 // the hue for a Democratic share of the two-party vote, 0 to 1, as [r, g, b] 0 to 255
 export function splitRGB(dShare) {
-  const h = (H_REP + (H_DEM - H_REP) * dShare) * Math.PI / 180, a = MIX_C * Math.cos(h), b = MIX_C * Math.sin(h);
-  const l = (MIX_L + 0.3963377774 * a + 0.2158037573 * b) ** 3, m = (MIX_L - 0.1055613458 * a - 0.0638541728 * b) ** 3,
-    s = (MIX_L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
-  const lin = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
-    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
-  return lin.map(v => { v = Math.min(1, Math.max(0, v)); return 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055); });
+  const x = Math.min(1, Math.max(0, dShare)) * SPLIT_STEPS, i = Math.min(SPLIT_STEPS - 1, Math.floor(x)), f = x - i;
+  return SPLIT_TABLE[i].map((v, k) => v + (SPLIT_TABLE[i + 1][k] - v) * f);
 }
 // a county's color: its split's hue, laid over the map's background as solid as its votes make it
 export function mixRGB(dem, rep, total, maxTotal) {
