@@ -58,7 +58,7 @@
 .rel-controls button[aria-pressed="true"] { color: #111; background: var(--accent); border-color: var(--accent); }
 .rel-controls button:hover, .rel-controls button:focus-visible { filter: brightness(1.15); }
 
-@media (max-width: 860px) {
+@media (max-width: 820px) {
   .rel-body { grid-template-columns: 1fr; gap: 0; }
   /* phones: the map stays at the top and the steps scroll up under it */
   .rel-map { grid-column: 1; grid-row: 1; top: 0; height: 58vh; height: 58svh; z-index: 3; background: var(--bg); padding: 8px 0; gap: 4px; }
