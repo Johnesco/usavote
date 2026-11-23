@@ -14,8 +14,8 @@
 <meta property="og:description" content="The usual county map colors a county of 116 voters darker than one of 783,714. Vote lead and Vote mix shade each county by how much its votes counted." />
 <meta property="og:image" content="https://johnesco.github.io/usavote/share.png" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="stylesheet" href="style.css?v=daf469deaf" />
-<link rel="stylesheet" href="why.css?v=2fcbd4c7f8" />
+<link rel="stylesheet" href="style.css?v=c2f60391c6" />
+<link rel="stylesheet" href="why.css?v=9aa8952ccd" />
 <link rel="stylesheet" href="shade-by-votes.css?v=4368966a1e" />
 <script type="importmap">
 { "imports": {
@@ -30,7 +30,7 @@
   "./dots-how.js": "./dots-how.js?v=2b9a638ee9",
   "./dots-worker.js": "./dots-worker.js?v=ceeecc0671",
   "./dots.js": "./dots.js?v=01ea30f381",
-  "./home.js": "./home.js?v=5e4d53da45",
+  "./home.js": "./home.js?v=af7c69d9e5",
   "./map3d.js": "./map3d.js?v=05aec45682",
   "./misread.js": "./misread.js?v=ed12c9803a",
   "./panel.js": "./panel.js?v=5149aad55f",
@@ -46,16 +46,16 @@
   "./viewbar.js": "./viewbar.js?v=2162491b04",
   "./volume.js": "./volume.js?v=6bc7e429a8",
   "./compare.css": "./compare.css?v=9826631cb5",
-  "./dotlook.css": "./dotlook.css?v=7e07ee9435",
-  "./flight.css": "./flight.css?v=f5265fe406",
-  "./home.css": "./home.css?v=96a0f588d1",
-  "./misread.css": "./misread.css?v=597ad035be",
+  "./dotlook.css": "./dotlook.css?v=74c9d9598d",
+  "./flight.css": "./flight.css?v=f8395aad2a",
+  "./home.css": "./home.css?v=78f58b5b36",
+  "./misread.css": "./misread.css?v=827456104e",
   "./shade-by-votes.css": "./shade-by-votes.css?v=4368966a1e",
-  "./sources.css": "./sources.css?v=b0ff33ddf2",
-  "./story.css": "./story.css?v=162f90e4e5",
-  "./style.css": "./style.css?v=daf469deaf",
-  "./voters.css": "./voters.css?v=d3d8dc4fa7",
-  "./why.css": "./why.css?v=2fcbd4c7f8"
+  "./sources.css": "./sources.css?v=f2165a3aae",
+  "./story.css": "./story.css?v=f4448ec5e4",
+  "./style.css": "./style.css?v=c2f60391c6",
+  "./voters.css": "./voters.css?v=275d6c1668",
+  "./why.css": "./why.css?v=9aa8952ccd"
 } }
 </script>
 </head>
@@ -63,7 +63,7 @@
 <!-- shade-by-votes.js draws the map and fills the numbers in the text from data/results-2026.json. Each step, as it scrolls into
      view, fades the map to one of the three colors the state maps have under Color: Vote share, Vote lead or Vote mix.
      The three buttons under the map do the same by hand. -->
-<div class="why rel">
+<div class="page why rel">
   <a class="back" id="back" href="texas.html">← Texas results</a>
   <header>
     <div class="kicker">Three ways to color a county map · 2026 U.S. Senate</div>
@@ -180,13 +180,13 @@
   <section class="next">
     <h2>See it for yourself</h2>
     <div class="cards">
-      <a class="card" id="tryAll" href="texas.html?race=u-s-senate&amp;color=mix"><b id="tryAllName">Try all three on Texas →</b><span>Every state map has Vote share, Vote lead and Vote mix under Color.</span></a>
-      <a class="card" href="texas.html?race=u-s-senate&amp;look=dots"><b>Texas in Dots →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
-      <a class="card" href="misread.html"><b>Misreading the Map →</b><span>Why the flat map looks red, step by step, with the dots.</span></a>
+      <a class="link-card" id="tryAll" href="texas.html?race=u-s-senate&amp;color=mix"><b id="tryAllName">Try all three on Texas →</b><span>Every state map has Vote share, Vote lead and Vote mix under Color.</span></a>
+      <a class="link-card" href="texas.html?race=u-s-senate&amp;look=dots"><b>Texas in Dots →</b><span>One dot per voter. Zoom from the whole state down to a neighborhood.</span></a>
+      <a class="link-card" href="misread.html"><b>Misreading the Map →</b><span>Why the flat map looks red, step by step, with the dots.</span></a>
     </div>
   </section>
 
-  <footer>
+  <footer class="site-footer">
     <p id="src">Results: Texas Secretary of State, election night returns, unofficial until the state canvass.</p>
     <p>County boundaries: U.S. Census Bureau, via <a href="https://github.com/topojson/us-atlas" target="_blank" rel="noopener">us-atlas</a>. This page counts visits with <a href="https://www.goatcounter.com" target="_blank" rel="noopener">GoatCounter</a>, which uses no cookies and does not collect personal data.</p>
     <p><a href="sources.html">Sources and credits for every state →</a> · <a href="about.html">About me →</a></p>
