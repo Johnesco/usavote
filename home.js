@@ -21,7 +21,7 @@ const opens = s => s.results.href;
 // Start here: the page that explains the idea, then every guided flight and dot tour (sitenav.js, the same list as the
 // Explainers menu on every other page)
 $('start').innerHTML = EXPLAINERS.map((c, i) => `
-  <a class="start-card${i ? '' : ' first'}" href="${c.href}"><span class="kicker">${c.about}</span><b>${i ? '▶ ' : ''}${c.title}${i ? '' : ' →'}</b><span>${c.how}</span></a>`).join('');
+  <a class="link-card start-card${i ? '' : ' first'}" href="${c.href}"><span class="kicker">${c.about}</span><b>${i ? '▶ ' : ''}${c.title}${i ? '' : ' →'}</b><span>${c.how}</span></a>`).join('');
 
 // the three Looks, the same words as the map page's Look buttons (viewbar.js), each opening the state's map in that Look
 const LOOKS = [
@@ -36,9 +36,9 @@ $('ready').innerHTML = STATES.map(s => `
     <div class="kicker">Available now</div>
     <h2 id="st-${s.fips}">${s.name}</h2>
     <p class="summary">${s.summary}</p>
-    <a class="view first" href="${s.results.href}"><b>${s.results.title} →</b><span>${s.results.text}</span></a>
+    <a class="link-card view first" href="${s.results.href}"><b>${s.results.title} →</b><span>${s.results.text}</span></a>
     <div class="looks" role="group" aria-label="Open ${s.name} as">${LOOKS.map(l => `
-      <a href="${s.results.href}${l.q}" title="${l.how}"><b>${l.name}</b><span>${l.how}</span></a>`).join('')}
+      <a class="link-card" href="${s.results.href}${l.q}" title="${l.how}"><b>${l.name}</b><span>${l.how}</span></a>`).join('')}
     </div>
   </section>`).join('');
 
