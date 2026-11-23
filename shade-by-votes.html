@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="stylesheet" href="style.css?v=ab974c9205" />
 <link rel="stylesheet" href="why.css?v=ef8e440c7a" />
-<link rel="stylesheet" href="shade-by-votes.css?v=2a57a1c7d6" />
+<link rel="stylesheet" href="shade-by-votes.css?v=954c25c5fc" />
 <script type="importmap">
 { "imports": {
   "d3-geo": "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm",
@@ -24,7 +24,7 @@
   "./app.js": "./app.js?v=dadc89e19e",
   "./busy.js": "./busy.js?v=386b779ab5",
   "./cities.js": "./cities.js?v=0d0b35869f",
-  "./colors.js": "./colors.js?v=00afe1d9c2",
+  "./colors.js": "./colors.js?v=6b728a2102",
   "./compare.js": "./compare.js?v=318faa6e94",
   "./dotlook.js": "./dotlook.js?v=f60bd179cf",
   "./dots-how.js": "./dots-how.js?v=2b9a638ee9",
@@ -50,7 +50,7 @@
   "./flight.css": "./flight.css?v=57a5930251",
   "./home.css": "./home.css?v=d8041113cd",
   "./misread.css": "./misread.css?v=827456104e",
-  "./shade-by-votes.css": "./shade-by-votes.css?v=2a57a1c7d6",
+  "./shade-by-votes.css": "./shade-by-votes.css?v=954c25c5fc",
   "./sources.css": "./sources.css?v=fb32e4ccd5",
   "./story.css": "./story.css?v=f4448ec5e4",
   "./style.css": "./style.css?v=ab974c9205",
@@ -81,11 +81,13 @@
         <div class="rel-legend" id="legRel"></div>
         <div class="rel-legend" id="legMix"></div>
       </div>
-      <div class="rel-controls" role="group" aria-label="Color">
+      <div class="rel-controls">
         <span>Color</span>
-        <button type="button" data-mode="share" aria-pressed="true">Vote share</button>
-        <button type="button" data-mode="lead" aria-pressed="false">Vote lead</button>
-        <button type="button" data-mode="mix" aria-pressed="false">Vote mix</button>
+        <div class="seg" role="group" aria-label="Color">
+          <button type="button" data-mode="share" aria-pressed="true">Vote share</button>
+          <button type="button" data-mode="lead" aria-pressed="false">Vote lead</button>
+          <button type="button" data-mode="mix" aria-pressed="false">Vote mix</button>
+        </div>
       </div>
     </figure>
 
